@@ -1,0 +1,6 @@
+Mon 29 Jan 2018 Yasuhiro Asaka <yasuhiro.asaka@grauwoelfchen.net>
+	* Add 404 error page
+	* Add template support
+
+Thu 25 Jan 2018 Yasuhiro Asaka <yasuhiro.asaka@grauwoelfchen.net>
+	* Initial commit
