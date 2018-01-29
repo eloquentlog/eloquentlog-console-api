@@ -1,0 +1,9 @@
+[global]
+template_dir = "src/templates/"
+
+[development]
+port = 5000
+log = "normal"
+
+[production]
+log = "critical"

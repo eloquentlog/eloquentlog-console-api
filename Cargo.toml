@@ -6,3 +6,8 @@ authors = ["Yasuhiro Asaka <yasuhiro.asaka@grauwoelfchen.net>"]
 [dependencies]
 rocket = "0.3.5"
 rocket_codegen = "0.3.5"
+
+[dependencies.rocket_contrib]
+version = "*"
+default-features = false
+features = ["handlebars_templates"]
