@@ -1,6 +1,8 @@
 Montafon
 ========
 
+The website of Eloquentlog_.
+
 
 Build
 -----
@@ -8,6 +10,16 @@ Build
 .. code:: zsh
 
     % cargo build --release
+
+
+Development
+~~~~~
+
+Use cargo-watch_
+
+.. code:: zsh
+
+    % cargo watch -x 'run' -d 0.3
 
 
 License
@@ -30,3 +42,7 @@ License
    See the License for the specific language governing permissions and
    limitations under the License.
 
+
+
+.. _Eloquentlog: http://eloquentlog.com/
+.. _cargo-watch: https://github.com/passcod/cargo-watch
