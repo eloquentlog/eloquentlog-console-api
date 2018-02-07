@@ -13,13 +13,22 @@ Build
 
 
 Development
-~~~~~
+~~~~~~~~~~~
 
 Use cargo-watch_
 
 .. code:: zsh
 
     % cargo watch -x 'run' -d 0.3
+
+
+Testing
+~~~~~~~
+
+.. code:: zsh
+
+    % cargo test
+
 
 
 License
