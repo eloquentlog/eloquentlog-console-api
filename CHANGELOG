@@ -1,3 +1,8 @@
+Mon 12 Feb 2018 Yasuhiro Asaka <yasuhiro.asaka@grauwoelfchen.net>
+	* Add DATABASE_URL support
+	* Add .env support
+	* Create config class {testing|development|production}
+
 Thu 08 Feb 2018 Yasuhiro Asaka <yasuhiro.asaka@grauwoelfchen.net>
 	* Change LICENSE as AGPL-3.0
 	* Separate routes into some files
