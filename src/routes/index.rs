@@ -2,6 +2,7 @@ use std::collections::HashMap;
 
 use rocket_contrib::Template;
 
+
 #[get("/")]
 fn index() -> Template {
     let mut ctx = HashMap::new();

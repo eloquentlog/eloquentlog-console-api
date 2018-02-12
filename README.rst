@@ -4,6 +4,25 @@ Montafon
 The website of Eloquentlog_.
 
 
+
+Requirements
+------------
+
+* Rust
+* PostgreSQL
+
+
+
+Setup
+-----
+
+.. code:: zsh
+
+    # set env variables for {production|testing|development}
+    % cp .env.sample .env
+
+
+
 Build
 -----
 
