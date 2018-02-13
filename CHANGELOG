@@ -1,3 +1,6 @@
+Tue 13 Feb 2018 Yasuhiro Asaka <yasuhiro.asaka@grauwoelfchen.net>
+	* Change template engine hbs to tera
+
 Mon 12 Feb 2018 Yasuhiro Asaka <yasuhiro.asaka@grauwoelfchen.net>
 	* Add DATABASE_URL support
 	* Add .env support
