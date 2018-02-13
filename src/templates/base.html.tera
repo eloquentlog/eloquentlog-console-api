@@ -2,17 +2,16 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <title></title>
+  <title>{% block title %}{% endblock title %}</title>
   <meta name="description" content="">
   <meta name="author" content="">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <link rel="stylesheet" href="/static/css/style.css">
+  {% block head %}
+  {% endblock head %}
 </head>
 <body>
-  <h1>{{title}}</h1>
-  <div class="message">
-    <div class="header">NOTE</div>
-    <p class="description">Under development</p>
-  </div>
+  {% block content %}
+  {% endblock content %}
 </body>
 </html>

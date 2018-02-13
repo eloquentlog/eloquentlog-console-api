@@ -14,4 +14,4 @@ dotenv = "0.10"
 [dependencies.rocket_contrib]
 version = "*"
 default-features = false
-features = ["handlebars_templates"]
+features = ["tera_templates"]
