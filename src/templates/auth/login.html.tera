@@ -1,0 +1,31 @@
+{% extends "base" %}
+{% block title %}Login | Eloquentlog{% endblock title %}
+{% block content %}
+<h1>{{title}}</h1>
+<div class="login-form">
+  <form class="form" action="/login" method="POST">
+    {% if flash %}
+    <div class="message">
+      <p class="description">{{flash}}</p>
+    </div>
+    {% endif %}
+    <div class="{% if form.errors.username %}field error{% else %}field{% endif %}">
+      <label for="username" class="label">Username</label>
+      <p class="description"></p>
+      <input id="username" type="email" name="username" value="{% if form and form.data %}{{form.data.username}}{% endif %}"/>
+      {% if form.errors.username %}
+      <p class="error text">{{form.errors.username}}</p>
+      {% endif %}
+    </div>
+    <div class="{% if form.errors.password %}field error{% else %}field{% endif %}">
+      <label for="password" class="label">Password</label>
+      <p class="description"></p>
+      <input id="password" type="password" name="password"/>
+      {% if form.errors.password %}
+      <p class="error text">{{form.errors.password}}</p>
+      {% endif %}
+    </div>
+    <input type="submit" value="Login"/>
+  </form>
+</div>
+{% endblock content %}

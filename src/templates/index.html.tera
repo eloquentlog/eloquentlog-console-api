@@ -5,5 +5,7 @@
 <div class="message">
   <div class="header">NOTE</div>
   <p class="description">Under development</p>
+  <hr>
+  <a href="/login">login</a>
 </div>
 {% endblock content %}
