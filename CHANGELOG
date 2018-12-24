@@ -1,3 +1,8 @@
+Mon 24 12 2018 Yasuhiro Asaka <yasuhiro.asaka@grauwoelfchen.net>
+	* Update rust (to 1.33.0-nightly) and rocket (0.3 -> 0.4)
+	* Improve coding style
+	* Add checks using rustfmt, clippy and check (Makefile)
+
 Tue 13 Feb 2018 Yasuhiro Asaka <yasuhiro.asaka@grauwoelfchen.net>
 	* Change template engine hbs to tera
 
