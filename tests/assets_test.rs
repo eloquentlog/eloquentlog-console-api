@@ -3,20 +3,18 @@ extern crate dotenv;
 
 #[cfg(test)]
 mod assets_test {
-    extern crate montafon;
+    extern crate eloquentlog_backend;
 
     use std::panic;
 
     use dotenv::dotenv;
-    use rocket::local::Client;
     use rocket::http::Status;
+    use rocket::local::Client;
 
-    fn run_test<T>(test: T) -> ()
-        where T: FnOnce() -> () + panic::UnwindSafe {
+    fn run_test<T>(test: T)
+    where T: FnOnce() -> () + panic::UnwindSafe {
         setup();
-        let result = panic::catch_unwind(|| {
-            test()
-        });
+        let result = panic::catch_unwind(test);
         teardown();
         assert!(result.is_ok())
     }
@@ -25,13 +23,13 @@ mod assets_test {
         dotenv().ok();
     }
 
-    fn teardown() {
-    }
+    fn teardown() {}
 
     #[test]
     fn test_static_style_css() {
         run_test(|| {
-            let client = Client::new(montafon::app("testing")).unwrap();
+            let client =
+                Client::new(eloquentlog_backend::app("testing")).unwrap();
             let mut res = client.get("/static/css/style.css").dispatch();
             assert_eq!(res.status(), Status::Ok);
             assert!(res.body_string().unwrap().contains("h1"));

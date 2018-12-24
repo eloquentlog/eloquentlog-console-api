@@ -1,17 +1,15 @@
 use std::env;
 
-
 pub struct Config {
     pub database_url: String,
     pub env_name: &'static str,
 }
 
-
 impl Default for Config {
     fn default() -> Config {
         Config {
-            database_url: env::var("DATABASE_URL").expect(
-                "DATABASE_URL is not set"),
+            database_url: env::var("DATABASE_URL")
+                .expect("DATABASE_URL is not set"),
             env_name: &"undefined",
         }
     }
@@ -24,7 +22,6 @@ impl Config {
             "testing" => Ok(Config::testing_config()),
             "development" => Ok(Config::development_config()),
             _ => Err(format!("Invalid config_name: '{}'", &config_name)),
-
         }
     }
 
@@ -37,10 +34,9 @@ impl Config {
 
     fn testing_config() -> Config {
         Config {
-            database_url: env::var("TEST_DATABASE_URL").expect(
-                "TEST_DATABASE_URL is not set"),
+            database_url: env::var("TEST_DATABASE_URL")
+                .expect("TEST_DATABASE_URL is not set"),
             env_name: &"testing",
-            ..Default::default()
         }
     }
 

@@ -7,7 +7,6 @@ use r2d2;
 use diesel::PgConnection;
 use r2d2_diesel::ConnectionManager;
 
-
 /// An alias to connection pool of PostgreSQL
 pub type Pool = r2d2::Pool<ConnectionManager<PgConnection>>;
 
@@ -20,7 +19,7 @@ impl<'a, 'r> FromRequest<'a, 'r> for DbConn {
         let pool = request.guard::<State<Pool>>()?;
         match pool.get() {
             Ok(conn) => Outcome::Success(DbConn(conn)),
-            Err(_) => Outcome::Failure((Status::ServiceUnavailable, ()))
+            Err(_) => Outcome::Failure((Status::ServiceUnavailable, ())),
         }
     }
 }
@@ -32,7 +31,6 @@ impl Deref for DbConn {
         &self.0
     }
 }
-
 
 /// Initializes db connection pool
 pub fn init_pool(database_url: &str) -> Pool {

@@ -1,7 +1,7 @@
-Montafon
-========
+Eloquentlog Backend
+===================
 
-The website of Eloquentlog_.
+The backend API server of Eloquentlog_.
 
 
 
@@ -55,7 +55,7 @@ License
 
 .. code:: text
 
-   Montafon
+   Eloquentlog Backend
    Copyright (c) 2018 Lupine Software LLC
 
 

@@ -1,10 +1,9 @@
 use std::collections::HashMap;
 
-use rocket_contrib::Template;
-
+use rocket_contrib::templates::Template;
 
 #[get("/")]
-fn index() -> Template {
+pub fn index() -> Template {
     let mut ctx = HashMap::new();
     ctx.insert("title", "Eloquentlog;)");
     Template::render("index", &ctx)

@@ -1,11 +1,11 @@
 use std::collections::HashMap;
 
 use rocket::Request;
-use rocket_contrib::Template;
+use rocket_contrib::templates::Template;
 
-#[error(404)]
-fn not_found(req: &Request) -> Template {
+#[catch(404)]
+pub fn not_found(req: &Request) -> Template {
     let mut ctx = HashMap::new();
-    ctx.insert("path", req.uri().as_str());
+    ctx.insert("path", req.uri().path());
     Template::render("errors/404", &ctx)
 }
