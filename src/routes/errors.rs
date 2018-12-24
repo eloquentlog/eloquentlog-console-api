@@ -1,11 +1,16 @@
-use std::collections::HashMap;
-
 use rocket::Request;
-use rocket_contrib::templates::Template;
+use rocket::http::Status;
+
+use response::Response;
 
 #[catch(404)]
-pub fn not_found(req: &Request) -> Template {
-    let mut ctx = HashMap::new();
-    ctx.insert("path", req.uri().path());
-    Template::render("errors/404", &ctx)
+pub fn not_found(req: &Request) -> Response {
+    Response {
+        status: Status::NotFound,
+        data: json!({
+            "data": {
+                "message": format!("{path} Not Found", path=req.uri().path()),
+            }
+        }),
+    }
 }

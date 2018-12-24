@@ -1,3 +1,16 @@
+toolchain ?= nightly
+
+# setup {{{
+setup\:tools:  ## Setup development tools
+	cargo install diesel_cli --no-default-features --features "postgres"
+	rustup component add clippy --toolchain $(toolchain) || cargo install \
+	  --git https://github.com/rust-lang/rust-clippy/ \
+		--force clippy
+	rustup component add rustfmt --toolchain $(toolchain)
+.PHONY: setup\:tools
+
+# }}}
+
 # vet {{{
 vet\:check:  ## Check rust syntax
 	cargo check --all -v
