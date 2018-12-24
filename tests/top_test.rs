@@ -3,7 +3,7 @@ extern crate dotenv;
 
 #[cfg(test)]
 mod top_test {
-    extern crate eloquentlog_backend;
+    extern crate eloquentlog_backend_api;
 
     use std::panic;
 
@@ -29,7 +29,7 @@ mod top_test {
     fn test_index() {
         run_test(|| {
             let client =
-                Client::new(eloquentlog_backend::app("testing")).unwrap();
+                Client::new(eloquentlog_backend_api::app("testing")).unwrap();
             let mut res = client.get("/").dispatch();
             assert_eq!(res.status(), Status::Ok);
             assert!(res.body_string().unwrap().contains("Eloquentlog"));

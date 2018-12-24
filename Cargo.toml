@@ -1,5 +1,5 @@
 [package]
-name = "eloquentlog-backend"
+name = "eloquentlog-backend-api"
 version = "0.1.0"
 authors = ["Yasuhiro Asaka <yasuhiro.asaka@grauwoelfchen.net>"]
 

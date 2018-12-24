@@ -1,10 +1,10 @@
-extern crate eloquentlog_backend;
+extern crate eloquentlog_backend_api;
 extern crate dotenv;
 
 use std::env;
 use dotenv::dotenv;
 
-use eloquentlog_backend::app;
+use eloquentlog_backend_api::app;
 
 fn main() {
     dotenv().ok();

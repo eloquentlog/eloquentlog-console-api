@@ -1,8 +1,7 @@
-Eloquentlog Backend
-===================
+Eloquentlog Backend API
+=======================
 
 The backend API server of Eloquentlog_.
-
 
 
 Requirements
@@ -79,5 +78,5 @@ License
 
 
 
-.. _Eloquentlog: http://eloquentlog.com/
+.. _Eloquentlog: https://eloquentlog.com/
 .. _cargo-watch: https://github.com/passcod/cargo-watch
