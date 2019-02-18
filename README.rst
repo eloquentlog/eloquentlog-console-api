@@ -7,13 +7,13 @@ Eloquentlog Backend API
 .. image:: https://gitlab.com/eloquentlog/eloquentlog-backend-api/badges/master/coverage.svg
    :target: https://gitlab.com/eloquentlog/eloquentlog-backend-api/commits/master
 
-```text
-Eloquentlog
+.. code:: text
 
-╔╗ ┌─┐┌─┐┬┌─┌─┐┌┐┌┌┬┐  ╔═╗╔═╗╦
-╠╩╗├─┤│  ├┴┐├┤ │││ ││  ╠═╣╠═╝║
-╚═╝┴ ┴└─┘┴ ┴└─┘┘└┘─┴┘  ╩ ╩╩  ╩
-```
+   Eloquentlog
+
+   ╔╗ ┌─┐┌─┐┬┌─┌─┐┌┐┌┌┬┐  ╔═╗╔═╗╦
+   ╠╩╗├─┤│  ├┴┐├┤ │││ ││  ╠═╣╠═╝║
+   ╚═╝┴ ┴└─┘┴ ┴└─┘┘└┘─┴┘  ╩ ╩╩  ╩
 
 The backend API server of Eloquentlog_.
 
