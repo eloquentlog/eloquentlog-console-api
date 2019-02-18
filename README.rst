@@ -1,7 +1,27 @@
 Eloquentlog Backend API
 =======================
 
+.. image:: https://gitlab.com/eloquentlog/eloquentlog-backend-api/badges/master/pipeline.svg
+   :target: https://gitlab.com/eloquentlog/eloquentlog-backend-api/commits/master
+
+.. image:: https://gitlab.com/eloquentlog/eloquentlog-backend-api/badges/master/coverage.svg
+   :target: https://gitlab.com/eloquentlog/eloquentlog-backend-api/commits/master
+
+```text
+Eloquentlog
+
+╔╗ ┌─┐┌─┐┬┌─┌─┐┌┐┌┌┬┐  ╔═╗╔═╗╦
+╠╩╗├─┤│  ├┴┐├┤ │││ ││  ╠═╣╠═╝║
+╚═╝┴ ┴└─┘┴ ┴└─┘┘└┘─┴┘  ╩ ╩╩  ╩
+```
+
 The backend API server of Eloquentlog_.
+
+
+Repository
+----------
+
+https://gitlab.com/eloquentlog/eloquentlog-backend-api
 
 
 Requirements
@@ -9,7 +29,6 @@ Requirements
 
 * Rust
 * PostgreSQL
-
 
 
 Setup
@@ -21,32 +40,43 @@ Setup
     % cp .env.sample .env
 
 
-
 Build
 -----
 
 .. code:: zsh
 
-    % cargo build --release
+    # debug
+    % make build
 
 
 Development
-~~~~~~~~~~~
+-----------
+
+Vet
+~~~
+
+.. code:: zsh
+
+    # see make help about details
+    % make vet
+
+Run
+~~~
 
 Use cargo-watch_
 
 .. code:: zsh
 
-    % cargo watch -x 'run' -d 0.3
+    # cargo watch -x 'run' -d 0.3
+    % make watch
 
 
 Testing
-~~~~~~~
+-------
 
 .. code:: zsh
 
-    % cargo test
-
+    % make test
 
 
 License
@@ -54,7 +84,11 @@ License
 
 .. code:: text
 
-   Eloquentlog Backend
+   ┏━╸╻  ┏━┓┏━┓╻ ╻┏━╸┏┓╻╺┳╸╻  ┏━┓┏━╸
+   ┣╸ ┃  ┃ ┃┃┓┃┃ ┃┣╸ ┃┗┫ ┃ ┃  ┃ ┃┃╺┓
+   ┗━╸┗━╸┗━┛┗┻┛┗━┛┗━╸╹ ╹ ╹ ┗━╸┗━┛┗━┛
+
+   Backend API
    Copyright (c) 2018-2019 Lupine Software LLC
 
 
