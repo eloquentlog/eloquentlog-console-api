@@ -1,4 +1,8 @@
 /target/
 **/*.rs.bk
 
+/.tools/kcov
+/.tools/gitlab-runner
+
 /.env
+/.env.ci
