@@ -2,7 +2,8 @@
 template_dir = "src/templates/"
 
 [development]
-port = 5000
+host = "0.0.0.0"
+port = 9001
 log = "normal"
 
 [production]
