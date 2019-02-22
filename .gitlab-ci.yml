@@ -4,7 +4,7 @@ stages:
   - build
 
 .vet-tools: &vet-tools
-  image: grauwoelfchen/rust-vet-tools:stable
+  image: grauwoelfchen/rust-vet-tools:nightly
   except:
     - tags
 
@@ -56,7 +56,7 @@ test:
 
 build:
   stage: build
-  image: grauwoelfchen/rust:stable
+  image: grauwoelfchen/rust:nightly
   before_script:
     - rustc --version
     - cargo --version
@@ -70,7 +70,7 @@ build:
 
 release:
   stage: build
-  image: grauwoelfchen/rust:stable
+  image: grauwoelfchen/rust:nightly
   before_script:
     - rustc --version
     - cargo --version
