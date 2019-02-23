@@ -44,6 +44,8 @@ test:
   stage: test
   <<: *vet-tools
   before_script:
+    - USE="nls readline ssl zlib" emerge -v dev-db/postgresql
+    - psql --version
     - rustc --version
     - cargo --version
     - kcov --version
