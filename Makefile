@@ -44,6 +44,17 @@ test: | test\:all   ## Same as test:all
 .PHONY: test
 # }}}
 
+# coverage -- {{{
+coverage:  ## Generate coverage report of unit tests only for lib using kcov [alias: cov]
+	@cargo test --lib --no-run
+	@./.tools/setup-kcov
+	./.tools/get-covered eloquentlog_backend_api
+.PHONY: coverage
+
+cov: | coverage
+.PHONY: cov
+# }}}
+
 # build {{{
 build\:debug:  ## Create debug build
 	cargo build
