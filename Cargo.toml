@@ -1,7 +1,11 @@
 [package]
 name = "eloquentlog-backend-api"
-version = "0.1.0"
-authors = ["Yasuhiro Asaka <yasuhiro.asaka@grauwoelfchen.net>"]
+version = "0.0.1"
+authors = ["Yasuhiro Яша Asaka <yasuhiro.asaka@grauwoelfchen.net>"]
+description = "A backend api server for Eloquentlog."
+repository = "https://gitlab.com/eloquentlog/eloquentlog-backend-api"
+keywords = []
+license = "AGPL-3.0-or-later"
 
 [dependencies]
 regex = "0.2"

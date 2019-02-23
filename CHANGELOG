@@ -1,24 +1,27 @@
-Mon 24 12 2018 Yasuhiro Asaka <yasuhiro.asaka@grauwoelfchen.net>
+Tue 19 Feb 2019 Yasuhiro Яша Asaka <yasuhiro.asaka@grauwoelfchen.net>
+	* Update LICENSE (identifier, from AGPL-3.0 to AGPL-3.0-or-later)
+
+Mon 24 Feb 2018 Yasuhiro Яша Asaka <yasuhiro.asaka@grauwoelfchen.net>
 	* Update rust (to 1.33.0-nightly) and rocket (0.3 -> 0.4)
 	* Improve coding style
 	* Add checks using rustfmt, clippy and check (Makefile)
 
-Tue 13 Feb 2018 Yasuhiro Asaka <yasuhiro.asaka@grauwoelfchen.net>
+Tue 13 Feb 2018 Yasuhiro Яша Asaka <yasuhiro.asaka@grauwoelfchen.net>
 	* Change template engine hbs to tera
 
-Mon 12 Feb 2018 Yasuhiro Asaka <yasuhiro.asaka@grauwoelfchen.net>
+Mon 12 Feb 2018 Yasuhiro Яша Asaka <yasuhiro.asaka@grauwoelfchen.net>
 	* Add DATABASE_URL support
 	* Add .env support
 	* Create config class {testing|development|production}
 
-Thu 08 Feb 2018 Yasuhiro Asaka <yasuhiro.asaka@grauwoelfchen.net>
+Thu 08 Feb 2018 Yasuhiro Яша Asaka <yasuhiro.asaka@grauwoelfchen.net>
 	* Change LICENSE as AGPL-3.0
 	* Separate routes into some files
 	* Add integration tests for routes
 
-Mon 29 Jan 2018 Yasuhiro Asaka <yasuhiro.asaka@grauwoelfchen.net>
+Mon 29 Jan 2018 Yasuhiro Яша Asaka <yasuhiro.asaka@grauwoelfchen.net>
 	* Add 404 error page
 	* Add template support
 
-Thu 25 Jan 2018 Yasuhiro Asaka <yasuhiro.asaka@grauwoelfchen.net>
+Thu 25 Jan 2018 Yasuhiro Яша Asaka <yasuhiro.asaka@grauwoelfchen.net>
 	* Initial commit
