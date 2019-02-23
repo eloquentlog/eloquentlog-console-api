@@ -1,3 +1,9 @@
+# setup -- {{{
+setup\:tools:  ## Setup development tools
+	cargo install diesel_cli --no-default-features --features "postgres"
+.PHONY: setup\:tools
+# }}}
+
 # vet -- {{{
 vet\:check:  ## Check rust syntax [alias: check]
 	@cargo check --all -v

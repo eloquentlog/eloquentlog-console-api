@@ -1,10 +1,12 @@
-use std::collections::HashMap;
-
-use rocket_contrib::templates::Template;
+use rocket::http::Status;
+use response::Response;
 
 #[get("/")]
-pub fn index() -> Template {
-    let mut ctx = HashMap::new();
-    ctx.insert("title", "Eloquentlog;)");
-    Template::render("index", &ctx)
+pub fn index() -> Response {
+    Response {
+        status: Status::Ok,
+        data: json!({
+            "message": "Eloquentlog ;)",
+        }),
+    }
 }

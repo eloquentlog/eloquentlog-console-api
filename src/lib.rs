@@ -6,25 +6,27 @@ extern crate regex;
 
 #[macro_use]
 extern crate rocket;
+#[macro_use]
 extern crate rocket_contrib;
+
+extern crate serde;
+extern crate serde_json;
 
 #[macro_use]
 extern crate serde_derive;
-extern crate serde;
 
 extern crate diesel;
 extern crate r2d2;
 extern crate r2d2_diesel;
 
-use rocket_contrib::templates::Template;
-
 pub mod config;
 pub mod db;
+pub mod response;
+pub mod model;
 
 mod routes {
     pub mod auth;
     pub mod index;
-    pub mod assets;
     pub mod errors;
 }
 
@@ -39,15 +41,6 @@ pub fn app(env_name: &str) -> rocket::Rocket {
 
     rocket::ignite()
         .manage(pool)
-        .mount(
-            "/",
-            routes![
-                routes::auth::login_get,
-                routes::auth::login_post,
-                routes::index::index,
-                routes::assets::assets
-            ],
-        )
-        .attach(Template::fairing())
+        .mount("/", routes![routes::auth::login, routes::index::index,])
         .register(catchers![routes::errors::not_found])
 }

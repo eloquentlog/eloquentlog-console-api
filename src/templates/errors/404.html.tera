@@ -1,6 +1,0 @@
-{% extends "base" %}
-{% block title %}404 Not Found | Eloquentlog{% endblock title %}
-{% block content %}
-  <h1>404 Not Found</h1>
-  <p>{{path}}</p>
-{% endblock content %}
