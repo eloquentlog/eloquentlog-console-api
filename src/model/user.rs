@@ -13,8 +13,8 @@ impl fmt::Display for User {
 }
 
 impl User {
-    // TODO
-    pub fn verify_password(&self, password: &str) -> bool {
+    pub fn verify_password(&self, _password: &str) -> bool {
+        // TODO
         true
     }
 }

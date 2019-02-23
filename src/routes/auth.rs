@@ -91,7 +91,7 @@ impl<'v> FromData<'v> for UserLogin {
                 UserLoginError::Empty
             ));
         }
-        return Success(UserLogin {username, password});
+        Success(UserLogin {username, password})
     }
 }
 
@@ -113,6 +113,6 @@ pub fn login(_conn: DbConn, user_login: Json<UserLogin>) ->
 
     Ok(Response {
         status: Status::Ok,
-        data: json!(null),
+        data: json!({"message": "Success"}),
     })
 }
