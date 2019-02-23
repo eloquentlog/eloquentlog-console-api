@@ -20,7 +20,11 @@ impl Response {
 }
 
 impl<'r> Responder<'r> for Response {
-    fn respond_to(self, _req: &Request) -> Result<OriginalResponse<'r>, Status> {
+    fn respond_to(
+        self,
+        _req: &Request,
+    ) -> Result<OriginalResponse<'r>, Status>
+    {
         let body = self.data;
 
         OriginalResponse::build()

@@ -7,6 +7,6 @@ pub fn index() -> Response {
         status: Status::Ok,
         data: json!({
             "message": "Eloquentlog ;)",
-        })
+        }),
     }
 }

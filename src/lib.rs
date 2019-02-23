@@ -41,12 +41,6 @@ pub fn app(env_name: &str) -> rocket::Rocket {
 
     rocket::ignite()
         .manage(pool)
-        .mount(
-            "/",
-            routes![
-                routes::auth::login,
-                routes::index::index,
-            ],
-        )
+        .mount("/", routes![routes::auth::login, routes::index::index,])
         .register(catchers![routes::errors::not_found])
 }

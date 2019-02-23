@@ -30,9 +30,9 @@ mod login_test {
         run_test(|| {
             let client =
                 Client::new(eloquentlog_backend_api::app("testing")).unwrap();
-            let req = client.post("/login")
-                .header(ContentType::JSON)
-                .body("{\"username\": \"u$ername\", \"password\": \"pa$$w0rd\"}");
+            let req = client.post("/login").header(ContentType::JSON).body(
+                "{\"username\": \"u$ername\", \"password\": \"pa$$w0rd\"}",
+            );
             let mut res = req.dispatch();
 
             assert_eq!(res.status(), Status::Ok);
