@@ -8,6 +8,21 @@ stages:
   except:
     - tags
 
+.build-env: &build-env
+  image: grauwoelfchen/rust:nightly
+  before_script:
+    - if [ ! -d "/usr/lib64/postgresql" ]; then
+        USE="nls readline ssl zlib" emerge -v dev-db/postgresql;
+      fi
+    - psql --version
+    - rustc --version
+    - cargo --version
+    - mkdir -p .git/hooks
+  cache:
+    key: ${CI_JOB_NAME}
+    paths:
+      - /usr/lib64/postgresql
+
 check:
   stage: vet
   <<: *vet-tools
@@ -44,7 +59,9 @@ test:
   stage: test
   <<: *vet-tools
   before_script:
-    - USE="nls readline ssl zlib" emerge -v dev-db/postgresql
+    - if [ ! -d "/usr/lib64/postgresql" ]; then
+        USE="nls readline ssl zlib" emerge -v dev-db/postgresql;
+      fi
     - psql --version
     - rustc --version
     - cargo --version
@@ -53,33 +70,25 @@ test:
   script:
     # test & get covered
     - KCOV_PATH=/usr/bin/kcov make coverage
+  cache:
+    key: ${CI_JOB_NAME}
+    paths:
+      - /usr/lib64/postgresql
   after_script:
     - cat target/coverage/index.json
 
 build:
   stage: build
-  image: grauwoelfchen/rust:nightly
-  before_script:
-    - rustc --version
-    - cargo --version
-    - mkdir -p .git/hooks
+  <<: *build-env
   script:
     - make build:debug
-  cache:
-    untracked: true
   only:
     - master
 
 release:
   stage: build
-  image: grauwoelfchen/rust:nightly
-  before_script:
-    - rustc --version
-    - cargo --version
-    - mkdir -p .git/hooks
+  <<: *build-env
   script:
     - make build:release
-  cache:
-    untracked: true
   only:
     - tags
