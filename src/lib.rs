@@ -19,15 +19,17 @@ extern crate diesel;
 extern crate r2d2;
 extern crate r2d2_diesel;
 
-pub mod config;
-pub mod db;
-pub mod response;
-pub mod model;
+mod config;
+mod db;
+mod response;
+mod request;
+mod model;
 
 mod routes {
     pub mod auth;
-    pub mod index;
     pub mod errors;
+    pub mod logs;
+    pub mod top;
 }
 
 pub fn app(env_name: &str) -> rocket::Rocket {
@@ -41,6 +43,10 @@ pub fn app(env_name: &str) -> rocket::Rocket {
 
     rocket::ignite()
         .manage(pool)
-        .mount("/", routes![routes::auth::login, routes::index::index,])
+        .mount("/", routes![routes::top::index, routes::auth::login,])
+        .mount(
+            "/api",
+            routes![routes::logs::get, routes::logs::post, routes::logs::put,],
+        )
         .register(catchers![routes::errors::not_found])
 }

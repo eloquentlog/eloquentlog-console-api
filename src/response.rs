@@ -13,7 +13,8 @@ pub struct Response {
 }
 
 impl Response {
-    pub fn data(mut self, data: JsonValue) -> Response {
+    // format its data attribute using json
+    pub fn format(mut self, data: JsonValue) -> Response {
         self.data = data;
         self
     }

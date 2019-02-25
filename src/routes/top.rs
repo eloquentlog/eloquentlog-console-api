@@ -3,10 +3,9 @@ use response::Response;
 
 #[get("/")]
 pub fn index() -> Response {
-    Response {
+    let res = Response {
         status: Status::Ok,
-        data: json!({
-            "message": "Eloquentlog ;)",
-        }),
-    }
+        data: json!(null),
+    };
+    res.format(json!({"message": "Eloquentlog ;)"}))
 }
