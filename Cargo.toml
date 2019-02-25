@@ -24,3 +24,8 @@ lazy_static = "1.0"
 version = "*"
 default-features = false
 features = ["json"]
+
+[dev-dependencies.cargo-husky]
+version = "1"
+default-features = false
+features = ["user-hooks"]
