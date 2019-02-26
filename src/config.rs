@@ -27,7 +27,7 @@ impl Config {
 
     fn production_config() -> Config {
         Config {
-            env_name: &"publication",
+            env_name: &"production",
             ..Default::default()
         }
     }
@@ -45,5 +45,43 @@ impl Config {
             env_name: &"development",
             ..Default::default()
         }
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use std::panic;
+
+    use super::*;
+
+    fn with_database_url<T>(key: &'static str, test: T)
+    where T: FnOnce() -> () + panic::UnwindSafe {
+        env::set_var(key, "postgresql://u$er:pa$$word@localhost:5432/dbname");
+        let result = panic::catch_unwind(test);
+        assert!(result.is_ok());
+        env::remove_var("DATABASE_URL");
+    }
+
+    #[test]
+    fn test_from() {
+        // without DATABASE_URL
+        let c = Config::from("unknown");
+        assert!(c.is_err());
+
+        with_database_url("TEST_DATABASE_URL", || {
+            let c = Config::from("testing");
+            assert_eq!(c.unwrap().env_name, "testing");
+        });
+
+        with_database_url("DATABASE_URL", || {
+            let c = Config::from("unknown");
+            assert!(c.is_err());
+
+            let c = Config::from("development");
+            assert_eq!(c.unwrap().env_name, "development");
+
+            let c = Config::from("production");
+            assert_eq!(c.unwrap().env_name, "production");
+        });
     }
 }
