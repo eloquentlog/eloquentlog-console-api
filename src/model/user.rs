@@ -8,7 +8,7 @@ pub struct User {
 
 impl fmt::Display for User {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "<User {username}", username = self.username)
+        write!(f, "<User {username}>", username = self.username)
     }
 }
 

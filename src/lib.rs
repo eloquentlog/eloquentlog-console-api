@@ -15,9 +15,8 @@ extern crate serde_json;
 #[macro_use]
 extern crate serde_derive;
 
+#[macro_use]
 extern crate diesel;
-extern crate r2d2;
-extern crate r2d2_diesel;
 
 mod config;
 mod db;
@@ -28,7 +27,7 @@ mod model;
 mod routes {
     pub mod auth;
     pub mod errors;
-    pub mod logs;
+    pub mod messages;
     pub mod top;
 }
 
@@ -46,7 +45,11 @@ pub fn app(env_name: &str) -> rocket::Rocket {
         .mount("/", routes![routes::top::index, routes::auth::login,])
         .mount(
             "/api",
-            routes![routes::logs::get, routes::logs::post, routes::logs::put,],
+            routes![
+                routes::messages::get,
+                routes::messages::post,
+                routes::messages::put,
+            ],
         )
         .register(catchers![routes::errors::not_found])
 }

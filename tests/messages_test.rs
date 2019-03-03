@@ -2,7 +2,7 @@ extern crate rocket;
 extern crate dotenv;
 
 #[cfg(test)]
-mod logs_test {
+mod messages_test {
     extern crate eloquentlog_backend_api;
 
     use std::panic;
@@ -30,7 +30,7 @@ mod logs_test {
         run_test(|| {
             let client =
                 Client::new(eloquentlog_backend_api::app("testing")).unwrap();
-            let mut res = client.get("/api/logs").dispatch();
+            let mut res = client.get("/api/messages").dispatch();
 
             assert_eq!(res.status(), Status::Ok);
             assert!(res.body_string().unwrap().contains("[]"));
@@ -43,12 +43,13 @@ mod logs_test {
             let client =
                 Client::new(eloquentlog_backend_api::app("testing")).unwrap();
             let mut res = client
-                .post("/api/logs")
+                .post("/api/messages")
                 .header(ContentType::JSON)
                 .body(
                     r#"{
-            "title": "new message",
-            "description": "Hello, world!"
+            "format": "toml",
+            "title": "New message",
+            "content": "Hello, world!"
           }"#,
                 )
                 .dispatch();
@@ -64,13 +65,13 @@ mod logs_test {
             let client =
                 Client::new(eloquentlog_backend_api::app("testing")).unwrap();
             let mut res = client
-                .put("/api/logs/3")
+                .put("/api/messages/3")
                 .header(ContentType::JSON)
                 .body(
                     r#"{
             "id": 3,
-            "title": "new message",
-            "description": "Hello, world!"
+            "title": "Updated message",
+            "content": "Hello, world!"
           }"#,
                 )
                 .dispatch();
