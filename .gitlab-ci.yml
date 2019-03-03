@@ -1,4 +1,5 @@
 stages:
+  - setup
   - vet
   - test
   - build
@@ -11,17 +12,41 @@ stages:
 .build-env: &build-env
   image: grauwoelfchen/rust:nightly
   before_script:
-    - if [ ! -d "/usr/lib64/postgresql" ]; then
-        USE="nls readline ssl zlib" emerge -v dev-db/postgresql;
+    # /usr/include/postgresql is symlink to postgresql-11
+    - if [ ! -d ".postgresql" ]; then
+        USE="readline ssl zlib server" emerge -v dev-db/postgresql:11;
+        cp -R /usr/include/postgresql/ .postgresql;
+      else
+        cp -R .postgresql /usr/include/postgresql;
       fi
-    - psql --version
     - rustc --version
     - cargo --version
     - mkdir -p .git/hooks
+    - if [ ! -d "vendor" ]; then
+        cargo install cargo-vendor;
+        mkdir -p .cargo;
+        cargo vendor > .cargo/vendor;
+      fi
   cache:
-    key: ${CI_JOB_NAME}
+    key: ${CI_JOB_STAGE}-${CARGO_LOCK_CHECKSUM}
     paths:
-      - /usr/lib64/postgresql
+      - .postgresql
+      - .cargo
+      - vendor
+
+update:
+  stage: setup
+  image: grauwoelfchen/rust-vet-tools:nightly
+  variables:
+    GITLAB_COM: https://gitlab.com/api/v4
+    PROJECT_ID: 4765963
+    API_HEADER: "PRIVATE-TOKEN: ${PRIVATE_TOKEN}"
+  script:
+    - curl --version
+    - export VALUE=$(md5sum Cargo.lock | awk '{print $1}') &&
+      curl --request PUT --header "${API_HEADER}"
+      "${GITLAB_COM}/projects/${PROJECT_ID}/variables/CARGO_LOCK_CHECKSUM"
+      --form "value=${VALUE}"
 
 check:
   stage: vet
@@ -48,36 +73,63 @@ lint:
   stage: vet
   <<: *vet-tools
   before_script:
+    # /usr/include/postgresql is symlink to postgresql-11
+    - if [ ! -d ".postgresql" ]; then
+        USE="readline ssl zlib server" emerge -v dev-db/postgresql:11;
+        cp -R /usr/include/postgresql/ .postgresql;
+      else
+        cp -R .postgresql /usr/include/postgresql;
+      fi
     - rustc --version
     - cargo --version
     - cargo clippy --version
     - mkdir -p .git/hooks
+    - if [ ! -d "vendor" ]; then
+        cargo install cargo-vendor;
+        mkdir -p .cargo;
+        cargo vendor > .cargo/vendor;
+      fi
   script:
     - make vet:lint
+  cache:
+    key: ${CI_JOB_STAGE}-${CARGO_LOCK_CHECKSUM}
+    paths:
+      - .postgresql
+      - .cargo
+      - vendor
 
 test:
   stage: test
   <<: *vet-tools
   before_script:
-    - if [ ! -d "/usr/lib64/postgresql" ]; then
-        USE="nls readline ssl zlib" emerge -v dev-db/postgresql;
+    # /usr/include/postgresql is symlink to postgresql-11
+    - if [ ! -d ".postgresql" ]; then
+        USE="readline ssl zlib server" emerge -v dev-db/postgresql:11;
+        cp -R /usr/include/postgresql/ .postgresql;
+      else
+        cp -R .postgresql /usr/include/postgresql;
       fi
-    - psql --version
     - rustc --version
     - cargo --version
     - kcov --version
     - mkdir -p .git/hooks
+    - if [ ! -d "vendor" ]; then
+        cargo install cargo-vendor;
+        mkdir -p .cargo;
+        cargo vendor > .cargo/vendor;
+      fi
   script:
-    # test & get covered
     - KCOV_PATH=/usr/bin/kcov make coverage
-  cache:
-    key: ${CI_JOB_NAME}
-    paths:
-      - /usr/lib64/postgresql
   after_script:
     - cat target/coverage/index.json
+  cache:
+    key: ${CI_JOB_STAGE}-${CARGO_LOCK_CHECKSUM}
+    paths:
+      - .postgresql
+      - .cargo
+      - vendor
 
-build:
+build-debug:
   stage: build
   <<: *build-env
   script:
@@ -85,7 +137,7 @@ build:
   only:
     - master
 
-release:
+build-release:
   stage: build
   <<: *build-env
   script:
