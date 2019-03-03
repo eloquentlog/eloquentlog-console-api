@@ -1,13 +1,13 @@
+//!
 use std::ops::Deref;
 
 use rocket::http::Status;
 use rocket::request::{self, FromRequest};
 use rocket::{Request, State, Outcome};
-use r2d2;
 use diesel::PgConnection;
-use r2d2_diesel::ConnectionManager;
+use diesel::r2d2::{self, ConnectionManager};
 
-/// An alias to connection pool of PostgreSQL
+// An alias to connection pool of PostgreSQL
 pub type Pool = r2d2::Pool<ConnectionManager<PgConnection>>;
 
 pub struct DbConn(pub r2d2::PooledConnection<ConnectionManager<PgConnection>>);
@@ -32,7 +32,7 @@ impl Deref for DbConn {
     }
 }
 
-/// Initializes db connection pool
+// Initializes db connection pool
 pub fn init_pool(database_url: &str) -> Pool {
     let manager = ConnectionManager::<PgConnection>::new(database_url);
     r2d2::Pool::new(manager).expect("db pool")

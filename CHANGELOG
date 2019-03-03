@@ -1,3 +1,7 @@
+Sun 03 Mar 2019 Yasuhiro Яша Asaka <yasuhiro.asaka@grauwoelfchen.net>
+	* Create log message saving functionality (update diesel to 0.4.1)
+	* Add types LogLevel and LogFormat
+
 Sat 23 Feb 2019 Yasuhiro Яша Asaka <yasuhiro.asaka@grauwoelfchen.net>
 	* Remove template_dir and static files (css)
 
