@@ -4,35 +4,54 @@ stages:
   - test
   - build
 
+.postgresql:
+  - &postgresql
+    # /usr/include/postgresql is symlink to postgresql-11
+    if [ ! -d ".postgresql" ]; then
+      USE="readline ssl zlib server" emerge -v dev-db/postgresql:11;
+      mkdir .postgresql;
+      cp -R /usr/include/postgresql-11/ .postgresql/include;
+      cp -R /usr/lib64/postgresql-11/ .postgresql/lib;
+    else
+      cp -R .postgresql/include/ /usr/include/postgresql-11;
+      ln -s /usr/include/postgresql /usr/include/postgresql-11;
+      ln -s /usr/include/libpq /usr/include/postgresql-11/libpq;
+      cp -R .postgresql/lib/ /usr/lib64/postgresql-11;
+      ln -s /usr/lib64/postgresql /usr/lib64/postgresql-11/lib64;
+      rm -fr /etc/ld.so.cache
+      ldconfig
+    fi
+
+.vendor:
+  - &vendor
+    if [ ! -d "vendor" ]; then
+      cargo install cargo-vendor;
+      mkdir .cargo;
+      cargo vendor > .cargo/vendor;
+    fi
+
+.cache: &cache
+  cache:
+    key: ${CARGO_LOCK_CHECKSUM}
+    paths:
+      - .postgresql
+      - .cargo
+      - vendor
+
 .vet-tools: &vet-tools
   image: grauwoelfchen/rust-vet-tools:nightly
   except:
     - tags
 
-.build-env: &build-env
+.rust: &rust
   image: grauwoelfchen/rust:nightly
   before_script:
-    # /usr/include/postgresql is symlink to postgresql-11
-    - if [ ! -d ".postgresql" ]; then
-        USE="readline ssl zlib server" emerge -v dev-db/postgresql:11;
-        cp -R /usr/include/postgresql/ .postgresql;
-      else
-        cp -R .postgresql /usr/include/postgresql;
-      fi
+    - *postgresql
     - rustc --version
     - cargo --version
     - mkdir -p .git/hooks
-    - if [ ! -d "vendor" ]; then
-        cargo install cargo-vendor;
-        mkdir -p .cargo;
-        cargo vendor > .cargo/vendor;
-      fi
-  cache:
-    key: ${CI_JOB_STAGE}-${CARGO_LOCK_CHECKSUM}
-    paths:
-      - .postgresql
-      - .cargo
-      - vendor
+    - *vendor
+  <<: *cache
 
 update:
   stage: setup
@@ -73,65 +92,35 @@ lint:
   stage: vet
   <<: *vet-tools
   before_script:
-    # /usr/include/postgresql is symlink to postgresql-11
-    - if [ ! -d ".postgresql" ]; then
-        USE="readline ssl zlib server" emerge -v dev-db/postgresql:11;
-        cp -R /usr/include/postgresql/ .postgresql;
-      else
-        cp -R .postgresql /usr/include/postgresql;
-      fi
+    - *postgresql
     - rustc --version
     - cargo --version
     - cargo clippy --version
     - mkdir -p .git/hooks
-    - if [ ! -d "vendor" ]; then
-        cargo install cargo-vendor;
-        mkdir -p .cargo;
-        cargo vendor > .cargo/vendor;
-      fi
+    - *vendor
   script:
     - make vet:lint
-  cache:
-    key: ${CI_JOB_STAGE}-${CARGO_LOCK_CHECKSUM}
-    paths:
-      - .postgresql
-      - .cargo
-      - vendor
+  <<: *cache
 
 test:
   stage: test
   <<: *vet-tools
   before_script:
-    # /usr/include/postgresql is symlink to postgresql-11
-    - if [ ! -d ".postgresql" ]; then
-        USE="readline ssl zlib server" emerge -v dev-db/postgresql:11;
-        cp -R /usr/include/postgresql/ .postgresql;
-      else
-        cp -R .postgresql /usr/include/postgresql;
-      fi
+    - *postgresql
     - rustc --version
     - cargo --version
     - kcov --version
     - mkdir -p .git/hooks
-    - if [ ! -d "vendor" ]; then
-        cargo install cargo-vendor;
-        mkdir -p .cargo;
-        cargo vendor > .cargo/vendor;
-      fi
+    - *vendor
   script:
     - KCOV_PATH=/usr/bin/kcov make coverage
   after_script:
     - cat target/coverage/index.json
-  cache:
-    key: ${CI_JOB_STAGE}-${CARGO_LOCK_CHECKSUM}
-    paths:
-      - .postgresql
-      - .cargo
-      - vendor
+  <<: *cache
 
 build-debug:
   stage: build
-  <<: *build-env
+  <<: *rust
   script:
     - make build:debug
   only:
@@ -139,7 +128,7 @@ build-debug:
 
 build-release:
   stage: build
-  <<: *build-env
+  <<: *rust
   script:
     - make build:release
   only:
