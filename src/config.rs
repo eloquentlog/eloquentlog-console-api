@@ -49,17 +49,23 @@ impl Config {
 }
 
 #[cfg(test)]
-mod test {
+mod config_test {
     use std::panic;
 
     use super::*;
 
     fn with_database_url<T>(key: &'static str, test: T)
     where T: FnOnce() -> () + panic::UnwindSafe {
+        let orig = env::var(key);
         env::set_var(key, "postgresql://u$er:pa$$word@localhost:5432/dbname");
         let result = panic::catch_unwind(test);
+
+        match orig {
+            Ok(v) => env::set_var(key, v),
+            Err(_) => env::remove_var(key),
+        }
+
         assert!(result.is_ok());
-        env::remove_var("DATABASE_URL");
     }
 
     #[test]
