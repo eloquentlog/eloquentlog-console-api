@@ -101,10 +101,10 @@ impl FromSql<LogLevel, Pg> for Level {
     }
 }
 
-#[derive(AsExpression, Debug, Identifiable)]
+/// NewMessage
+#[derive(Debug, Insertable)]
 #[table_name = "messages"]
-pub struct Message {
-    pub id: i64,
+pub struct NewMessage {
     pub code: String,
     pub lang: String,
     pub level: Level,
@@ -113,9 +113,17 @@ pub struct Message {
     pub content: String,
 }
 
-#[derive(Insertable)]
+impl fmt::Display for NewMessage {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "<NewMessage {title}>", title = self.title)
+    }
+}
+
+/// Message
+#[derive(AsExpression, Debug, Identifiable, Queryable)]
 #[table_name = "messages"]
-pub struct NewMessage {
+pub struct Message {
+    pub id: i64,
     pub code: String,
     pub lang: String,
     pub level: Level,
@@ -150,10 +158,12 @@ impl Message {
 
     /// Update a message.
     pub fn update(message: &Message, conn: &PgConnection) -> bool {
+        // TODO
         let id = diesel::update(messages::table)
             .set((
                 messages::code.eq(&(message.code)),
                 messages::lang.eq(&(message.lang)),
+                messages::title.eq(&(message.title)),
             ))
             .returning(messages::id)
             .get_result::<i64>(conn);
@@ -169,15 +179,16 @@ impl Message {
 
 #[cfg(test)]
 mod message_test {
-    use std::env;
-
     use diesel::PgConnection;
 
+    use config::Config;
     use super::*;
 
     #[test]
     fn test_update() {
+        // TODO
         let conn = establish_connection();
+
         let m = NewMessage {
             code: "".to_string(),
             lang: "en".to_string(),
@@ -186,17 +197,42 @@ mod message_test {
             title: "title".to_string(),
             content: "".to_string(),
         };
-        let inserted = Message::insert(m, &conn);
-        println!("inserted: {}", inserted);
+
+        let _ = diesel::sql_query("TRUNCATE TABLE messages;")
+            .execute(&conn)
+            .expect("Failed to clean");
+
+        let inserted_id = diesel::insert_into(messages::table)
+            .values(&m)
+            .returning(messages::id)
+            .get_result::<i64>(&conn)
+            .unwrap_or_else(|_| panic!("Error inserting: {}", m));
+
+        let m = Message {
+            id: inserted_id,
+            code: "".to_string(),
+            lang: "en".to_string(),
+            level: Level::Information,
+            format: Format::TOML,
+            title: "updated".to_string(),
+            content: "".to_string(),
+        };
+        assert!(Message::update(&m, &conn));
+
+        let result = messages::table
+            .select(messages::title)
+            .filter(messages::id.eq(m.id))
+            .get_result::<String>(&conn)
+            .expect("Failed to load");
+        assert_eq!("updated", &result);
     }
 
     fn establish_connection() -> PgConnection {
         dotenv::dotenv().ok();
 
-        let database_url = env::var("TEST_DATABASE_URL")
-            .expect("TEST_DATABASE_URL must be set");
-        PgConnection::establish(&database_url).unwrap_or_else(|_| {
-            panic!("Error connecting to : {}", database_url)
+        let c = Config::from("testing").unwrap();
+        PgConnection::establish(&c.database_url).unwrap_or_else(|_| {
+            panic!("Error connecting to : {}", c.database_url)
         })
     }
 }
