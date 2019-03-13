@@ -75,6 +75,8 @@ test:
     - cargo --version
     - kcov --version
     - mkdir -p .git/hooks
+    - cargo install diesel_cli --no-default-features --features postgres
+    - DATABASE_URL=$TEST_DATABASE_URL diesel migration run
   script:
     # test & get covered
     - KCOV_PATH=/usr/bin/kcov make coverage
