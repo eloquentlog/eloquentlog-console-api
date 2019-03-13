@@ -16,7 +16,7 @@ mod schema {
         use model::message::LogLevel;
 
         messages (id) {
-            id -> Nullable<Integer>,
+            id -> BigInt,
             code -> Nullable<Varchar>,
             lang -> Varchar,
             level -> LogLevel,
@@ -101,7 +101,7 @@ impl FromSql<LogLevel, Pg> for Level {
     }
 }
 
-#[derive(Debug, Identifiable)]
+#[derive(AsExpression, Debug, Identifiable)]
 #[table_name = "messages"]
 pub struct Message {
     pub id: i64,
@@ -146,5 +146,57 @@ impl Message {
             },
             Ok(_) => true,
         }
+    }
+
+    /// Update a message.
+    pub fn update(message: &Message, conn: &PgConnection) -> bool {
+        let id = diesel::update(messages::table)
+            .set((
+                messages::code.eq(&(message.code)),
+                messages::lang.eq(&(message.lang)),
+            ))
+            .returning(messages::id)
+            .get_result::<i64>(conn);
+        match id {
+            Err(e) => {
+                println!("err: {}", e);
+                false
+            },
+            Ok(_) => true,
+        }
+    }
+}
+
+#[cfg(test)]
+mod message_test {
+    use std::env;
+
+    use diesel::PgConnection;
+
+    use super::*;
+
+    #[test]
+    fn test_update() {
+        let conn = establish_connection();
+        let m = NewMessage {
+            code: "".to_string(),
+            lang: "en".to_string(),
+            level: Level::Information,
+            format: Format::TOML,
+            title: "title".to_string(),
+            content: "".to_string(),
+        };
+        let inserted = Message::insert(m, &conn);
+        println!("inserted: {}", inserted);
+    }
+
+    fn establish_connection() -> PgConnection {
+        dotenv::dotenv().ok();
+
+        let database_url = env::var("TEST_DATABASE_URL")
+            .expect("TEST_DATABASE_URL must be set");
+        PgConnection::establish(&database_url).unwrap_or_else(|_| {
+            panic!("Error connecting to : {}", database_url)
+        })
     }
 }
