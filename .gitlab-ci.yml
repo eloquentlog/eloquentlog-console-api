@@ -18,6 +18,11 @@ stages:
       ln -s /usr/include/libpq /usr/include/postgresql-11/libpq;
       cp -R .postgresql/lib/ /usr/lib64/postgresql-11;
       ln -s /usr/lib64/postgresql /usr/lib64/postgresql-11/lib64;
+      ln -s /usr/lib64/postgresql-11/lib64/libecpg_compat.so /usr/lib64/libecpg_compat.so;
+      ln -s /usr/lib64/postgresql-11/lib64/libecpg.so /usr/lib64/libecpg.so;
+      ln -s /usr/lib64/postgresql-11/lib64/libpgtypes.so /usr/lib64/libpgtypes.so;
+      ln -s /usr/lib64/postgresql-11/lib64/libpq.so /usr/lib64/libpq.so;
+      ln -s /usr/lib64/postgresql-11/lib64/libpq.so.5 /usr/lib64/libpq.so.5;
       rm -fr /etc/ld.so.cache;
       ldconfig;
     fi
