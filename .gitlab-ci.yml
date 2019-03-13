@@ -58,6 +58,8 @@ lint:
 test:
   stage: test
   <<: *vet-tools
+  variables:
+    TEST_DATABASE_URL: "postgresql://eloquentlog:eloquentlog@localhost:5432/eloquentlog_test"
   before_script:
     - if [ ! -d "/usr/lib64/postgresql" ]; then
         USE="nls readline ssl zlib" emerge -v dev-db/postgresql;
