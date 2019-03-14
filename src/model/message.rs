@@ -120,7 +120,7 @@ impl fmt::Display for NewMessage {
 }
 
 /// Message
-#[derive(AsExpression, Debug, Identifiable, Queryable)]
+#[derive(AsChangeset, AsExpression, Debug, Identifiable, Queryable)]
 #[table_name = "messages"]
 pub struct Message {
     pub id: i64,
@@ -158,13 +158,9 @@ impl Message {
 
     /// Update a message.
     pub fn update(message: &Message, conn: &PgConnection) -> bool {
-        // TODO
         let id = diesel::update(messages::table)
-            .set((
-                messages::code.eq(&(message.code)),
-                messages::lang.eq(&(message.lang)),
-                messages::title.eq(&(message.title)),
-            ))
+            .set(message)
+            .filter(messages::id.eq(message.id))
             .returning(messages::id)
             .get_result::<i64>(conn);
         match id {
@@ -186,7 +182,6 @@ mod message_test {
 
     #[test]
     fn test_update() {
-        // TODO
         let conn = establish_connection();
 
         let m = NewMessage {
@@ -198,15 +193,29 @@ mod message_test {
             content: "".to_string(),
         };
 
+        // TODO
         let _ = diesel::sql_query("TRUNCATE TABLE messages;")
             .execute(&conn)
             .expect("Failed to clean");
+
+        let _ =
+            diesel::sql_query("ALTER SEQUENCE messages_id_seq RESTART WITH 1;")
+                .execute(&conn)
+                .expect("Failed to reset sequence");
 
         let inserted_id = diesel::insert_into(messages::table)
             .values(&m)
             .returning(messages::id)
             .get_result::<i64>(&conn)
             .unwrap_or_else(|_| panic!("Error inserting: {}", m));
+        assert_eq!(1, inserted_id);
+
+        let current_title = messages::table
+            .filter(messages::id.eq(inserted_id))
+            .select(messages::title)
+            .first::<String>(&conn)
+            .expect("Failed to select a row");
+        assert_eq!("title", current_title);
 
         let m = Message {
             id: inserted_id,
