@@ -82,6 +82,7 @@ build\:release:  ## Build release
 
 # other utilities -- {{{
 clean:  ## Tidy up
+	@rm -fr vendor
 	@cargo clean
 .PHONY: clean
 
