@@ -175,65 +175,112 @@ impl Message {
 
 #[cfg(test)]
 mod message_test {
+    use std::panic::{self, AssertUnwindSafe};
+
     use diesel::PgConnection;
 
     use config::Config;
     use super::*;
 
     #[test]
+    fn test_insert() {
+        run(|conn| {
+            let m = NewMessage {
+                code: "".to_string(),
+                lang: "en".to_string(),
+                level: Level::Information,
+                format: Format::TOML,
+                title: "title".to_string(),
+                content: "".to_string(),
+            };
+            let result = Message::insert(m, conn);
+            assert!(result);
+
+            let rows_count: i64 = messages::table
+                .count()
+                .first(conn)
+                .expect("Failed to count rows");
+            assert_eq!(1, rows_count);
+        })
+    }
+
+    #[test]
     fn test_update() {
+        run(|conn| {
+            let m = NewMessage {
+                code: "".to_string(),
+                lang: "en".to_string(),
+                level: Level::Information,
+                format: Format::TOML,
+                title: "title".to_string(),
+                content: "".to_string(),
+            };
+
+            let inserted_id = diesel::insert_into(messages::table)
+                .values(&m)
+                .returning(messages::id)
+                .get_result::<i64>(conn)
+                .unwrap_or_else(|_| panic!("Error inserting: {}", m));
+            assert_eq!(1, inserted_id);
+
+            let current_title = messages::table
+                .filter(messages::id.eq(inserted_id))
+                .select(messages::title)
+                .first::<String>(conn)
+                .expect("Failed to select a row");
+            assert_eq!("title", current_title);
+
+            let m = Message {
+                id: inserted_id,
+                code: "".to_string(),
+                lang: "en".to_string(),
+                level: Level::Information,
+                format: Format::TOML,
+                title: "updated".to_string(),
+                content: "".to_string(),
+            };
+            assert!(Message::update(&m, conn));
+
+            let result = messages::table
+                .select(messages::title)
+                .filter(messages::id.eq(m.id))
+                .get_result::<String>(conn)
+                .expect("Failed to load");
+            assert_eq!("updated", &result);
+        })
+    }
+
+    /// A test runner
+    fn run<T>(test: T)
+    where T: FnOnce(&PgConnection) -> () + panic::UnwindSafe {
         let conn = establish_connection();
 
-        let m = NewMessage {
-            code: "".to_string(),
-            lang: "en".to_string(),
-            level: Level::Information,
-            format: Format::TOML,
-            title: "title".to_string(),
-            content: "".to_string(),
-        };
+        setup(&conn);
 
-        // TODO
+        let result = panic::catch_unwind(AssertUnwindSafe(|| test(&conn)));
+
+        teardown(&conn);
+
+        assert!(result.is_ok());
+    }
+
+    fn setup(conn: &PgConnection) {
+        truncate_messages(conn);
+    }
+
+    fn teardown(conn: &PgConnection) {
+        truncate_messages(conn);
+    }
+
+    fn truncate_messages(conn: &PgConnection) {
         let _ = diesel::sql_query("TRUNCATE TABLE messages;")
-            .execute(&conn)
+            .execute(conn)
             .expect("Failed to clean");
 
         let _ =
             diesel::sql_query("ALTER SEQUENCE messages_id_seq RESTART WITH 1;")
-                .execute(&conn)
+                .execute(conn)
                 .expect("Failed to reset sequence");
-
-        let inserted_id = diesel::insert_into(messages::table)
-            .values(&m)
-            .returning(messages::id)
-            .get_result::<i64>(&conn)
-            .unwrap_or_else(|_| panic!("Error inserting: {}", m));
-        assert_eq!(1, inserted_id);
-
-        let current_title = messages::table
-            .filter(messages::id.eq(inserted_id))
-            .select(messages::title)
-            .first::<String>(&conn)
-            .expect("Failed to select a row");
-        assert_eq!("title", current_title);
-
-        let m = Message {
-            id: inserted_id,
-            code: "".to_string(),
-            lang: "en".to_string(),
-            level: Level::Information,
-            format: Format::TOML,
-            title: "updated".to_string(),
-            content: "".to_string(),
-        };
-        assert!(Message::update(&m, &conn));
-
-        let result = messages::table
-            .select(messages::title)
-            .filter(messages::id.eq(m.id))
-            .get_result::<String>(&conn)
-            .expect("Failed to load");
-        assert_eq!("updated", &result);
     }
 
     fn establish_connection() -> PgConnection {
