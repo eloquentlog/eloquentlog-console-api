@@ -183,6 +183,28 @@ mod message_test {
     use super::*;
 
     #[test]
+    fn test_insert() {
+        run(|conn| {
+            let m = NewMessage {
+                code: "".to_string(),
+                lang: "en".to_string(),
+                level: Level::Information,
+                format: Format::TOML,
+                title: "title".to_string(),
+                content: "".to_string(),
+            };
+            let result = Message::insert(m, conn);
+            assert!(result);
+
+            let rows_count: i64 = messages::table
+                .count()
+                .first(conn)
+                .expect("Failed to count rows");
+            assert_eq!(1, rows_count);
+        })
+    }
+
+    #[test]
     fn test_update() {
         run(|conn| {
             let m = NewMessage {
