@@ -58,7 +58,7 @@ stages:
     - *vendor
   <<: *cache
 
-update:
+setup-checksum:
   stage: setup
   image: grauwoelfchen/rust-vet-tools:nightly
   variables:
