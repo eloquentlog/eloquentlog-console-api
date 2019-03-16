@@ -4,6 +4,7 @@
 use std::fmt;
 use std::io::Write;
 
+// use diesel::debug_query;
 use diesel::{self, Insertable, prelude::*};
 use diesel::pg::{Pg, PgConnection};
 use diesel::serialize::{self, IsNull, Output, ToSql};
@@ -143,11 +144,14 @@ impl Message {
     ///
     /// `created_at` and `updated_at` will be filled on PostgreSQL side
     /// using timezone('utc'::text, now()).
-    pub fn insert(message: NewMessage, conn: &PgConnection) -> bool {
-        let result = diesel::insert_into(messages::table)
-            .values(&message)
-            .execute(conn);
-        match result {
+    pub fn insert(message: &NewMessage, conn: &PgConnection) -> bool {
+        let q = diesel::insert_into(messages::table).values(message);
+
+        // TODO
+        // let sql = debug_query::<Pg, _>(&q).to_string();
+        // println!("sql: {}", sql);
+
+        match q.execute(conn) {
             Err(e) => {
                 println!("err: {}", e);
                 false
@@ -158,12 +162,16 @@ impl Message {
 
     /// Update a message.
     pub fn update(message: &Message, conn: &PgConnection) -> bool {
-        let id = diesel::update(messages::table)
+        let q = diesel::update(messages::table)
             .set(message)
             .filter(messages::id.eq(message.id))
-            .returning(messages::id)
-            .get_result::<i64>(conn);
-        match id {
+            .returning(messages::id);
+
+        // TODO
+        // let sql = debug_query::<Pg, _>(&q).to_string();
+        // println!("sql: {}", sql);
+
+        match q.get_result::<i64>(conn) {
             Err(e) => {
                 println!("err: {}", e);
                 false
@@ -193,7 +201,7 @@ mod message_test {
                 title: "title".to_string(),
                 content: "".to_string(),
             };
-            let result = Message::insert(m, conn);
+            let result = Message::insert(&m, conn);
             assert!(result);
 
             let rows_count: i64 = messages::table
@@ -255,13 +263,21 @@ mod message_test {
     where T: FnOnce(&PgConnection) -> () + panic::UnwindSafe {
         let conn = establish_connection();
 
-        setup(&conn);
+        let _: std::result::Result<(), diesel::result::Error> = conn
+            .build_transaction()
+            .serializable()
+            .read_write()
+            .run(|| {
+                setup(&conn);
 
-        let result = panic::catch_unwind(AssertUnwindSafe(|| test(&conn)));
+                let result =
+                    panic::catch_unwind(AssertUnwindSafe(|| test(&conn)));
 
-        teardown(&conn);
+                teardown(&conn);
 
-        assert!(result.is_ok());
+                assert!(result.is_ok());
+                Ok(())
+            });
     }
 
     fn setup(conn: &PgConnection) {
@@ -275,7 +291,7 @@ mod message_test {
     fn truncate_messages(conn: &PgConnection) {
         let _ = diesel::sql_query("TRUNCATE TABLE messages;")
             .execute(conn)
-            .expect("Failed to clean");
+            .expect("Failed to truncate");
 
         let _ =
             diesel::sql_query("ALTER SEQUENCE messages_id_seq RESTART WITH 1;")
