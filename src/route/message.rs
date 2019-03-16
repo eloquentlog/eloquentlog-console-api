@@ -39,7 +39,7 @@ pub fn post(data: Json<Data>, conn: DbConn) -> Response {
         content: data.0.content.unwrap_or_default(),
     };
 
-    let inserted = Message::insert(m, &conn);
+    let inserted = Message::insert(&m, &conn);
     println!("inserted: {}", inserted);
 
     let res = Response {
