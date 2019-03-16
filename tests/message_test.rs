@@ -2,7 +2,7 @@ extern crate rocket;
 extern crate dotenv;
 
 #[cfg(test)]
-mod messages_test {
+mod message_test {
     extern crate eloquentlog_backend_api;
 
     use std::panic;

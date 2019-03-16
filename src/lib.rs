@@ -24,10 +24,10 @@ mod response;
 mod request;
 mod model;
 
-mod routes {
+mod route {
     pub mod auth;
-    pub mod errors;
-    pub mod messages;
+    pub mod error;
+    pub mod message;
     pub mod top;
 }
 
@@ -42,14 +42,14 @@ pub fn app(env_name: &str) -> rocket::Rocket {
 
     rocket::ignite()
         .manage(pool)
-        .mount("/", routes![routes::top::index, routes::auth::login,])
+        .mount("/", routes![route::top::index, route::auth::login,])
         .mount(
             "/api",
             routes![
-                routes::messages::get,
-                routes::messages::post,
-                routes::messages::put,
+                route::message::get,
+                route::message::post,
+                route::message::put,
             ],
         )
-        .register(catchers![routes::errors::not_found])
+        .register(catchers![route::error::not_found])
 }
