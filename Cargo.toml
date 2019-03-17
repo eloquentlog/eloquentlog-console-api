@@ -8,15 +8,16 @@ keywords = []
 license = "AGPL-3.0-or-later"
 
 [dependencies]
+accord = { git = "https://github.com/ChrisBuchholz/accord.git", rev = "e56cecc" }
+diesel = { version = "1.4.1", features = ["postgres", "r2d2"] }
+dotenv = "0.10"
+lazy_static = "1.0"
 regex = "0.2"
 rocket = "0.4.0"
 rocket_codegen = "*"
-diesel = { version = "1.4.1", features = ["postgres", "r2d2"] }
-dotenv = "0.10"
 serde = "1.0"
 serde_derive = "1.0"
 serde_json = "1.0"
-lazy_static = "1.0"
 
 [dependencies.rocket_contrib]
 version = "*"

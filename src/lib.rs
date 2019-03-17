@@ -1,6 +1,9 @@
 #![feature(proc_macro_hygiene, decl_macro, custom_attribute)]
 
 #[macro_use]
+extern crate accord;
+
+#[macro_use]
 extern crate lazy_static;
 extern crate regex;
 
@@ -23,6 +26,7 @@ mod db;
 mod response;
 mod request;
 mod model;
+mod validation;
 
 mod route {
     pub mod auth;
