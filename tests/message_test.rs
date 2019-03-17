@@ -38,6 +38,28 @@ mod message_test {
     }
 
     #[test]
+    fn test_post_with_errors() {
+        run_test(|| {
+            let client =
+                Client::new(eloquentlog_backend_api::app("testing")).unwrap();
+            let mut res = client
+                .post("/api/messages")
+                .header(ContentType::JSON)
+                .body(
+                    r#"{
+            "code": "",
+            "title": "New Message",
+            "content": "Hello, world!"
+          }"#,
+                )
+                .dispatch();
+
+            assert_eq!(res.status(), Status::UnprocessableEntity);
+            assert!(res.body_string().unwrap().contains("errors"));
+        })
+    }
+
+    #[test]
     fn test_post() {
         run_test(|| {
             let client =
@@ -48,6 +70,7 @@ mod message_test {
                 .body(
                     r#"{
             "format": "toml",
+            "code": "200",
             "title": "New message",
             "content": "Hello, world!"
           }"#,

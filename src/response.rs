@@ -12,7 +12,21 @@ pub struct Response {
     pub data: JsonValue,
 }
 
+impl Default for Response {
+    fn default() -> Self {
+        Self {
+            status: Status::Ok,
+            data: json!(null),
+        }
+    }
+}
+
 impl Response {
+    pub fn status(mut self, status: Status) -> Response {
+        self.status = status;
+        self
+    }
+
     // format its data attribute using json
     pub fn format(mut self, data: JsonValue) -> Response {
         self.data = data;

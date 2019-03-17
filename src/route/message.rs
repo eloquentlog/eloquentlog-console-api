@@ -1,10 +1,13 @@
+use std::any::Any;
+
 use rocket::http::Status;
 use rocket_contrib::json::Json;
-use response::Response;
-use request::Message as Data;
 
 use db::DbConn;
-use model::message::{Format, Level, Message, NewMessage};
+use model::message::{Message, NewMessage};
+use response::Response;
+use request::Message as Data;
+use validation::message::Validator;
 
 #[get("/messages")]
 pub fn get() -> Response {
@@ -27,28 +30,26 @@ pub fn get() -> Response {
 // ```
 #[post("/messages", format = "json", data = "<data>")]
 pub fn post(data: Json<Data>, conn: DbConn) -> Response {
-    // TODO
-    // * validations
-    // * default values
-    let m = NewMessage {
-        code: data.0.code.unwrap_or_default(),
-        lang: "en".to_string(),
-        level: Level::Information,
-        format: Format::TOML,
-        title: data.0.title,
-        content: data.0.content.unwrap_or_default(),
-    };
+    let res: Response = Default::default();
 
-    let inserted = Message::insert(&m, &conn);
-    println!("inserted: {}", inserted);
-
-    let res = Response {
-        status: Status::Ok,
-        data: json!(null),
-    };
-    res.format(json!({"message": {
-        "id": 0,
-    }}))
+    let v = Validator::new(data);
+    match v.validate() {
+        Err(errors) => {
+            res.status(Status::UnprocessableEntity).format(json!({
+                "errors": errors,
+            }))
+        },
+        Ok(v) => {
+            if let Ok(m) = (v as Box<Any>).downcast::<NewMessage>() {
+                if let Some(id) = Message::insert(&m, &conn) {
+                    return res.format(json!({"message": {
+                        "id": id,
+                    }}));
+                }
+            }
+            res.status(Status::InternalServerError)
+        },
+    }
 }
 
 #[put("/messages/<id>", format = "json", data = "<data>")]

@@ -37,10 +37,18 @@ use self::schema::messages;
 #[postgres(type_name = "log_format")]
 pub struct LogFormat;
 
-#[derive(AsExpression, Debug, FromSqlRow, PartialEq)]
+#[derive(AsExpression, Clone, Debug, FromSqlRow, PartialEq)]
 #[sql_type = "LogFormat"]
 pub enum Format {
     TOML, // default
+}
+
+impl fmt::Display for Format {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match *self {
+            Format::TOML => write!(f, "toml"),
+        }
+    }
 }
 
 impl ToSql<LogFormat, Pg> for Format {
@@ -66,7 +74,7 @@ impl FromSql<LogFormat, Pg> for Format {
 #[postgres(type_name = "log_level")]
 pub struct LogLevel;
 
-#[derive(AsExpression, Debug, FromSqlRow, PartialEq)]
+#[derive(AsExpression, Clone, Debug, FromSqlRow, PartialEq)]
 #[sql_type = "LogLevel"]
 pub enum Level {
     Debug,
@@ -74,6 +82,18 @@ pub enum Level {
     Warning,
     Error,
     Critical,
+}
+
+impl fmt::Display for Level {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match *self {
+            Level::Debug => write!(f, "debug"),
+            Level::Information => write!(f, "information"),
+            Level::Warning => write!(f, "warning"),
+            Level::Error => write!(f, "error"),
+            Level::Critical => write!(f, "Critical"),
+        }
+    }
 }
 
 impl ToSql<LogLevel, Pg> for Level {
@@ -106,17 +126,33 @@ impl FromSql<LogLevel, Pg> for Level {
 #[derive(Debug, Insertable)]
 #[table_name = "messages"]
 pub struct NewMessage {
-    pub code: String,
+    pub code: Option<String>,
     pub lang: String,
     pub level: Level,
     pub format: Format,
-    pub title: String,
-    pub content: String,
+    pub title: Option<String>,
+    pub content: Option<String>,
 }
 
 impl fmt::Display for NewMessage {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "<NewMessage {title}>", title = self.title)
+        match &self.title {
+            Some(title) => write!(f, "<NewMessage {title}>", title = title),
+            None => write!(f, "<NewMessage>"),
+        }
+    }
+}
+
+impl Default for NewMessage {
+    fn default() -> Self {
+        Self {
+            code: None,
+            lang: "en".to_string(),
+            level: Level::Information,
+            format: Format::TOML,
+            title: None, // validation error
+            content: None,
+        }
     }
 }
 
@@ -125,12 +161,12 @@ impl fmt::Display for NewMessage {
 #[table_name = "messages"]
 pub struct Message {
     pub id: i64,
-    pub code: String,
+    pub code: Option<String>,
     pub lang: String,
     pub level: Level,
     pub format: Format,
     pub title: String,
-    pub content: String,
+    pub content: Option<String>,
 }
 
 impl fmt::Display for Message {
@@ -144,24 +180,26 @@ impl Message {
     ///
     /// `created_at` and `updated_at` will be filled on PostgreSQL side
     /// using timezone('utc'::text, now()).
-    pub fn insert(message: &NewMessage, conn: &PgConnection) -> bool {
-        let q = diesel::insert_into(messages::table).values(message);
+    pub fn insert(message: &NewMessage, conn: &PgConnection) -> Option<i64> {
+        let q = diesel::insert_into(messages::table)
+            .values(message)
+            .returning(messages::id);
 
         // TODO
         // let sql = debug_query::<Pg, _>(&q).to_string();
         // println!("sql: {}", sql);
 
-        match q.execute(conn) {
+        match q.get_result::<i64>(conn) {
             Err(e) => {
                 println!("err: {}", e);
-                false
+                None
             },
-            Ok(_) => true,
+            Ok(id) => Some(id),
         }
     }
 
     /// Update a message.
-    pub fn update(message: &Message, conn: &PgConnection) -> bool {
+    pub fn update(message: &Message, conn: &PgConnection) -> Option<i64> {
         let q = diesel::update(messages::table)
             .set(message)
             .filter(messages::id.eq(message.id))
@@ -174,9 +212,9 @@ impl Message {
         match q.get_result::<i64>(conn) {
             Err(e) => {
                 println!("err: {}", e);
-                false
+                None
             },
-            Ok(_) => true,
+            Ok(id) => Some(id),
         }
     }
 }
@@ -194,15 +232,15 @@ mod message_test {
     fn test_insert() {
         run(|conn| {
             let m = NewMessage {
-                code: "".to_string(),
+                code: None,
                 lang: "en".to_string(),
                 level: Level::Information,
                 format: Format::TOML,
-                title: "title".to_string(),
-                content: "".to_string(),
+                title: Some("title".to_string()),
+                content: None,
             };
             let result = Message::insert(&m, conn);
-            assert!(result);
+            assert!(result.is_some());
 
             let rows_count: i64 = messages::table
                 .count()
@@ -216,12 +254,12 @@ mod message_test {
     fn test_update() {
         run(|conn| {
             let m = NewMessage {
-                code: "".to_string(),
+                code: Some("200".to_string()),
                 lang: "en".to_string(),
                 level: Level::Information,
                 format: Format::TOML,
-                title: "title".to_string(),
-                content: "".to_string(),
+                title: Some("title".to_string()),
+                content: None,
             };
 
             let inserted_id = diesel::insert_into(messages::table)
@@ -240,21 +278,22 @@ mod message_test {
 
             let m = Message {
                 id: inserted_id,
-                code: "".to_string(),
+                code: Some("200".to_string()),
                 lang: "en".to_string(),
                 level: Level::Information,
                 format: Format::TOML,
                 title: "updated".to_string(),
-                content: "".to_string(),
+                content: Some("content".to_string()),
             };
-            assert!(Message::update(&m, conn));
+            let result = Message::update(&m, conn);
+            assert!(result.is_some());
 
-            let result = messages::table
+            let value = messages::table
                 .select(messages::title)
                 .filter(messages::id.eq(m.id))
                 .get_result::<String>(conn)
                 .expect("Failed to load");
-            assert_eq!("updated", &result);
+            assert_eq!("updated", &value);
         })
     }
 

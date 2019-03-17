@@ -1,3 +1,6 @@
+Mon 18 Mar 2019 Yasuhiro Яша Asaka <yasuhiro.asaka@grauwoelfchen.net>
+	* Add message validator
+
 Sat 16 Mar 2019 Yasuhiro Яша Asaka <yasuhiro.asaka@grauwoelfchen.net>
 	* Run tests using DB connection in a transaction
 
