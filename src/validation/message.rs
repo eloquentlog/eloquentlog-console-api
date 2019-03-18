@@ -70,12 +70,14 @@ impl Validator {
 mod message_test {
     use super::*;
 
+    use std::any::Any;
+
     use rocket_contrib::json::Json;
 
     #[test]
     fn test_validate_code_is_empty() {
         let data = Json(Data {
-            code: Some("".to_string()), // error
+            code: Some("".to_string()),
             title: Some("title".to_string()),
 
             ..Default::default()
@@ -87,8 +89,205 @@ mod message_test {
 
         if let Err(errors) = &result {
             assert_eq!("code", errors[0].field);
+            assert_eq!(
+                vec!["Must contain more than 1 characters"],
+                errors[0].messages
+            );
         } else {
             panic!("must fail");
+        }
+    }
+
+    #[test]
+    fn test_validate_code_is_too_long() {
+        let data = Json(Data {
+            code: Some("long".repeat(9).to_string()),
+            title: Some("title".to_string()),
+
+            ..Default::default()
+        });
+        let v = Validator { data };
+
+        let result = v.validate();
+        assert!(result.is_err());
+
+        if let Err(errors) = &result {
+            assert_eq!("code", errors[0].field);
+            assert_eq!(
+                vec!["Must contain less than 32 characters"],
+                errors[0].messages
+            );
+        } else {
+            panic!("must fail");
+        }
+    }
+
+    #[test]
+    fn test_validate_code() {
+        let data = Json(Data {
+            code: Some("200".to_string()),
+            title: Some("title".to_string()),
+
+            ..Default::default()
+        });
+        let v = Validator { data };
+
+        let result = v.validate();
+        assert!(result.is_ok());
+
+        if let Ok(m) = result {
+            assert!((m as Box<Any>).downcast::<NewMessage>().is_ok());
+        } else {
+            panic!("must not fail");
+        }
+    }
+
+    #[test]
+    fn test_validate_lang_in_invalid() {
+        let data = Json(Data {
+            lang: Some("unknown".to_string()),
+            title: Some("title".to_string()),
+
+            ..Default::default()
+        });
+        let v = Validator { data };
+
+        let result = v.validate();
+        assert!(result.is_err());
+
+        if let Err(errors) = &result {
+            assert_eq!("lang", errors[0].field);
+            assert_eq!(vec!["Must be one of , en"], errors[0].messages);
+        } else {
+            panic!("must fail");
+        }
+    }
+
+    #[test]
+    fn test_validate_lang() {
+        let data = Json(Data {
+            lang: Some("en".to_string()),
+            title: Some("title".to_string()),
+
+            ..Default::default()
+        });
+        let v = Validator { data };
+
+        let result = v.validate();
+        assert!(result.is_ok());
+
+        if let Ok(m) = result {
+            assert!((m as Box<Any>).downcast::<NewMessage>().is_ok());
+        } else {
+            panic!("must not fail");
+        }
+    }
+
+    // TODO
+    // level
+    // format
+
+    #[test]
+    fn test_validate_title_is_missing() {
+        let data = Json(Data {
+            ..Default::default()
+        });
+        let v = Validator { data };
+
+        let result = v.validate();
+        assert!(result.is_err());
+
+        if let Err(errors) = &result {
+            assert_eq!("title", errors[0].field);
+            assert_eq!(vec!["Must exist"], errors[0].messages);
+        } else {
+            panic!("must fail");
+        }
+    }
+
+    #[test]
+    fn test_validate_title_is_too_long() {
+        let data = Json(Data {
+            title: Some("title".repeat(52).to_string()),
+
+            ..Default::default()
+        });
+        let v = Validator { data };
+
+        let result = v.validate();
+        assert!(result.is_err());
+
+        if let Err(errors) = &result {
+            assert_eq!("title", errors[0].field);
+            assert_eq!(
+                vec!["Must contain less than 255 characters"],
+                errors[0].messages
+            );
+        } else {
+            panic!("must fail");
+        }
+    }
+
+    #[test]
+    fn test_validate_title() {
+        let data = Json(Data {
+            title: Some("title".repeat(51).to_string()),
+
+            ..Default::default()
+        });
+        let v = Validator { data };
+
+        let result = v.validate();
+        assert!(result.is_ok());
+
+        if let Ok(m) = result {
+            assert!((m as Box<Any>).downcast::<NewMessage>().is_ok());
+        } else {
+            panic!("must not fail");
+        }
+    }
+
+    #[test]
+    fn test_validate_content_is_too_long() {
+        let data = Json(Data {
+            content: Some("text".repeat(2001).to_string()),
+            title: Some("title".to_string()),
+
+            ..Default::default()
+        });
+        let v = Validator { data };
+
+        let result = v.validate();
+        assert!(result.is_err());
+
+        if let Err(errors) = &result {
+            assert_eq!("content", errors[0].field);
+            assert_eq!(
+                vec!["Must contain less than 8000 characters"],
+                errors[0].messages
+            );
+        } else {
+            panic!("must fail");
+        }
+    }
+
+    #[test]
+    fn test_validate_content() {
+        let data = Json(Data {
+            content: Some("text".repeat(2000).to_string()),
+            title: Some("title".to_string()),
+
+            ..Default::default()
+        });
+        let v = Validator { data };
+
+        let result = v.validate();
+        assert!(result.is_ok());
+
+        if let Ok(m) = result {
+            assert!((m as Box<Any>).downcast::<NewMessage>().is_ok());
+        } else {
+            panic!("must not fail");
         }
     }
 }
