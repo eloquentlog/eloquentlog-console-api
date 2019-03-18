@@ -1,3 +1,10 @@
+INTEGRATION_TESTS := \
+  --test error_test \
+  --test login_test \
+  --test message_test \
+  --test top_test
+
+
 # setup -- {{{
 setup\:tools:  ## Setup development tools
 	cargo install diesel_cli --no-default-features --features "postgres"
@@ -6,7 +13,7 @@ setup\:tools:  ## Setup development tools
 
 # vet -- {{{
 vet\:check:  ## Check rust syntax [alias: check]
-	@cargo check --all -v
+	@cargo check --all --verbose
 .PHONY: vet\:check
 
 check: | vet\:check
@@ -45,7 +52,7 @@ test\:unit:  ## Run unit tests
 .PHONY: test\:unit
 
 test\:integration:  ## Run integrations test only
-	@cargo test --test top_test --test assets_test --test errors_test
+	@cargo test $(INTEGRATION_TESTS)
 .PHONY: test\:integration
 
 test\:all:  ## Run unit tests and integration tests [alias: test]
@@ -80,23 +87,57 @@ build\:release:  ## Build release
 .PHONY: build\:release
 # }}}
 
+# watch -- {{{
+watch:  ## Start watch process for development [alias: serve]
+	@cargo watch --exec 'run' --delay 0.3 \
+	  --ignore .tools/\* \
+	  --ignore migrations/\*
+.PHONY: watch
+
+serve: | watch
+.PHONY: serve
+
+watch\:check:  ## Start watch process for check
+	@cargo watch --postpone --exec 'check --all --verbose'
+.PHONY: watch\:check
+
+watch\:fmt:  ## Start watch process for fmt
+	@cargo watch --postpone --exec 'fmt --all -- --check'
+.PHONY: watch\:fmt
+
+watch\:lint:  ## Start watch process for lint
+	@cargo watch --postpone --exec 'clippy --all-targets'
+.PHONY: watch\:lint
+
+watch\:test\:unit:  ## Start watch process for test:unit
+	@cargo watch --postpone --exec 'test --lib'
+.PHONY: watch\:test\:unit
+
+watch\:test\:integration:  ## Start watch process for test:integration
+	@cargo watch --postpone --exec 'test $(INTEGRATION_TESTS)'
+.PHONY: watch\:test\:integration
+
+watch\:test\:all:  ## Start watch process for test:all
+	@cargo watch --postpone --exec 'test --tests'
+.PHONY: watch\:test
+
+watch\:test: | watch\:test\:all
+.PHONY: watch\:test
+# }}}
+
 # other utilities -- {{{
 clean:  ## Tidy up
-	@rm -fr vendor
+	@rm --force --recursive vendor
 	@cargo clean
 .PHONY: clean
 
-watch:  ## Start watch process for development
-	@cargo watch -x 'run' -d 0.3
-.PHONY: watch
-
 help:  ## Display this message
-	@grep -E '^[0-9a-z\:\\]+: ' $(MAKEFILE_LIST) | \
-	  grep -E '  ## ' | \
-	  sed -e 's/\(\s|\(\s[0-9a-z\:\\]*\)*\)  /  /' | \
-	  tr -d \\\\ | \
+	@grep --extended-regexp '^[0-9a-z\:\\]+: ' $(MAKEFILE_LIST) | \
+	  grep --extended-regexp '  ## ' | \
+	  sed --expression='s/\(\s|\(\s[0-9a-z\:\\]*\)*\)  /  /' | \
+	  tr --delete \\\\ | \
 	  awk 'BEGIN {FS = ":  ## "}; \
-	      {printf "\033[38;05;222m%-17s\033[0m %s\n", $$1, $$2}' | \
+	      {printf "\033[38;05;222m%-22s\033[0m %s\n", $$1, $$2}' | \
 	  sort
 .PHONY: help
 # }}}
