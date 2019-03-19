@@ -30,8 +30,12 @@ impl Validator {
         let m = NewMessage {
             code: input.code,
             lang: input.lang.unwrap_or_else(|| "en".to_string()),
-            level: Level::Information,
-            format: Format::TOML,
+            level: Level::from(
+                input.level.unwrap_or_else(|| "information".to_string()),
+            ),
+            format: Format::from(
+                input.format.unwrap_or_else(|| "toml".to_string()),
+            ),
             title: input.title,
             content: input.content,
         };
@@ -40,7 +44,7 @@ impl Validator {
             "code" => m.code => [length_if_present(1, 32)],
             "lang" => m.lang => [either(vec!["en".to_string()])], // default: en
             "level" => m.level => [either(Level::as_vec())],
-            "format" => m.format => [either(vec![Format::TOML])],
+            "format" => m.format => [either(Format::as_vec())],
             "title" => m.title => [required(), max_if_present(255)],
             "content" => m.content => [length_if_present(0, 8000)]
         };
