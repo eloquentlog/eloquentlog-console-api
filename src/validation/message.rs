@@ -39,7 +39,7 @@ impl Validator {
         let result = rules! {
             "code" => m.code => [length_if_present(1, 32)],
             "lang" => m.lang => [either(vec!["en".to_string()])], // default: en
-            "level" => m.level => [either(vec![Level::Information])],
+            "level" => m.level => [either(Level::as_vec())],
             "format" => m.format => [either(vec![Format::TOML])],
             "title" => m.title => [required(), max_if_present(255)],
             "content" => m.content => [length_if_present(0, 8000)]

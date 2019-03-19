@@ -3,6 +3,7 @@
 //! See diesel_tests' custom_types.rs
 use std::fmt;
 use std::io::Write;
+use std::slice::Iter;
 
 // use diesel::debug_query;
 use diesel::{self, Insertable, prelude::*};
@@ -91,7 +92,7 @@ impl fmt::Display for Level {
             Level::Information => write!(f, "information"),
             Level::Warning => write!(f, "warning"),
             Level::Error => write!(f, "error"),
-            Level::Critical => write!(f, "Critical"),
+            Level::Critical => write!(f, "critical"),
         }
     }
 }
@@ -119,6 +120,23 @@ impl FromSql<LogLevel, Pg> for Level {
             b"critical" => Ok(Level::Critical),
             _ => Err("Unrecognized enum variant".into()),
         }
+    }
+}
+
+impl Level {
+    pub fn iter() -> Iter<'static, Level> {
+        static LEVELS: [Level; 5] = [
+            Level::Debug,
+            Level::Information,
+            Level::Warning,
+            Level::Error,
+            Level::Critical,
+        ];
+        LEVELS.iter()
+    }
+
+    pub fn as_vec() -> Vec<Level> {
+        Level::iter().cloned().collect()
     }
 }
 
@@ -216,6 +234,34 @@ impl Message {
             },
             Ok(id) => Some(id),
         }
+    }
+}
+
+#[cfg(test)]
+mod level_test {
+    use super::*;
+
+    #[test]
+    fn test_fmt() {
+        assert_eq!("debug", format!("{}", Level::Debug));
+        assert_eq!("information", format!("{}", Level::Information));
+        assert_eq!("warning", format!("{}", Level::Warning));
+        assert_eq!("error", format!("{}", Level::Error));
+        assert_eq!("critical", format!("{}", Level::Critical));
+    }
+
+    #[test]
+    fn test_as_vec() {
+        assert_eq!(
+            vec![
+                Level::Debug,
+                Level::Information,
+                Level::Warning,
+                Level::Error,
+                Level::Critical,
+            ],
+            Level::as_vec()
+        )
     }
 }
 
