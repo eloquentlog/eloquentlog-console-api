@@ -477,4 +477,37 @@ mod message_test {
             panic!("must fail");
         }
     }
+
+    #[test]
+    fn test_validate() {
+        let data = Json(Data {
+            id: None,
+
+            code: Some("301".to_string()),
+            lang: Some("en".to_string()),
+            level: Some("warn".to_string()),
+            format: Some("TOML".to_string()),
+            title: Some("deprecated method".to_string()),
+            content: Some(
+                r#"
+[method]
+name = "message::Validator::validate()"
+
+[[reason]]
+description = "It's deprecated. Use panic!() instead"
+"#
+                .to_string(),
+            ),
+        });
+        let v = Validator { data };
+
+        let result = v.validate();
+        assert!(result.is_ok());
+
+        if let Ok(m) = result {
+            assert!((m as Box<Any>).downcast::<NewMessage>().is_ok());
+        } else {
+            panic!("must not fail");
+        }
+    }
 }
