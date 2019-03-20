@@ -210,8 +210,67 @@ mod message_test {
         }
     }
 
+    #[test]
+    fn test_validate_level_is_invalid() {
+        let data = Json(Data {
+            level: Some("unknown".to_string()),
+            title: Some("title".to_string()),
+
+            ..Default::default()
+        });
+        let v = Validator { data };
+
+        let result = v.validate();
+        assert!(result.is_ok());
+
+        if let Ok(m) = result {
+            assert!((m as Box<Any>).downcast::<NewMessage>().is_ok());
+        } else {
+            panic!("must not fail");
+        }
+    }
+
+    #[test]
+    fn test_validate_level_is_none() {
+        let data = Json(Data {
+            level: None,
+            title: Some("title".to_string()),
+
+            ..Default::default()
+        });
+        let v = Validator { data };
+
+        let result = v.validate();
+        assert!(result.is_ok());
+
+        if let Ok(m) = result {
+            assert!((m as Box<Any>).downcast::<NewMessage>().is_ok());
+        } else {
+            panic!("must not fail");
+        }
+    }
+
+    #[test]
+    fn test_validate_level() {
+        let data = Json(Data {
+            level: Some("debug".to_string()),
+            title: Some("title".to_string()),
+
+            ..Default::default()
+        });
+        let v = Validator { data };
+
+        let result = v.validate();
+        assert!(result.is_ok());
+
+        if let Ok(m) = result {
+            assert!((m as Box<Any>).downcast::<NewMessage>().is_ok());
+        } else {
+            panic!("must not fail");
+        }
+    }
+
     // TODO
-    // level
     // format
 
     #[test]
