@@ -92,6 +92,7 @@ mod message_test {
         assert!(result.is_err());
 
         if let Err(errors) = &result {
+            assert_eq!(1, errors.len());
             assert_eq!("code", errors[0].field);
             assert_eq!(
                 vec!["Must contain more than 1 characters"],
@@ -116,6 +117,7 @@ mod message_test {
         assert!(result.is_err());
 
         if let Err(errors) = &result {
+            assert_eq!(1, errors.len());
             assert_eq!("code", errors[0].field);
             assert_eq!(
                 vec!["Must contain less than 32 characters"],
@@ -180,6 +182,7 @@ mod message_test {
         assert!(result.is_err());
 
         if let Err(errors) = &result {
+            assert_eq!(1, errors.len());
             assert_eq!("lang", errors[0].field);
             assert_eq!(vec!["Must be one of , en"], errors[0].messages);
         } else {
@@ -212,24 +215,6 @@ mod message_test {
     // format
 
     #[test]
-    fn test_validate_title_is_default() {
-        let data = Json(Data {
-            ..Default::default()
-        });
-        let v = Validator { data };
-
-        let result = v.validate();
-        assert!(result.is_err());
-
-        if let Err(errors) = &result {
-            assert_eq!("title", errors[0].field);
-            assert_eq!(vec!["Must exist"], errors[0].messages);
-        } else {
-            panic!("must fail");
-        }
-    }
-
-    #[test]
     fn test_validate_title_is_none() {
         let data = Json(Data {
             title: None,
@@ -242,6 +227,7 @@ mod message_test {
         assert!(result.is_err());
 
         if let Err(errors) = &result {
+            assert_eq!(1, errors.len());
             assert_eq!("title", errors[0].field);
             assert_eq!(vec!["Must exist"], errors[0].messages);
         } else {
@@ -262,6 +248,7 @@ mod message_test {
         assert!(result.is_err());
 
         if let Err(errors) = &result {
+            assert_eq!(1, errors.len());
             assert_eq!("title", errors[0].field);
             assert_eq!(
                 vec!["Must contain less than 255 characters"],
@@ -305,6 +292,7 @@ mod message_test {
         assert!(result.is_err());
 
         if let Err(errors) = &result {
+            assert_eq!(1, errors.len());
             assert_eq!("content", errors[0].field);
             assert_eq!(
                 vec!["Must contain less than 8000 characters"],
@@ -352,6 +340,25 @@ mod message_test {
             assert!((m as Box<Any>).downcast::<NewMessage>().is_ok());
         } else {
             panic!("must not fail");
+        }
+    }
+
+    #[test]
+    fn test_validate_fields_are_default() {
+        let data = Json(Data {
+            ..Default::default()
+        });
+        let v = Validator { data };
+
+        let result = v.validate();
+        assert!(result.is_err());
+
+        if let Err(errors) = &result {
+            assert_eq!(1, errors.len());
+            assert_eq!("title", errors[0].field);
+            assert_eq!(vec!["Must exist"], errors[0].messages);
+        } else {
+            panic!("must fail");
         }
     }
 }
