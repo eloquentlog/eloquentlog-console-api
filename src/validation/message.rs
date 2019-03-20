@@ -212,8 +212,28 @@ mod message_test {
     // format
 
     #[test]
-    fn test_validate_title_is_missing() {
+    fn test_validate_title_is_default() {
         let data = Json(Data {
+            ..Default::default()
+        });
+        let v = Validator { data };
+
+        let result = v.validate();
+        assert!(result.is_err());
+
+        if let Err(errors) = &result {
+            assert_eq!("title", errors[0].field);
+            assert_eq!(vec!["Must exist"], errors[0].messages);
+        } else {
+            panic!("must fail");
+        }
+    }
+
+    #[test]
+    fn test_validate_title_is_none() {
+        let data = Json(Data {
+            title: None,
+
             ..Default::default()
         });
         let v = Validator { data };
