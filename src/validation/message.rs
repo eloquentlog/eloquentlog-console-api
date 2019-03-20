@@ -270,8 +270,65 @@ mod message_test {
         }
     }
 
-    // TODO
-    // format
+    #[test]
+    fn test_validation_format_is_invalid() {
+        let data = Json(Data {
+            format: Some("unknown".to_string()),
+            title: Some("title".to_string()),
+
+            ..Default::default()
+        });
+        let v = Validator { data };
+
+        let result = v.validate();
+        assert!(result.is_ok());
+
+        if let Ok(m) = result {
+            assert!((m as Box<Any>).downcast::<NewMessage>().is_ok());
+        } else {
+            panic!("must not fail");
+        }
+    }
+
+    #[test]
+    fn test_validation_format_is_none() {
+        let data = Json(Data {
+            format: None,
+            title: Some("title".to_string()),
+
+            ..Default::default()
+        });
+        let v = Validator { data };
+
+        let result = v.validate();
+        assert!(result.is_ok());
+
+        if let Ok(m) = result {
+            assert!((m as Box<Any>).downcast::<NewMessage>().is_ok());
+        } else {
+            panic!("must not fail");
+        }
+    }
+
+    #[test]
+    fn test_validation_format() {
+        let data = Json(Data {
+            format: Some("TOML".to_string()),
+            title: Some("title".to_string()),
+
+            ..Default::default()
+        });
+        let v = Validator { data };
+
+        let result = v.validate();
+        assert!(result.is_ok());
+
+        if let Ok(m) = result {
+            assert!((m as Box<Any>).downcast::<NewMessage>().is_ok());
+        } else {
+            panic!("must not fail");
+        }
+    }
 
     #[test]
     fn test_validate_title_is_none() {
