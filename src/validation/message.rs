@@ -92,6 +92,7 @@ mod message_test {
         assert!(result.is_err());
 
         if let Err(errors) = &result {
+            assert_eq!(1, errors.len());
             assert_eq!("code", errors[0].field);
             assert_eq!(
                 vec!["Must contain more than 1 characters"],
@@ -116,6 +117,7 @@ mod message_test {
         assert!(result.is_err());
 
         if let Err(errors) = &result {
+            assert_eq!(1, errors.len());
             assert_eq!("code", errors[0].field);
             assert_eq!(
                 vec!["Must contain less than 32 characters"],
@@ -123,6 +125,26 @@ mod message_test {
             );
         } else {
             panic!("must fail");
+        }
+    }
+
+    #[test]
+    fn test_validate_code_is_none() {
+        let data = Json(Data {
+            code: None,
+            title: Some("title".to_string()),
+
+            ..Default::default()
+        });
+        let v = Validator { data };
+
+        let result = v.validate();
+        assert!(result.is_ok());
+
+        if let Ok(m) = result {
+            assert!((m as Box<Any>).downcast::<NewMessage>().is_ok());
+        } else {
+            panic!("must not fail");
         }
     }
 
@@ -160,6 +182,7 @@ mod message_test {
         assert!(result.is_err());
 
         if let Err(errors) = &result {
+            assert_eq!(1, errors.len());
             assert_eq!("lang", errors[0].field);
             assert_eq!(vec!["Must be one of , en"], errors[0].messages);
         } else {
@@ -187,13 +210,131 @@ mod message_test {
         }
     }
 
-    // TODO
-    // level
-    // format
+    #[test]
+    fn test_validate_level_is_invalid() {
+        let data = Json(Data {
+            level: Some("unknown".to_string()),
+            title: Some("title".to_string()),
+
+            ..Default::default()
+        });
+        let v = Validator { data };
+
+        let result = v.validate();
+        assert!(result.is_ok());
+
+        if let Ok(m) = result {
+            assert!((m as Box<Any>).downcast::<NewMessage>().is_ok());
+        } else {
+            panic!("must not fail");
+        }
+    }
 
     #[test]
-    fn test_validate_title_is_missing() {
+    fn test_validate_level_is_none() {
         let data = Json(Data {
+            level: None,
+            title: Some("title".to_string()),
+
+            ..Default::default()
+        });
+        let v = Validator { data };
+
+        let result = v.validate();
+        assert!(result.is_ok());
+
+        if let Ok(m) = result {
+            assert!((m as Box<Any>).downcast::<NewMessage>().is_ok());
+        } else {
+            panic!("must not fail");
+        }
+    }
+
+    #[test]
+    fn test_validate_level() {
+        let data = Json(Data {
+            level: Some("debug".to_string()),
+            title: Some("title".to_string()),
+
+            ..Default::default()
+        });
+        let v = Validator { data };
+
+        let result = v.validate();
+        assert!(result.is_ok());
+
+        if let Ok(m) = result {
+            assert!((m as Box<Any>).downcast::<NewMessage>().is_ok());
+        } else {
+            panic!("must not fail");
+        }
+    }
+
+    #[test]
+    fn test_validation_format_is_invalid() {
+        let data = Json(Data {
+            format: Some("unknown".to_string()),
+            title: Some("title".to_string()),
+
+            ..Default::default()
+        });
+        let v = Validator { data };
+
+        let result = v.validate();
+        assert!(result.is_ok());
+
+        if let Ok(m) = result {
+            assert!((m as Box<Any>).downcast::<NewMessage>().is_ok());
+        } else {
+            panic!("must not fail");
+        }
+    }
+
+    #[test]
+    fn test_validation_format_is_none() {
+        let data = Json(Data {
+            format: None,
+            title: Some("title".to_string()),
+
+            ..Default::default()
+        });
+        let v = Validator { data };
+
+        let result = v.validate();
+        assert!(result.is_ok());
+
+        if let Ok(m) = result {
+            assert!((m as Box<Any>).downcast::<NewMessage>().is_ok());
+        } else {
+            panic!("must not fail");
+        }
+    }
+
+    #[test]
+    fn test_validation_format() {
+        let data = Json(Data {
+            format: Some("TOML".to_string()),
+            title: Some("title".to_string()),
+
+            ..Default::default()
+        });
+        let v = Validator { data };
+
+        let result = v.validate();
+        assert!(result.is_ok());
+
+        if let Ok(m) = result {
+            assert!((m as Box<Any>).downcast::<NewMessage>().is_ok());
+        } else {
+            panic!("must not fail");
+        }
+    }
+
+    #[test]
+    fn test_validate_title_is_none() {
+        let data = Json(Data {
+            title: None,
+
             ..Default::default()
         });
         let v = Validator { data };
@@ -202,6 +343,7 @@ mod message_test {
         assert!(result.is_err());
 
         if let Err(errors) = &result {
+            assert_eq!(1, errors.len());
             assert_eq!("title", errors[0].field);
             assert_eq!(vec!["Must exist"], errors[0].messages);
         } else {
@@ -222,6 +364,7 @@ mod message_test {
         assert!(result.is_err());
 
         if let Err(errors) = &result {
+            assert_eq!(1, errors.len());
             assert_eq!("title", errors[0].field);
             assert_eq!(
                 vec!["Must contain less than 255 characters"],
@@ -265,6 +408,7 @@ mod message_test {
         assert!(result.is_err());
 
         if let Err(errors) = &result {
+            assert_eq!(1, errors.len());
             assert_eq!("content", errors[0].field);
             assert_eq!(
                 vec!["Must contain less than 8000 characters"],
@@ -276,12 +420,84 @@ mod message_test {
     }
 
     #[test]
+    fn test_validate_content_is_none() {
+        let data = Json(Data {
+            content: None,
+            title: Some("title".to_string()),
+
+            ..Default::default()
+        });
+        let v = Validator { data };
+
+        let result = v.validate();
+        assert!(result.is_ok());
+
+        if let Ok(m) = result {
+            assert!((m as Box<Any>).downcast::<NewMessage>().is_ok());
+        } else {
+            panic!("must not fail");
+        }
+    }
+
+    #[test]
     fn test_validate_content() {
         let data = Json(Data {
             content: Some("text".repeat(2000).to_string()),
             title: Some("title".to_string()),
 
             ..Default::default()
+        });
+        let v = Validator { data };
+
+        let result = v.validate();
+        assert!(result.is_ok());
+
+        if let Ok(m) = result {
+            assert!((m as Box<Any>).downcast::<NewMessage>().is_ok());
+        } else {
+            panic!("must not fail");
+        }
+    }
+
+    #[test]
+    fn test_validate_fields_are_default() {
+        let data = Json(Data {
+            ..Default::default()
+        });
+        let v = Validator { data };
+
+        let result = v.validate();
+        assert!(result.is_err());
+
+        if let Err(errors) = &result {
+            assert_eq!(1, errors.len());
+            assert_eq!("title", errors[0].field);
+            assert_eq!(vec!["Must exist"], errors[0].messages);
+        } else {
+            panic!("must fail");
+        }
+    }
+
+    #[test]
+    fn test_validate() {
+        let data = Json(Data {
+            id: None,
+
+            code: Some("301".to_string()),
+            lang: Some("en".to_string()),
+            level: Some("warn".to_string()),
+            format: Some("TOML".to_string()),
+            title: Some("deprecated method".to_string()),
+            content: Some(
+                r#"
+[method]
+name = "message::Validator::validate()"
+
+[[reason]]
+description = "It's deprecated. Use panic!() instead"
+"#
+                .to_string(),
+            ),
         });
         let v = Validator { data };
 
