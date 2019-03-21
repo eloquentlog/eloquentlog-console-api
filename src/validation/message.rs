@@ -4,7 +4,7 @@ use accord::validators::{either, length_if_present};
 use rocket_contrib::json::Json;
 
 use validation::{required, max_if_present};
-use request::Message as Data;
+use request::Message as RequestData;
 use model::message::{Format, Level, NewMessage};
 
 #[derive(Debug, Clone, Serialize)]
@@ -13,33 +13,18 @@ pub struct ValidationError {
     pub messages: Vec<String>,
 }
 
-pub struct Validator {
-    data: Json<Data>,
+pub struct Validator<'a> {
+    data: &'a Json<RequestData>,
 }
 
-impl Validator {
-    pub fn new(data: Json<Data>) -> Self {
+impl<'a> Validator<'a> {
+    pub fn new(data: &'a Json<RequestData>) -> Self {
         Self { data }
     }
 
     #[allow(clippy::redundant_closure)]
-    pub fn validate(&self) -> Result<Box<NewMessage>, Vec<ValidationError>> {
-        let input = self.data.0.clone();
-
-        // TODO: level and format
-        let m = NewMessage {
-            code: input.code,
-            lang: input.lang.unwrap_or_else(|| "en".to_string()),
-            level: Level::from(
-                input.level.unwrap_or_else(|| "information".to_string()),
-            ),
-            format: Format::from(
-                input.format.unwrap_or_else(|| "toml".to_string()),
-            ),
-            title: input.title,
-            content: input.content,
-        };
-
+    pub fn validate(&self) -> Result<(), Vec<ValidationError>> {
+        let m = NewMessage::from(self.data.0.clone());
         let result = rules! {
             "code" => m.code => [length_if_present(1, 32)],
             "lang" => m.lang => [either(vec!["en".to_string()])], // default: en
@@ -49,7 +34,7 @@ impl Validator {
             "content" => m.content => [length_if_present(0, 8000)]
         };
         if let Err(v) = result {
-            // MultipleError to ValidationError
+            // MultipleError to Vec<ValidationError>
             let errors =
                 v.0.iter()
                     .map(|e| {
@@ -65,8 +50,7 @@ impl Validator {
                     .collect();
             return Err(errors);
         }
-
-        Ok(Box::new(m))
+        Ok(())
     }
 }
 
@@ -74,13 +58,11 @@ impl Validator {
 mod message_test {
     use super::*;
 
-    use std::any::Any;
-
     use rocket_contrib::json::Json;
 
     #[test]
     fn test_validate_code_is_empty() {
-        let data = Json(Data {
+        let data = &Json(RequestData {
             code: Some("".to_string()),
             title: Some("title".to_string()),
 
@@ -105,7 +87,7 @@ mod message_test {
 
     #[test]
     fn test_validate_code_is_too_long() {
-        let data = Json(Data {
+        let data = &Json(RequestData {
             code: Some("long".repeat(9).to_string()),
             title: Some("title".to_string()),
 
@@ -130,7 +112,7 @@ mod message_test {
 
     #[test]
     fn test_validate_code_is_none() {
-        let data = Json(Data {
+        let data = &Json(RequestData {
             code: None,
             title: Some("title".to_string()),
 
@@ -140,17 +122,11 @@ mod message_test {
 
         let result = v.validate();
         assert!(result.is_ok());
-
-        if let Ok(m) = result {
-            assert!((m as Box<Any>).downcast::<NewMessage>().is_ok());
-        } else {
-            panic!("must not fail");
-        }
     }
 
     #[test]
     fn test_validate_code() {
-        let data = Json(Data {
+        let data = &Json(RequestData {
             code: Some("200".to_string()),
             title: Some("title".to_string()),
 
@@ -160,17 +136,11 @@ mod message_test {
 
         let result = v.validate();
         assert!(result.is_ok());
-
-        if let Ok(m) = result {
-            assert!((m as Box<Any>).downcast::<NewMessage>().is_ok());
-        } else {
-            panic!("must not fail");
-        }
     }
 
     #[test]
     fn test_validate_lang_in_invalid() {
-        let data = Json(Data {
+        let data = &Json(RequestData {
             lang: Some("unknown".to_string()),
             title: Some("title".to_string()),
 
@@ -192,7 +162,7 @@ mod message_test {
 
     #[test]
     fn test_validate_lang() {
-        let data = Json(Data {
+        let data = &Json(RequestData {
             lang: Some("en".to_string()),
             title: Some("title".to_string()),
 
@@ -202,17 +172,11 @@ mod message_test {
 
         let result = v.validate();
         assert!(result.is_ok());
-
-        if let Ok(m) = result {
-            assert!((m as Box<Any>).downcast::<NewMessage>().is_ok());
-        } else {
-            panic!("must not fail");
-        }
     }
 
     #[test]
     fn test_validate_level_is_invalid() {
-        let data = Json(Data {
+        let data = &Json(RequestData {
             level: Some("unknown".to_string()),
             title: Some("title".to_string()),
 
@@ -222,17 +186,11 @@ mod message_test {
 
         let result = v.validate();
         assert!(result.is_ok());
-
-        if let Ok(m) = result {
-            assert!((m as Box<Any>).downcast::<NewMessage>().is_ok());
-        } else {
-            panic!("must not fail");
-        }
     }
 
     #[test]
     fn test_validate_level_is_none() {
-        let data = Json(Data {
+        let data = &Json(RequestData {
             level: None,
             title: Some("title".to_string()),
 
@@ -242,17 +200,11 @@ mod message_test {
 
         let result = v.validate();
         assert!(result.is_ok());
-
-        if let Ok(m) = result {
-            assert!((m as Box<Any>).downcast::<NewMessage>().is_ok());
-        } else {
-            panic!("must not fail");
-        }
     }
 
     #[test]
     fn test_validate_level() {
-        let data = Json(Data {
+        let data = &Json(RequestData {
             level: Some("debug".to_string()),
             title: Some("title".to_string()),
 
@@ -262,17 +214,11 @@ mod message_test {
 
         let result = v.validate();
         assert!(result.is_ok());
-
-        if let Ok(m) = result {
-            assert!((m as Box<Any>).downcast::<NewMessage>().is_ok());
-        } else {
-            panic!("must not fail");
-        }
     }
 
     #[test]
     fn test_validation_format_is_invalid() {
-        let data = Json(Data {
+        let data = &Json(RequestData {
             format: Some("unknown".to_string()),
             title: Some("title".to_string()),
 
@@ -282,17 +228,11 @@ mod message_test {
 
         let result = v.validate();
         assert!(result.is_ok());
-
-        if let Ok(m) = result {
-            assert!((m as Box<Any>).downcast::<NewMessage>().is_ok());
-        } else {
-            panic!("must not fail");
-        }
     }
 
     #[test]
     fn test_validation_format_is_none() {
-        let data = Json(Data {
+        let data = &Json(RequestData {
             format: None,
             title: Some("title".to_string()),
 
@@ -302,17 +242,11 @@ mod message_test {
 
         let result = v.validate();
         assert!(result.is_ok());
-
-        if let Ok(m) = result {
-            assert!((m as Box<Any>).downcast::<NewMessage>().is_ok());
-        } else {
-            panic!("must not fail");
-        }
     }
 
     #[test]
     fn test_validation_format() {
-        let data = Json(Data {
+        let data = &Json(RequestData {
             format: Some("TOML".to_string()),
             title: Some("title".to_string()),
 
@@ -322,17 +256,11 @@ mod message_test {
 
         let result = v.validate();
         assert!(result.is_ok());
-
-        if let Ok(m) = result {
-            assert!((m as Box<Any>).downcast::<NewMessage>().is_ok());
-        } else {
-            panic!("must not fail");
-        }
     }
 
     #[test]
     fn test_validate_title_is_none() {
-        let data = Json(Data {
+        let data = &Json(RequestData {
             title: None,
 
             ..Default::default()
@@ -353,7 +281,7 @@ mod message_test {
 
     #[test]
     fn test_validate_title_is_too_long() {
-        let data = Json(Data {
+        let data = &Json(RequestData {
             title: Some("title".repeat(52).to_string()),
 
             ..Default::default()
@@ -377,7 +305,7 @@ mod message_test {
 
     #[test]
     fn test_validate_title() {
-        let data = Json(Data {
+        let data = &Json(RequestData {
             title: Some("title".repeat(51).to_string()),
 
             ..Default::default()
@@ -386,17 +314,11 @@ mod message_test {
 
         let result = v.validate();
         assert!(result.is_ok());
-
-        if let Ok(m) = result {
-            assert!((m as Box<Any>).downcast::<NewMessage>().is_ok());
-        } else {
-            panic!("must not fail");
-        }
     }
 
     #[test]
     fn test_validate_content_is_too_long() {
-        let data = Json(Data {
+        let data = &Json(RequestData {
             content: Some("text".repeat(2001).to_string()),
             title: Some("title".to_string()),
 
@@ -421,7 +343,7 @@ mod message_test {
 
     #[test]
     fn test_validate_content_is_none() {
-        let data = Json(Data {
+        let data = &Json(RequestData {
             content: None,
             title: Some("title".to_string()),
 
@@ -431,17 +353,11 @@ mod message_test {
 
         let result = v.validate();
         assert!(result.is_ok());
-
-        if let Ok(m) = result {
-            assert!((m as Box<Any>).downcast::<NewMessage>().is_ok());
-        } else {
-            panic!("must not fail");
-        }
     }
 
     #[test]
     fn test_validate_content() {
-        let data = Json(Data {
+        let data = &Json(RequestData {
             content: Some("text".repeat(2000).to_string()),
             title: Some("title".to_string()),
 
@@ -451,17 +367,11 @@ mod message_test {
 
         let result = v.validate();
         assert!(result.is_ok());
-
-        if let Ok(m) = result {
-            assert!((m as Box<Any>).downcast::<NewMessage>().is_ok());
-        } else {
-            panic!("must not fail");
-        }
     }
 
     #[test]
     fn test_validate_fields_are_default() {
-        let data = Json(Data {
+        let data = &Json(RequestData {
             ..Default::default()
         });
         let v = Validator { data };
@@ -480,7 +390,7 @@ mod message_test {
 
     #[test]
     fn test_validate() {
-        let data = Json(Data {
+        let data = &Json(RequestData {
             id: None,
 
             code: Some("301".to_string()),
@@ -503,11 +413,5 @@ description = "It's deprecated. Use panic!() instead"
 
         let result = v.validate();
         assert!(result.is_ok());
-
-        if let Ok(m) = result {
-            assert!((m as Box<Any>).downcast::<NewMessage>().is_ok());
-        } else {
-            panic!("must not fail");
-        }
     }
 }

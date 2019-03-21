@@ -2,6 +2,7 @@
 
 #[macro_use]
 extern crate accord;
+extern crate chrono;
 
 #[macro_use]
 extern crate lazy_static;
@@ -21,11 +22,9 @@ extern crate serde_derive;
 #[macro_use]
 extern crate diesel;
 
-mod config;
 mod db;
 mod response;
 mod request;
-mod model;
 mod validation;
 
 mod route {
@@ -34,6 +33,9 @@ mod route {
     pub mod message;
     pub mod top;
 }
+
+pub mod config;
+pub mod model;
 
 pub fn app(env_name: &str) -> rocket::Rocket {
     let config_name = match env_name {
