@@ -1,6 +1,9 @@
 # https://github.com/rust-lang-nursery/rustfmt/blob/master/Configurations.md
 indent_style = "Block"
 
+# issue 3343
+# inline_attribute_width  = 80
+
 max_width = 80
 tab_spaces = 4
 
