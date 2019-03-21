@@ -12,8 +12,7 @@ CREATE SEQUENCE messages_id_seq
 ;
 
 CREATE TABLE messages (
-  id BIGINT NOT NULL PRIMARY KEY CHECK (id=currval('messages_id_seq'))
-    DEFAULT nextval('messages_id_seq'),
+  id BIGINT NOT NULL PRIMARY KEY DEFAULT nextval('messages_id_seq'),
   code CHAR(128) NULL,
   lang CHAR(8) NOT NULL DEFAULT 'en',
   level log_level NOT NULL DEFAULT 'information',

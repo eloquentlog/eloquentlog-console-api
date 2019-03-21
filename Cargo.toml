@@ -9,7 +9,8 @@ license = "AGPL-3.0-or-later"
 
 [dependencies]
 accord = { git = "https://github.com/ChrisBuchholz/accord.git", rev = "e56cecc" }
-diesel = { version = "1.4.1", features = ["postgres", "r2d2"] }
+chrono = { version = "0.4.6", features = ["serde"] }
+diesel = { version = "1.4.2", features = ["chrono", "postgres", "r2d2"] }
 dotenv = "0.10"
 lazy_static = "1.0"
 regex = "0.2"

@@ -3,14 +3,19 @@
 //! See diesel_tests' custom_types.rs
 use std::fmt;
 
-// use diesel::debug_query;
+use chrono::{NaiveDateTime, Utc};
 use diesel::{self, Insertable, prelude::*};
 use diesel::pg::PgConnection;
+
+// use diesel::pg::Pg;
+// use diesel::debug_query;
 
 use model::level::LogLevel;
 use model::format::LogFormat;
 pub use model::level::Level;
 pub use model::format::Format;
+
+use request::Message as RequestData;
 
 mod schema {
     table! {
@@ -25,14 +30,16 @@ mod schema {
             level -> LogLevel,
             format -> LogFormat,
             title -> Text,
-            content -> Text,
+            content -> Nullable<Text>,
             created_at -> Timestamp,
             updated_at -> Timestamp,
         }
     }
+
+    allow_tables_to_appear_in_same_query!(messages,);
 }
 
-use self::schema::messages;
+pub use self::schema::messages;
 
 /// NewMessage
 #[derive(Debug, Insertable)]
@@ -68,6 +75,23 @@ impl Default for NewMessage {
     }
 }
 
+impl From<RequestData> for NewMessage {
+    fn from(data: RequestData) -> Self {
+        Self {
+            code: data.code,
+            lang: data.lang.unwrap_or_else(|| "en".to_string()),
+            level: Level::from(
+                data.level.unwrap_or_else(|| "information".to_string()),
+            ),
+            format: Format::from(
+                data.format.unwrap_or_else(|| "toml".to_string()),
+            ),
+            title: data.title,
+            content: data.content,
+        }
+    }
+}
+
 /// Message
 #[derive(AsChangeset, AsExpression, Debug, Identifiable, Queryable)]
 #[table_name = "messages"]
@@ -79,6 +103,8 @@ pub struct Message {
     pub format: Format,
     pub title: String,
     pub content: Option<String>,
+    pub created_at: NaiveDateTime,
+    pub updated_at: NaiveDateTime,
 }
 
 impl fmt::Display for Message {
@@ -88,6 +114,22 @@ impl fmt::Display for Message {
 }
 
 impl Message {
+    pub fn first(id: i64, conn: &PgConnection) -> Option<Self> {
+        let q = messages::table.find(id);
+
+        // TODO
+        // let sql = debug_query::<Pg, _>(&q).to_string();
+        // println!("sql: {}", sql);
+
+        match q.first::<Message>(conn) {
+            Err(e) => {
+                println!("err: {}", e);
+                None
+            },
+            Ok(m) => Some(m),
+        }
+    }
+
     /// Save new message.
     ///
     /// `created_at` and `updated_at` will be filled on PostgreSQL side
@@ -111,9 +153,10 @@ impl Message {
     }
 
     /// Update a message.
-    pub fn update(message: &Message, conn: &PgConnection) -> Option<i64> {
+    pub fn update(message: &mut Message, conn: &PgConnection) -> Option<i64> {
+        message.updated_at = Utc::now().naive_utc();
         let q = diesel::update(messages::table)
-            .set(message)
+            .set(&*message)
             .filter(messages::id.eq(message.id))
             .returning(messages::id);
 
@@ -133,11 +176,7 @@ impl Message {
 
 #[cfg(test)]
 mod message_test {
-    use std::panic::{self, AssertUnwindSafe};
-
-    use diesel::PgConnection;
-
-    use config::Config;
+    use model::test::run;
     use super::*;
 
     #[test]
@@ -188,7 +227,7 @@ mod message_test {
                 .expect("Failed to select a row");
             assert_eq!("title", current_title);
 
-            let m = Message {
+            let mut m = Message {
                 id: inserted_id,
                 code: Some("200".to_string()),
                 lang: "en".to_string(),
@@ -196,8 +235,10 @@ mod message_test {
                 format: Format::TOML,
                 title: "updated".to_string(),
                 content: Some("content".to_string()),
+                created_at: Utc::now().naive_utc(),
+                updated_at: Utc::now().naive_utc(),
             };
-            let result = Message::update(&m, conn);
+            let result = Message::update(&mut m, conn);
             assert!(result.is_some());
 
             let value = messages::table
@@ -206,56 +247,6 @@ mod message_test {
                 .get_result::<String>(conn)
                 .expect("Failed to load");
             assert_eq!("updated", &value);
-        })
-    }
-
-    /// A test runner
-    fn run<T>(test: T)
-    where T: FnOnce(&PgConnection) -> () + panic::UnwindSafe {
-        let conn = establish_connection();
-
-        let _: std::result::Result<(), diesel::result::Error> = conn
-            .build_transaction()
-            .serializable()
-            .read_write()
-            .run(|| {
-                setup(&conn);
-
-                let result =
-                    panic::catch_unwind(AssertUnwindSafe(|| test(&conn)));
-
-                teardown(&conn);
-
-                assert!(result.is_ok());
-                Ok(())
-            });
-    }
-
-    fn setup(conn: &PgConnection) {
-        truncate_messages(conn);
-    }
-
-    fn teardown(conn: &PgConnection) {
-        truncate_messages(conn);
-    }
-
-    fn truncate_messages(conn: &PgConnection) {
-        let _ = diesel::sql_query("TRUNCATE TABLE messages;")
-            .execute(conn)
-            .expect("Failed to truncate");
-
-        let _ =
-            diesel::sql_query("ALTER SEQUENCE messages_id_seq RESTART WITH 1;")
-                .execute(conn)
-                .expect("Failed to reset sequence");
-    }
-
-    fn establish_connection() -> PgConnection {
-        dotenv::dotenv().ok();
-
-        let c = Config::from("testing").unwrap();
-        PgConnection::establish(&c.database_url).unwrap_or_else(|_| {
-            panic!("Error connecting to : {}", c.database_url)
         })
     }
 }

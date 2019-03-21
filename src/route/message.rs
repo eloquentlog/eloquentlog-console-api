@@ -1,12 +1,10 @@
-use std::any::Any;
-
 use rocket::http::Status;
 use rocket_contrib::json::Json;
 
 use db::DbConn;
-use model::message::{Message, NewMessage};
+use model::message::{Format, Level, Message, NewMessage};
 use response::Response;
-use request::Message as Data;
+use request::Message as RequestData;
 use validation::message::Validator;
 
 #[get("/messages")]
@@ -29,23 +27,23 @@ pub fn get() -> Response {
 // }
 // ```
 #[post("/messages", format = "json", data = "<data>")]
-pub fn post(data: Json<Data>, conn: DbConn) -> Response {
+pub fn post(data: Json<RequestData>, conn: DbConn) -> Response {
     let res: Response = Default::default();
 
-    let v = Validator::new(data);
+    let v = Validator::new(&data);
     match v.validate() {
         Err(errors) => {
             res.status(Status::UnprocessableEntity).format(json!({
                 "errors": errors,
             }))
         },
-        Ok(v) => {
-            if let Ok(m) = (v as Box<Any>).downcast::<NewMessage>() {
-                if let Some(id) = Message::insert(&m, &conn) {
-                    return res.format(json!({"message": {
-                        "id": id,
-                    }}));
-                }
+        Ok(_) => {
+            // TODO
+            let m = NewMessage::from(data.0.clone());
+            if let Some(id) = Message::insert(&m, &conn) {
+                return res.format(json!({"message": {
+                    "id": id,
+                }}));
             }
             res.status(Status::InternalServerError)
         },
@@ -53,23 +51,46 @@ pub fn post(data: Json<Data>, conn: DbConn) -> Response {
 }
 
 #[put("/messages/<id>", format = "json", data = "<data>")]
-pub fn put(id: usize, data: Json<Data>) -> Response {
-    // TODO
-    println!("id: {}", id);
+pub fn put(id: usize, data: Json<RequestData>, conn: DbConn) -> Response {
+    let res: Response = Default::default();
 
     let message_id = data.0.id.unwrap_or_default();
     if message_id == 0 || id != message_id {
-        return Response {
-            status: Status::NotFound,
-            data: json!(null),
-        };
+        return res.status(Status::NotFound).format(json!(null));
     }
 
-    let res = Response {
-        status: Status::Ok,
-        data: json!(null),
-    };
-    res.format(json!({"message": {
-        "id": message_id,
-    }}))
+    let result = Message::first(id as i64, &conn);
+    if result.is_none() {
+        return res.status(Status::NotFound).format(json!(null));
+    }
+
+    let v = Validator::new(&data);
+    match v.validate() {
+        Err(errors) => {
+            res.status(Status::UnprocessableEntity).format(json!({
+                "errors": errors,
+            }))
+        },
+        Ok(_) => {
+            // TODO
+            let data = data.0.clone();
+            let mut m = result.unwrap();
+            m.code = data.code;
+            m.lang = data.lang.unwrap_or_default();
+            m.level = Level::from(
+                data.level.unwrap_or_else(|| "information".to_string()),
+            );
+            m.format =
+                Format::from(data.format.unwrap_or_else(|| "toml".to_string()));
+            m.title = data.title.unwrap_or_default();
+            m.content = data.content;
+
+            if let Some(id) = Message::update(&mut m, &conn) {
+                return res.format(json!({"message": {
+                    "id": id,
+                }}));
+            }
+            res.status(Status::InternalServerError)
+        },
+    }
 }
