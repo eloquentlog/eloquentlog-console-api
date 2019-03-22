@@ -7,6 +7,10 @@ repository = "https://gitlab.com/eloquentlog/eloquentlog-backend-api"
 keywords = []
 license = "AGPL-3.0-or-later"
 
+[[test]]
+name = "integration"
+path = "test/test.rs"
+
 [dependencies]
 accord = { git = "https://github.com/ChrisBuchholz/accord.git", rev = "e56cecc" }
 chrono = { version = "0.4.6", features = ["serde"] }

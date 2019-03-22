@@ -1,10 +1,3 @@
-INTEGRATION_TESTS := \
-  --test error_test \
-  --test login_test \
-  --test message_test \
-  --test top_test
-
-
 # setup -- {{{
 setup\:tools:  ## Setup development tools
 	cargo install diesel_cli --no-default-features --features "postgres"
@@ -52,7 +45,7 @@ test\:unit:  ## Run unit tests
 .PHONY: test\:unit
 
 test\:integration:  ## Run integrations test only
-	@cargo test $(INTEGRATION_TESTS)
+	@cargo test --test integration
 .PHONY: test\:integration
 
 test\:all:  ## Run unit tests and integration tests [alias: test]
@@ -114,7 +107,7 @@ watch\:test\:unit:  ## Start watch process for test:unit
 .PHONY: watch\:test\:unit
 
 watch\:test\:integration:  ## Start watch process for test:integration
-	@cargo watch --postpone --exec 'test $(INTEGRATION_TESTS)'
+	@cargo watch --postpone --exec 'test --test integration'
 .PHONY: watch\:test\:integration
 
 watch\:test\:all:  ## Start watch process for test:all
