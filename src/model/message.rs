@@ -6,6 +6,7 @@ use std::fmt;
 use chrono::{NaiveDateTime, Utc};
 use diesel::{self, Insertable, prelude::*};
 use diesel::pg::PgConnection;
+use serde::Serialize;
 
 // use diesel::pg::Pg;
 // use diesel::debug_query;
@@ -93,7 +94,15 @@ impl From<RequestData> for NewMessage {
 }
 
 /// Message
-#[derive(AsChangeset, AsExpression, Debug, Identifiable, Queryable)]
+#[derive(
+    AsChangeset,
+    AsExpression,
+    Debug,
+    Identifiable,
+    Insertable,
+    Queryable,
+    Serialize,
+)]
 #[table_name = "messages"]
 pub struct Message {
     pub id: i64,
@@ -149,6 +158,24 @@ impl Message {
                 None
             },
             Ok(id) => Some(id),
+        }
+    }
+
+    pub fn recent(count: i64, conn: &PgConnection) -> Vec<Message> {
+        let q = messages::table
+            .limit(count)
+            .order(messages::created_at.desc());
+
+        // TODO
+        // let sql = debug_query::<Pg, _>(&q).to_string();
+        // println!("sql: {}", sql);
+
+        match q.load::<Message>(conn) {
+            Err(e) => {
+                println!("err: {}", e);
+                vec![]
+            },
+            Ok(r) => r,
         }
     }
 

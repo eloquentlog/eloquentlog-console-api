@@ -1,13 +1,10 @@
-use rocket::local::Client;
 use rocket::http::{ContentType, Status};
 
 use run_test;
 
 #[test]
 fn test_login() {
-    run_test(|| {
-        let client =
-            Client::new(eloquentlog_backend_api::app("testing")).unwrap();
+    run_test(|client, _| {
         let req = client
             .post("/login")
             .header(ContentType::JSON)

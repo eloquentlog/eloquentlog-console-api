@@ -9,12 +9,13 @@ use std::slice::Iter;
 use diesel::deserialize::{self, FromSql};
 use diesel::pg::Pg;
 use diesel::serialize::{self, IsNull, Output, ToSql};
+use serde::Serialize;
 
 #[derive(SqlType)]
 #[postgres(type_name = "log_format")]
 pub struct LogFormat;
 
-#[derive(AsExpression, Clone, Debug, FromSqlRow, PartialEq)]
+#[derive(AsExpression, Clone, Debug, FromSqlRow, PartialEq, Serialize)]
 #[sql_type = "LogFormat"]
 pub enum Format {
     TOML, // default

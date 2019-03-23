@@ -7,13 +7,14 @@ use response::Response;
 use request::Message as RequestData;
 use validation::message::Validator;
 
+const MESSAGES_PER_REQUEST: i64 = 100;
+
 #[get("/messages")]
-pub fn get() -> Response {
-    let res = Response {
-        status: Status::Ok,
-        data: json!(null),
-    };
-    res.format(json!({"messages": []}))
+pub fn get(conn: DbConn) -> Response {
+    let res: Response = Default::default();
+
+    let messages = Message::recent(MESSAGES_PER_REQUEST, &conn);
+    res.format(json!({ "messages": messages }))
 }
 
 // Save a new log message.
