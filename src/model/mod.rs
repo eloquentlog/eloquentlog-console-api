@@ -1,5 +1,8 @@
+// sql types
 mod level;
 mod format;
+
+// models
 pub mod message;
 pub mod user;
 
