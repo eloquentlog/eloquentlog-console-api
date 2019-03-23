@@ -6,6 +6,7 @@ use std::fmt;
 use std::io::Write;
 use std::slice::Iter;
 
+use serde::Serialize;
 use diesel::deserialize::{self, FromSql};
 use diesel::pg::Pg;
 use diesel::serialize::{self, IsNull, Output, ToSql};
@@ -14,7 +15,7 @@ use diesel::serialize::{self, IsNull, Output, ToSql};
 #[postgres(type_name = "log_level")]
 pub struct LogLevel;
 
-#[derive(AsExpression, Clone, Debug, FromSqlRow, PartialEq)]
+#[derive(AsExpression, Clone, Debug, FromSqlRow, PartialEq, Serialize)]
 #[sql_type = "LogLevel"]
 pub enum Level {
     Debug,

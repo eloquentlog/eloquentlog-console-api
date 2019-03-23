@@ -22,7 +22,6 @@ extern crate serde_derive;
 #[macro_use]
 extern crate diesel;
 
-mod db;
 mod response;
 mod request;
 mod validation;
@@ -34,20 +33,12 @@ mod route {
     pub mod top;
 }
 
+pub mod db;
 pub mod config;
 pub mod model;
 
-pub fn app(env_name: &str) -> rocket::Rocket {
-    let config_name = match env_name {
-        "test" => "testing",
-        _ => env_name,
-    };
-
-    let config = config::Config::from(config_name).unwrap();
-    let pool = db::init_pool(&config.database_url);
-
+pub fn app() -> rocket::Rocket {
     rocket::ignite()
-        .manage(pool)
         .mount("/", routes![route::top::index, route::auth::login,])
         .mount(
             "/api",
