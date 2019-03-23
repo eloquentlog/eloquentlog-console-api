@@ -11,36 +11,11 @@ use serde::Serialize;
 // use diesel::pg::Pg;
 // use diesel::debug_query;
 
-use model::level::LogLevel;
-use model::format::LogFormat;
-pub use model::level::Level;
-pub use model::format::Format;
+pub use model::level::{Level, LogLevel};
+pub use model::format::{Format, LogFormat};
+pub use schema::messages;
 
 use request::Message as RequestData;
-
-mod schema {
-    table! {
-        use diesel::sql_types::*;
-        use model::message::LogFormat;
-        use model::message::LogLevel;
-
-        messages (id) {
-            id -> BigInt,
-            code -> Nullable<Varchar>,
-            lang -> Varchar,
-            level -> LogLevel,
-            format -> LogFormat,
-            title -> Text,
-            content -> Nullable<Text>,
-            created_at -> Timestamp,
-            updated_at -> Timestamp,
-        }
-    }
-
-    allow_tables_to_appear_in_same_query!(messages,);
-}
-
-pub use self::schema::messages;
 
 /// NewMessage
 #[derive(Debug, Insertable)]

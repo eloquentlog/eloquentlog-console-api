@@ -25,6 +25,7 @@ extern crate diesel;
 mod response;
 mod request;
 mod validation;
+mod schema;
 
 mod route {
     pub mod auth;

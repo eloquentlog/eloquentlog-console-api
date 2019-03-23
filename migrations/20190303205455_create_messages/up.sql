@@ -13,11 +13,11 @@ CREATE SEQUENCE messages_id_seq
 
 CREATE TABLE messages (
   id BIGINT NOT NULL PRIMARY KEY DEFAULT nextval('messages_id_seq'),
-  code CHAR(128) NULL,
-  lang CHAR(8) NOT NULL DEFAULT 'en',
+  code CHARACTER VARYING(128) NULL,
+  lang CHARACTER VARYING(8) NOT NULL DEFAULT 'en',
   level log_level NOT NULL DEFAULT 'information',
   format log_format NOT NULL DEFAULT 'toml',
-  title VARCHAR(255) NOT NULL,
+  title CHARACTER VARYING(255) NOT NULL,
   content TEXT NULL,
   created_at TIMESTAMP WITHOUT TIME ZONE NOT NULL
     DEFAULT (now() AT TIME ZONE 'utc'),

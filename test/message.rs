@@ -52,7 +52,6 @@ fn test_get_recent_messages() {
 
         assert_eq!(res.status(), Status::Ok);
 
-        // TODO: fix lang type (bchar)
         assert_eq!(
             res.body_string().unwrap(),
             minify(format!(
@@ -63,7 +62,7 @@ fn test_get_recent_messages() {
   "created_at": "2019-08-07T06:05:04.333",
   "format": "TOML",
   "id": {},
-  "lang": "en      ",
+  "lang": "en",
   "level": "Information",
   "title": "title",
   "updated_at": "2019-08-07T06:05:04.333"
