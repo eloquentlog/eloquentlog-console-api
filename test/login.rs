@@ -11,7 +11,7 @@ fn test_login() {
             .body("{\"username\": \"u$ername\", \"password\": \"pa$$w0rd\"}");
         let mut res = req.dispatch();
 
-        assert_eq!(res.status(), Status::Ok);
-        assert!(res.body_string().unwrap().contains("Success"));
+        assert_eq!(res.status(), Status::Unauthorized);
+        assert_eq!("null", res.body_string().unwrap());
     })
 }
