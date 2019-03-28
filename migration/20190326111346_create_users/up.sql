@@ -18,7 +18,7 @@ CREATE TABLE users (
   name CHARACTER VARYING(64) NULL,
   username CHARACTER VARYING(32) NULL,
   email CHARACTER VARYING(128) UNIQUE NOT NULL,
-  password CHARACTER VARYING(255) NOT NULL,
+  password BYTEA NOT NULL,
   activation_state account_activation_state NOT NULL DEFAULT 'pending',
   access_token CHARACTER VARYING(128) NOT NULL,
   access_token_expires_at TIMESTAMP WITHOUT TIME ZONE NOT NULL,
