@@ -2,7 +2,7 @@ use rocket::http::Status;
 use rocket_contrib::json::Json;
 
 use db::DbConn;
-use model::message::{Format, Level, Message, NewMessage};
+use model::message::{LogFormat, LogLevel, Message, NewMessage};
 use response::Response;
 use request::Message as RequestData;
 use validation::message::Validator;
@@ -78,11 +78,12 @@ pub fn put(id: usize, data: Json<RequestData>, conn: DbConn) -> Response {
             let mut m = result.unwrap();
             m.code = data.code;
             m.lang = data.lang.unwrap_or_default();
-            m.level = Level::from(
+            m.level = LogLevel::from(
                 data.level.unwrap_or_else(|| "information".to_string()),
             );
-            m.format =
-                Format::from(data.format.unwrap_or_else(|| "toml".to_string()));
+            m.format = LogFormat::from(
+                data.format.unwrap_or_else(|| "toml".to_string()),
+            );
             m.title = data.title.unwrap_or_default();
             m.content = data.content;
 

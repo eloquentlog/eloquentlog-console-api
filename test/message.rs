@@ -34,8 +34,8 @@ fn test_get_recent_messages() {
             id: 1,
             code: None,
             lang: "en".to_string(),
-            level: message::Level::Information,
-            format: message::Format::TOML,
+            level: message::LogLevel::Information,
+            format: message::LogFormat::TOML,
             title: "title".to_string(),
             content: None,
             created_at: dt.naive_utc(),
@@ -121,8 +121,8 @@ fn test_put() {
         let m = message::NewMessage {
             code: None,
             lang: "en".to_string(),
-            level: message::Level::Information,
-            format: message::Format::TOML,
+            level: message::LogLevel::Information,
+            format: message::LogFormat::TOML,
             title: Some("title".to_string()),
             content: None,
         };

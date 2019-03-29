@@ -1,6 +1,6 @@
 // sql types
-mod level;
-mod format;
+mod log_level;
+mod log_format;
 mod user_activation_state;
 
 // models

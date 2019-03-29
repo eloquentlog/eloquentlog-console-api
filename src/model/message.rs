@@ -11,8 +11,8 @@ use serde::Serialize;
 // use diesel::pg::Pg;
 // use diesel::debug_query;
 
-pub use model::level::{Level, LogLevel};
-pub use model::format::{Format, LogFormat};
+pub use model::log_level::*;
+pub use model::log_format::*;
 pub use schema::messages;
 
 use request::Message as RequestData;
@@ -23,8 +23,8 @@ use request::Message as RequestData;
 pub struct NewMessage {
     pub code: Option<String>,
     pub lang: String,
-    pub level: Level,
-    pub format: Format,
+    pub level: LogLevel,
+    pub format: LogFormat,
     pub title: Option<String>,
     pub content: Option<String>,
 }
@@ -43,8 +43,8 @@ impl Default for NewMessage {
         Self {
             code: None,
             lang: "en".to_string(),
-            level: Level::Information,
-            format: Format::TOML,
+            level: LogLevel::Information,
+            format: LogFormat::TOML,
             title: None, // validation error
             content: None,
         }
@@ -56,10 +56,10 @@ impl From<RequestData> for NewMessage {
         Self {
             code: data.code,
             lang: data.lang.unwrap_or_else(|| "en".to_string()),
-            level: Level::from(
+            level: LogLevel::from(
                 data.level.unwrap_or_else(|| "information".to_string()),
             ),
-            format: Format::from(
+            format: LogFormat::from(
                 data.format.unwrap_or_else(|| "toml".to_string()),
             ),
             title: data.title,
@@ -83,8 +83,8 @@ pub struct Message {
     pub id: i64,
     pub code: Option<String>,
     pub lang: String,
-    pub level: Level,
-    pub format: Format,
+    pub level: LogLevel,
+    pub format: LogFormat,
     pub title: String,
     pub content: Option<String>,
     pub created_at: NaiveDateTime,
@@ -187,8 +187,8 @@ mod message_test {
             let m = NewMessage {
                 code: None,
                 lang: "en".to_string(),
-                level: Level::Information,
-                format: Format::TOML,
+                level: LogLevel::Information,
+                format: LogFormat::TOML,
                 title: Some("title".to_string()),
                 content: None,
             };
@@ -209,8 +209,8 @@ mod message_test {
             let m = NewMessage {
                 code: Some("200".to_string()),
                 lang: "en".to_string(),
-                level: Level::Information,
-                format: Format::TOML,
+                level: LogLevel::Information,
+                format: LogFormat::TOML,
                 title: Some("title".to_string()),
                 content: None,
             };
@@ -233,8 +233,8 @@ mod message_test {
                 id: inserted_id,
                 code: Some("200".to_string()),
                 lang: "en".to_string(),
-                level: Level::Information,
-                format: Format::TOML,
+                level: LogLevel::Information,
+                format: LogFormat::TOML,
                 title: "updated".to_string(),
                 content: Some("content".to_string()),
                 created_at: Utc::now().naive_utc(),

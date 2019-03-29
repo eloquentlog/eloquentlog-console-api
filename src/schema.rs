@@ -1,13 +1,13 @@
 table! {
     use diesel::sql_types::*;
-    use model::message::{LogFormat, LogLevel};
+    use model::message::{ELogFormat, ELogLevel};
 
     messages (id) {
         id -> Int8,
         code -> Nullable<Varchar>,
         lang -> Varchar,
-        level -> LogLevel,
-        format -> LogFormat,
+        level -> ELogLevel,
+        format -> ELogFormat,
         title -> Varchar,
         content -> Nullable<Text>,
         created_at -> Timestamp,
