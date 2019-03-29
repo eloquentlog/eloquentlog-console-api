@@ -17,7 +17,7 @@ table! {
 
 table! {
     use diesel::sql_types::*;
-    use model::user::AccountActivationState;
+    use model::user::EUserActivationState;
 
     users (id) {
         id -> Int8,
@@ -26,7 +26,7 @@ table! {
         username -> Nullable<Varchar>,
         email -> Varchar,
         password -> Bytea,
-        activation_state -> AccountActivationState,
+        activation_state -> EUserActivationState,
         access_token -> Varchar,
         access_token_expires_at -> Timestamp,
         reset_password_token -> Nullable<Varchar>,

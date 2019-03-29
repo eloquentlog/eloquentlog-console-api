@@ -1,7 +1,7 @@
 // sql types
 mod level;
 mod format;
-mod activation_state;
+mod user_activation_state;
 
 // models
 pub mod message;

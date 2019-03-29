@@ -1,7 +1,7 @@
 -- (AS SUPERUSER)
 -- CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
-CREATE TYPE account_activation_state AS ENUM ('pending', 'active');
+CREATE TYPE e_user_activation_state AS ENUM ('pending', 'active');
 
 -- equivalent to use of SERIAL or BIGSERIAL
 CREATE SEQUENCE users_id_seq
@@ -19,7 +19,7 @@ CREATE TABLE users (
   username CHARACTER VARYING(32) NULL,
   email CHARACTER VARYING(128) UNIQUE NOT NULL,
   password BYTEA NOT NULL,
-  activation_state account_activation_state NOT NULL DEFAULT 'pending',
+  activation_state e_user_activation_state NOT NULL DEFAULT 'pending',
   access_token CHARACTER VARYING(128) NOT NULL,
   access_token_expires_at TIMESTAMP WITHOUT TIME ZONE NOT NULL,
   reset_password_token CHARACTER VARYING(128) NULL,
@@ -33,9 +33,10 @@ CREATE TABLE users (
 
 ALTER SEQUENCE users_id_seq OWNED BY users.id;
 
-CREATE UNIQUE INDEX users_uuid ON users(uuid);
-CREATE UNIQUE INDEX users_email ON users(email);
 CREATE UNIQUE INDEX users_access_token ON users(access_token);
+CREATE UNIQUE INDEX users_email ON users(email);
 CREATE UNIQUE INDEX users_reset_password_token ON users(reset_password_token);
+CREATE UNIQUE INDEX users_uuid ON users(uuid);
+
 CREATE INDEX users_activation_state ON users(activation_state);
 CREATE INDEX users_username ON users(username);

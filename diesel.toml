@@ -6,4 +6,5 @@ import_types = [
   "diesel::sql_types::*",
   "eloquentlog_backend_api::model::message::LogLevel",
   "eloquentlog_backend_api::model::message::LogFormat",
+  "eloquentlog_backend_api::model::user::EUserActivationState",
 ]
