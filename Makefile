@@ -1,11 +1,21 @@
 MIGRATION_DIRECTORY := migration
 
 # setup -- {{{
-setup\:tool:  ## Setup development tool [alias: setup]
-	cargo install diesel_cli --no-default-features --features "postgres"
+setup\:vendor:  ## Install cargo vendor and run it [alias: setup]
+	@mkdir -p .cargo
+	@which cargo-vendor >/dev/null 2>&1 || cargo install \
+	  cargo-vendor --force
+	@cargo vendor > .cargo/vendor
+.PHONY: setup\:vendor
+
+setup\:tool:  ## Install development tools
+# for cargo-husky
+	@mkdir -p .git/hooks
+	@which diesel >/dev/null 2>&1 || cargo install \
+	  diesel_cli --no-default-features --features "postgres" --force
 .PHONY: setup\:tool
 
-setup: | setup\:tool
+setup: | setup\:vendor
 .PHONY: setup
 # }}}
 
@@ -86,13 +96,15 @@ build\:release:  ## Build release
 # }}}
 
 # watch -- {{{
-watch:  ## Start watch process for development [alias: serve]
+watch\:server:  ## Start watch process for development [alias: serve, watch]
 	@cargo watch --exec 'run' --delay 0.3 \
-	  --ignore .tool/\* \
-	  --ignore migration/\*
+	  --ignore '(\.tool|tmp|migration)/\*'
+.PHONY: watch\:server
+
+watch: | watch\:server
 .PHONY: watch
 
-serve: | watch
+serve: | watch\:server
 .PHONY: serve
 
 watch\:check:  ## Start watch process for check
