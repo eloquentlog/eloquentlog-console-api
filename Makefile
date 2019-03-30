@@ -1,3 +1,5 @@
+MIGRATION_DIRECTORY := migration
+
 # setup -- {{{
 setup\:tools:  ## Setup development tools
 	cargo install diesel_cli --no-default-features --features "postgres"
@@ -84,7 +86,7 @@ build\:release:  ## Build release
 watch:  ## Start watch process for development [alias: serve]
 	@cargo watch --exec 'run' --delay 0.3 \
 	  --ignore .tools/\* \
-	  --ignore migrations/\*
+	  --ignore migration/\*
 .PHONY: watch
 
 serve: | watch
@@ -118,6 +120,20 @@ watch\:test: | watch\:test\:all
 .PHONY: watch\:test
 # }}}
 
+# schema -- {{{
+schema\:migration\:status:  ## List migrations
+	@diesel migration list --migration-dir $(MIGRATION_DIRECTORY)
+.PHONY: schema\:migration\:status
+
+schema\:migration\:commit:  ## Run all migrations
+	@diesel migration run --migration-dir $(MIGRATION_DIRECTORY)
+.PHONY: schema\:migration\:commit
+
+schema\:migration\:revert:  ## Rollback a latest migration
+	@diesel migration revert --migration-dir $(MIGRATION_DIRECTORY)
+.PHONY: schema\:migration\:revert
+# }}}
+
 # other utilities -- {{{
 clean:  ## Tidy up
 	@rm --force --recursive vendor
@@ -130,7 +146,7 @@ help:  ## Display this message
 	  sed --expression='s/\(\s|\(\s[0-9a-z\:\\]*\)*\)  /  /' | \
 	  tr --delete \\\\ | \
 	  awk 'BEGIN {FS = ":  ## "}; \
-	      {printf "\033[38;05;222m%-22s\033[0m %s\n", $$1, $$2}' | \
+	      {printf "\033[38;05;222m%-23s\033[0m %s\n", $$1, $$2}' | \
 	  sort
 .PHONY: help
 # }}}

@@ -5,7 +5,7 @@ use rocket_contrib::json::Json;
 
 use validation::{required, max_if_present};
 use request::Message as RequestData;
-use model::message::{Format, Level, NewMessage};
+use model::message::{LogFormat, LogLevel, NewMessage};
 
 #[derive(Debug, Clone, Serialize)]
 pub struct ValidationError {
@@ -28,8 +28,8 @@ impl<'a> Validator<'a> {
         let result = rules! {
             "code" => m.code => [length_if_present(1, 32)],
             "lang" => m.lang => [either(vec!["en".to_string()])], // default: en
-            "level" => m.level => [either(Level::as_vec())],
-            "format" => m.format => [either(Format::as_vec())],
+            "level" => m.level => [either(LogLevel::as_vec())],
+            "format" => m.format => [either(LogFormat::as_vec())],
             "title" => m.title => [required(), max_if_present(255)],
             "content" => m.content => [length_if_present(0, 8000)]
         };

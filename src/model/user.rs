@@ -4,7 +4,7 @@ use chrono::NaiveDateTime;
 use diesel::{Identifiable, Insertable, prelude::*};
 use uuid::Uuid;
 
-pub use model::activation_state::{ActivationState, AccountActivationState};
+pub use model::user_activation_state::*;
 pub use schema::users;
 
 /// NewUser
@@ -29,7 +29,7 @@ pub struct User {
     pub username: Option<String>,
     pub email: String,
     pub password: Vec<u8>,
-    pub activation_state: ActivationState,
+    pub activation_state: UserActivationState,
     pub access_token: String,
     pub access_token_expires_at: NaiveDateTime,
     pub reset_password_token: Option<String>,

@@ -1,6 +1,6 @@
-CREATE TYPE log_level AS ENUM (
+CREATE TYPE e_log_level AS ENUM (
   'debug', 'information', 'warning', 'error', 'critical');
-CREATE TYPE log_format AS ENUM ('toml');
+CREATE TYPE e_log_format AS ENUM ('toml');
 
 -- equivalent to use of SERIAL or BIGSERIAL
 CREATE SEQUENCE messages_id_seq
@@ -15,8 +15,8 @@ CREATE TABLE messages (
   id BIGINT NOT NULL PRIMARY KEY DEFAULT nextval('messages_id_seq'),
   code CHARACTER VARYING(128) NULL,
   lang CHARACTER VARYING(8) NOT NULL DEFAULT 'en',
-  level log_level NOT NULL DEFAULT 'information',
-  format log_format NOT NULL DEFAULT 'toml',
+  level e_log_level NOT NULL DEFAULT 'information',
+  format e_log_format NOT NULL DEFAULT 'toml',
   title CHARACTER VARYING(255) NOT NULL,
   content TEXT NULL,
   created_at TIMESTAMP WITHOUT TIME ZONE NOT NULL
@@ -26,3 +26,5 @@ CREATE TABLE messages (
 );
 
 ALTER SEQUENCE messages_id_seq OWNED BY messages.id;
+
+CREATE INDEX messages_level ON messages(level);
