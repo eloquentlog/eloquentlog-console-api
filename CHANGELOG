@@ -1,3 +1,8 @@
+Sat 30 Mar 2019 Yasuhiro Яша Asaka <yasuhiro.asaka@grauwoelfchen.net>
+	* Rename {.tools,.tool}, {migrations,migration} and {tests,test}
+	* Update schema for users and messages (Fix enum types)
+	* Add user model
+
 Mon 18 Mar 2019 Yasuhiro Яша Asaka <yasuhiro.asaka@grauwoelfchen.net>
 	* Add message validator
 
