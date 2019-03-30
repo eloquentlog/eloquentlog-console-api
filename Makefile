@@ -1,7 +1,10 @@
 # setup -- {{{
-setup\:tools:  ## Setup development tools
+setup\:tool:  ## Setup development tool [alias: setup]
 	cargo install diesel_cli --no-default-features --features "postgres"
-.PHONY: setup\:tools
+.PHONY: setup\:tool
+
+setup: | setup\:tool
+.PHONY: setup
 # }}}
 
 # vet -- {{{
@@ -59,8 +62,8 @@ test: | test\:all
 # coverage -- {{{
 coverage:  ## Generate coverage report of unit tests only for lib using kcov [alias: cov]
 	@cargo test --lib --no-run
-	@./.tools/setup-kcov
-	./.tools/get-covered eloquentlog_backend_api
+	@./.tool/setup-kcov
+	./.tool/get-covered eloquentlog_backend_api
 .PHONY: coverage
 
 cov: | coverage
@@ -83,7 +86,7 @@ build\:release:  ## Build release
 # watch -- {{{
 watch:  ## Start watch process for development [alias: serve]
 	@cargo watch --exec 'run' --delay 0.3 \
-	  --ignore .tools/\* \
+	  --ignore .tool/\* \
 	  --ignore migrations/\*
 .PHONY: watch
 
