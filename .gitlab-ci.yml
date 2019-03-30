@@ -131,9 +131,8 @@ test:
     - mkdir -p .git/hooks
     - cargo install diesel_cli --no-default-features --features postgres
     - psql $TEST_DATABASE_URL -c "CREATE EXTENSION IF NOT EXISTS \"uuid-ossp\""
-    - make schema:migration:commit
-    - make schema:migration:status
-    - DATABASE_URL=$TEST_DATABASE_URL diesel migration run
+    - DATABASE_URL=$TEST_DATABASE_URL make schema:migration:commit
+    - DATABASE_URL=$TEST_DATABASE_URL make schema:migration:status
     - *vendor
   script:
     - KCOV_PATH=/usr/bin/kcov make coverage
