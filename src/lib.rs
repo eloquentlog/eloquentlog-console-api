@@ -5,6 +5,9 @@ extern crate accord;
 extern crate chrono;
 
 #[macro_use]
+extern crate diesel;
+
+#[macro_use]
 extern crate lazy_static;
 extern crate regex;
 
@@ -19,8 +22,7 @@ extern crate serde_json;
 #[macro_use]
 extern crate serde_derive;
 
-#[macro_use]
-extern crate diesel;
+extern crate uuid;
 
 mod response;
 mod request;
