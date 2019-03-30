@@ -12,7 +12,11 @@ stages:
       mkdir .postgresql;
       cp -R /usr/include/postgresql-11/ .postgresql/include;
       cp -R /usr/lib64/postgresql-11/ .postgresql/lib;
+      cp -R /usr/share/postgresql-11/ .postgresql/share;
+      cp -R /usr/bin/psql .postgresql/psql;
     else
+      cp -R .postgresql/psql /usr/bin/psql;
+      cp -R .postgresql/share/ /usr/share/postgresql-11;
       cp -R .postgresql/include/ /usr/include/postgresql-11;
       ln -s /usr/include/postgresql /usr/include/postgresql-11;
       ln -s /usr/include/libpq /usr/include/postgresql-11/libpq;
@@ -114,6 +118,7 @@ test:
     - postgres:11.2
   variables:
     ENV: test
+    # superuser
     POSTGRES_DB: eloquentlog_test
     POSTGRES_USER: eloquentlog
     POSTGRES_PASSWORD: eloquentlog
@@ -125,9 +130,10 @@ test:
     - kcov --version
     - mkdir -p .git/hooks
     - cargo install diesel_cli --no-default-features --features postgres
-    - psql -c "CREATE EXTENSION IF NOT EXISTS \"uuid-ossp\""
+    - psql $TEST_DATABASE_URL -c "CREATE EXTENSION IF NOT EXISTS \"uuid-ossp\""
     - make schema:migration:commit
     - make schema:migration:status
+    - DATABASE_URL=$TEST_DATABASE_URL diesel migration run
     - *vendor
   script:
     - KCOV_PATH=/usr/bin/kcov make coverage
