@@ -1,20 +1,10 @@
-use regex::Regex;
-
 use chrono::{Utc, TimeZone};
 use diesel::{self, prelude::*};
 use rocket::http::{ContentType, Status};
 
 use eloquentlog_backend_api::model::message;
 
-use run_test;
-
-/// Formats JSON text as one line
-fn minify(s: String) -> String {
-    lazy_static! {
-        static ref RE: Regex = Regex::new(r"\n\s{2}|\n|(:)\s").unwrap();
-    }
-    RE.replace_all(&s, "$1").to_string()
-}
+use {minify, run_test};
 
 #[test]
 fn test_get_no_message() {

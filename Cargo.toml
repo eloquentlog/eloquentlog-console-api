@@ -13,6 +13,7 @@ path = "test/test.rs"
 
 [dependencies]
 accord = { git = "https://github.com/ChrisBuchholz/accord.git", rev = "e56cecc" }
+bcrypt = "0.3"
 chrono = { version = "0.4.6", features = ["serde"] }
 diesel = { version = "1.4.2", features = ["chrono", "postgres", "r2d2"] }
 dotenv = "0.10"
