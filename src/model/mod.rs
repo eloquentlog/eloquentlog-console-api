@@ -1,3 +1,7 @@
+//! Model entities and SQL types.
+//!
+//! SQL types are imported publicly in each model entities.
+
 // sql types
 mod log_level;
 mod log_format;

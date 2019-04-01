@@ -34,6 +34,26 @@ impl Default for Message {
     }
 }
 
+/// User
+#[derive(Clone, Deserialize)]
+pub struct User {
+    pub name: Option<String>,
+    pub username: Option<String>,
+    pub email: String,
+    pub password: String,
+}
+
+impl Default for User {
+    fn default() -> Self {
+        Self {
+            name: None,
+            username: None,
+            email: "".to_string(),
+            password: "".to_string(),
+        }
+    }
+}
+
 /// UserLogin
 pub enum UserLoginError {
     Io(io::Error),

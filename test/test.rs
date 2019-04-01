@@ -14,9 +14,11 @@ extern crate eloquentlog_backend_api;
 mod login;
 mod message;
 mod error;
+mod user;
 mod top;
 
 use std::panic::{self, AssertUnwindSafe};
+use regex::Regex;
 
 use diesel::prelude::*;
 use diesel::PgConnection;
@@ -26,6 +28,14 @@ use rocket::local::Client;
 use eloquentlog_backend_api::app;
 use eloquentlog_backend_api::db::{DbConn, Pool, init_pool};
 use eloquentlog_backend_api::config::Config;
+
+/// Formats JSON text as one line
+pub fn minify(s: String) -> String {
+    lazy_static! {
+        static ref RE: Regex = Regex::new(r"\n\s{2}|\n|(:)\s").unwrap();
+    }
+    RE.replace_all(&s, "$1").to_string()
+}
 
 /// A test runner for integration tests
 pub fn run_test<T>(test: T)

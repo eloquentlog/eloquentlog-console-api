@@ -1,4 +1,5 @@
 pub mod message;
+pub mod user;
 
 use accord::{Invalid, ValidatorResult};
 use accord::validators::max as original_max;
