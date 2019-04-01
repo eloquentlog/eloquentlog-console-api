@@ -1,1 +1,2 @@
-web: ROCKET_PORT=$PORT ./target/release/eloquentlog_backend_api
+web: ROCKET_PORT=$PORT ./target/release/server
+worker: ./target/release/worker

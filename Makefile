@@ -96,16 +96,21 @@ build\:release:  ## Build release
 # }}}
 
 # watch -- {{{
-watch\:server:  ## Start watch process for development [alias: serve, watch]
-	@cargo watch --exec 'run' --delay 0.3 \
-	  --ignore '(\.tool|tmp|migration)/\*'
+watch\:server:  ## Start watch process for development server [alias: server]
+	@cargo watch --exec 'run --bin server' --delay 0.3 \
+	  --ignore '(\.tool|tmp|migration|src\/worker)/\*'
 .PHONY: watch\:server
 
-watch: | watch\:server
-.PHONY: watch
+server: | watch\:server
+.PHONY: server
 
-serve: | watch\:server
-.PHONY: serve
+watch\:worker:  ## Start watch process for development woker [alias: worker]
+	@cargo watch --exec 'run --bin worker' --delay 0.3 \
+	  --ignore '(\.tool|tmp|migration|src\/server)/\*'
+.PHONY: watch\:worker
+
+worker: | watch\:worker
+.PHONY: worker
 
 watch\:check:  ## Start watch process for check
 	@cargo watch --postpone --exec 'check --all --verbose'

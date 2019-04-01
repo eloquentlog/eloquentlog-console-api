@@ -3,6 +3,7 @@ use std::env;
 pub struct Config {
     pub database_url: String,
     pub env_name: &'static str,
+    pub queue_url: String,
 }
 
 impl Default for Config {
@@ -11,6 +12,7 @@ impl Default for Config {
             database_url: env::var("DATABASE_URL")
                 .expect("DATABASE_URL is not set"),
             env_name: &"undefined",
+            queue_url: env::var("QUEUE_URL").expect("QUEUE_URL is not set"),
         }
     }
 }
@@ -37,6 +39,8 @@ impl Config {
             database_url: env::var("TEST_DATABASE_URL")
                 .expect("TEST_DATABASE_URL is not set"),
             env_name: &"testing",
+            queue_url: env::var("TEST_QUEUE_URL")
+                .expect("TEST_QUEUE_URL is not set"),
         }
     }
 
@@ -50,36 +54,77 @@ impl Config {
 
 #[cfg(test)]
 mod config_test {
+    use std::collections::HashMap;
     use std::panic;
 
     use super::*;
 
-    fn with_database_url<T>(key: &'static str, test: T)
-    where T: FnOnce() -> () + panic::UnwindSafe {
-        let orig = env::var(key);
-        env::set_var(key, "postgresql://u$er:pa$$word@localhost:5432/dbname");
-        let result = panic::catch_unwind(test);
+    macro_rules! map(
+        { $($key:expr => $value:expr),+ } => {
+            {
+                let mut m = ::std::collections::HashMap::new();
+                $(
+                    m.insert($key, $value);
+                )+
+                m
+            }
+        };
+    );
 
-        match orig {
-            Ok(v) => env::set_var(key, v),
-            Err(_) => env::remove_var(key),
+    // TODO: set HashMap as an arg
+    fn with_env_vars<T>(keys: &'static str, test: T)
+    where T: FnOnce() -> () + panic::UnwindSafe {
+        lazy_static! {
+            static ref DEFAULTS: HashMap<&'static str, &'static str> = map! {
+                "DATABASE_URL" =>
+                    "postgresql://u$er:pa$$w0rd@localhost:5432/dbname",
+                "QUEUE_URL" => "redis://u$er:pa$$w0rd@localhost:6379/queue",
+
+                "TEST_DATABASE_URL" =>
+                    "postgresql://u$er:pa$$w0rd@localhost:5432/dbname",
+                "TEST_QUEUE_URL" => "redis://u$er:pa$$w0rd@localhost:6379/queue"
+            };
         }
 
+        let mut origins: HashMap<&str, Result<String, env::VarError>> =
+            HashMap::new();
+
+        let inputs: Vec<&str> = keys.split(',').collect();
+        for key in inputs {
+            origins.insert(key, env::var(key));
+
+            let var = DEFAULTS.get(key).unwrap();
+            env::set_var(key, var);
+        }
+
+        let result = panic::catch_unwind(test);
+
+        for (key, origin) in origins {
+            match origin {
+                Ok(v) => env::set_var(key, v),
+                Err(_) => env::remove_var(key),
+            }
+        }
         assert!(result.is_ok());
     }
 
     #[test]
     fn test_from() {
-        // without DATABASE_URL
+        // without any env vars
         let c = Config::from("unknown");
         assert!(c.is_err());
 
-        with_database_url("TEST_DATABASE_URL", || {
+        // with TEST_ prefix
+        with_env_vars("TEST_DATABASE_URL,TEST_QUEUE_URL", || {
+            let c = Config::from("unknown");
+            assert!(c.is_err());
+
             let c = Config::from("testing");
             assert_eq!(c.unwrap().env_name, "testing");
         });
 
-        with_database_url("DATABASE_URL", || {
+        // production or development
+        with_env_vars("DATABASE_URL,QUEUE_URL", || {
             let c = Config::from("unknown");
             assert!(c.is_err());
 

@@ -25,7 +25,7 @@ use diesel::PgConnection;
 use parking_lot::Mutex;
 use rocket::local::Client;
 
-use eloquentlog_backend_api::app;
+use eloquentlog_backend_api::server;
 use eloquentlog_backend_api::db::{DbConn, Pool, init_pool};
 use eloquentlog_backend_api::config::Config;
 
@@ -43,7 +43,7 @@ where T: FnOnce(Client, &PgConnection) -> () + panic::UnwindSafe {
     // NOTE:
     // For now, run tests sequencially :'(
     // The usage of transactions for the same connection between tests and
-    // client (app) might fix this issue, but we use connection pool.
+    // client (server) might fix this issue, but we use connection pool.
     // Find another way.
     lazy_static! {
         static ref DB_LOCK: Mutex<()> = Mutex::new(());
@@ -58,7 +58,7 @@ where T: FnOnce(Client, &PgConnection) -> () + panic::UnwindSafe {
     setup(&conn);
 
     let result = panic::catch_unwind(AssertUnwindSafe(|| {
-        let client = Client::new(app().manage(connection_pool)).unwrap();
+        let client = Client::new(server().manage(connection_pool)).unwrap();
 
         test(client, &conn)
     }));

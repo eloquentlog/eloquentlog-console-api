@@ -1,10 +1,11 @@
-extern crate eloquentlog_backend_api;
 extern crate dotenv;
+
+extern crate eloquentlog_backend_api;
 
 use std::env;
 use dotenv::dotenv;
 
-use eloquentlog_backend_api::{app, db, config};
+use eloquentlog_backend_api::{server, db, config};
 
 fn get_env() -> String {
     match env::var("ENV") {
@@ -24,5 +25,5 @@ fn main() {
     // database
     let connection_pool = db::init_pool(&config.database_url);
 
-    app().manage(connection_pool).launch();
+    server().manage(connection_pool).launch();
 }
