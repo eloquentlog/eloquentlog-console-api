@@ -27,8 +27,8 @@ https://gitlab.com/eloquentlog/eloquentlog-backend-api
 Requirements
 ------------
 
-* Rust
 * PostgreSQL
+* Redis
 
 
 Setup
@@ -44,7 +44,7 @@ Setup
     % psql -U postgres eloquent_test \
         -c 'CREATE EXTENSION IF NOT EXISTS "uuid-ossp";'
 
-    % diesel migration run
+    % make schema:migration:commit
 
 
 Build
@@ -74,8 +74,8 @@ Use cargo-watch_
 
 .. code:: zsh
 
-    # cargo watch -x 'run' -d 0.3
-    % make watch
+    % make watch:server
+    % make watch:worker
 
 
 Testing

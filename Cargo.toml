@@ -1,4 +1,5 @@
 [package]
+autobins = false
 name = "eloquentlog-backend-api"
 version = "0.0.1"
 authors = ["Yasuhiro Яша Asaka <yasuhiro.asaka@grauwoelfchen.net>"]
@@ -6,6 +7,14 @@ description = "A backend api server for Eloquentlog."
 repository = "https://gitlab.com/eloquentlog/eloquentlog-backend-api"
 keywords = []
 license = "AGPL-3.0-or-later"
+
+[[bin]]
+name = "server"
+path = "src/bin/server.rs"
+
+[[bin]]
+name = "worker"
+path = "src/bin/worker.rs"
 
 [[test]]
 name = "integration"
@@ -18,7 +27,9 @@ chrono = { version = "0.4.6", features = ["serde"] }
 diesel = { version = "1.4.2", features = ["chrono", "postgres", "r2d2"] }
 dotenv = "0.10"
 lazy_static = "1.0"
+oppgave = { git = "https://github.com/badboy/oppgave.git", rev = "3128dc6" }
 parking_lot = "0.7.1"
+redis = "0.9.0"
 regex = "0.2"
 rocket = "0.4.0"
 rocket_codegen = "*"

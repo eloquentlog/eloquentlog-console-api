@@ -1,3 +1,6 @@
+Mon 01 Apr 2019 Yasuhiro Яша Asaka <yasuhiro.asaka@grauwoelfchen.net>
+	* Add asynchronous worker
+
 Sat 30 Mar 2019 Yasuhiro Яша Asaka <yasuhiro.asaka@grauwoelfchen.net>
 	* Rename {.tools,.tool}, {migrations,migration} and {tests,test}
 	* Update schema for users and messages (Fix enum types)

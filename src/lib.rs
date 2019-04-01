@@ -14,6 +14,8 @@ extern crate diesel;
 
 #[macro_use]
 extern crate lazy_static;
+extern crate oppgave;
+extern crate redis;
 extern crate regex;
 
 #[macro_use]
@@ -36,11 +38,12 @@ mod validation;
 mod route;
 mod schema;
 
-pub mod db;
 pub mod config;
+pub mod db;
+pub mod job;
 pub mod model;
 
-pub fn app() -> rocket::Rocket {
+pub fn server() -> rocket::Rocket {
     rocket::ignite()
         .mount(
             "/",
