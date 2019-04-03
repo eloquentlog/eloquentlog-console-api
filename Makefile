@@ -1,3 +1,8 @@
+VAR_DATABASE_URL := $(if $(ENV),"$$$(shell echo "$(ENV)" | \
+	tr '[:lower:]' '[:upper:]')_DATABASE_URL","$$DATABASE_URL")
+
+ENV := development
+
 MIGRATION_DIRECTORY := migration
 
 # setup -- {{{
@@ -142,15 +147,30 @@ watch\:test: | watch\:test\:all
 
 # schema -- {{{
 schema\:migration\:status:  ## List migrations
-	@diesel migration list --migration-dir $(MIGRATION_DIRECTORY)
+	@if [ -f "$$(pwd)/.env" ]; then \
+	  source $$(pwd)/.env && \
+		export $$(cut -d= -f1 $$(pwd)/.env | grep -vE "^(#|$$)"); \
+	fi; \
+	export DATABASE_URL="$(VAR_DATABASE_URL)"; \
+	diesel migration list --migration-dir $(MIGRATION_DIRECTORY)
 .PHONY: schema\:migration\:status
 
 schema\:migration\:commit:  ## Run all migrations
-	@diesel migration run --migration-dir $(MIGRATION_DIRECTORY)
+	@if [ -f "$$(pwd)/.env" ]; then \
+	  source $$(pwd)/.env && \
+		export $$(cut -d= -f1 $$(pwd)/.env | grep -vE "^(#|$$)"); \
+	fi; \
+	export DATABASE_URL="$(VAR_DATABASE_URL)"; \
+	diesel migration run --migration-dir $(MIGRATION_DIRECTORY)
 .PHONY: schema\:migration\:commit
 
 schema\:migration\:revert:  ## Rollback a latest migration
-	@diesel migration revert --migration-dir $(MIGRATION_DIRECTORY)
+	@if [ -f "$$(pwd)/.env" ]; then \
+	  source $$(pwd)/.env && \
+		export $$(cut -d= -f1 $$(pwd)/.env | grep -vE "^(#|$$)"); \
+	fi; \
+	export DATABASE_URL="$(VAR_DATABASE_URL)"; \
+	diesel migration revert --migration-dir $(MIGRATION_DIRECTORY)
 .PHONY: schema\:migration\:revert
 # }}}
 

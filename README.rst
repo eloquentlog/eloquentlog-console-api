@@ -83,6 +83,8 @@ Testing
 
 .. code:: zsh
 
+    % ENV=test make schema:migration:commit
+
     % make test
 
 
