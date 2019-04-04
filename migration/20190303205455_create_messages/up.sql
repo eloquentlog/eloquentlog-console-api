@@ -27,4 +27,4 @@ CREATE TABLE messages (
 
 ALTER SEQUENCE messages_id_seq OWNED BY messages.id;
 
-CREATE INDEX messages_level ON messages(level);
+CREATE INDEX messages_level_idx ON messages(level);

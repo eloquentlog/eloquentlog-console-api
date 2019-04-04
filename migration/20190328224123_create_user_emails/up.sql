@@ -26,9 +26,9 @@ CREATE TABLE user_emails (
 
 ALTER SEQUENCE user_emails_id_seq OWNED BY user_emails.id;
 
-CREATE UNIQUE INDEX user_emails_email ON user_emails(email);
+CREATE UNIQUE INDEX user_emails_email_idx ON user_emails(email);
 
-CREATE INDEX user_emails_activation_state ON user_emails(activation_state);
-CREATE INDEX user_emails_activation_token ON user_emails(activation_token);
-CREATE INDEX user_emails_type ON user_emails(type);
-CREATE INDEX user_emails_user_id ON user_emails(user_id);
+CREATE INDEX user_emails_activation_state_idx ON user_emails(activation_state);
+CREATE INDEX user_emails_activation_token_idx ON user_emails(activation_token);
+CREATE INDEX user_emails_type_idx ON user_emails(type);
+CREATE INDEX user_emails_user_id_idx ON user_emails(user_id);
