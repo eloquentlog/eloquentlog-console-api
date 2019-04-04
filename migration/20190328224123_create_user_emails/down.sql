@@ -1,9 +1,9 @@
-DROP INDEX user_emails_user_id;
-DROP INDEX user_emails_type;
-DROP INDEX user_emails_activation_token;
-DROP INDEX user_emails_activation_state;
+DROP INDEX IF EXISTS user_emails_user_id_idx;
+DROP INDEX IF EXISTS user_emails_type_idx;
+DROP INDEX IF EXISTS user_emails_activation_token_idx;
+DROP INDEX IF EXISTS user_emails_activation_state_idx;
 
-DROP INDEX user_emails_email;
+DROP INDEX IF EXISTS user_emails_email_idx;
 
 DROP TABLE IF EXISTS user_emails;
 DROP SEQUENCE IF EXISTS user_emails_id_seq;

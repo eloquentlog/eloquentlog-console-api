@@ -1,4 +1,4 @@
-DROP INDEX messages_level;
+DROP INDEX IF EXISTS messages_level_idx;
 
 DROP TABLE IF EXISTS messages;
 DROP SEQUENCE IF EXISTS messages_id_seq;

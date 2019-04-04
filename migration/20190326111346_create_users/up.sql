@@ -33,10 +33,10 @@ CREATE TABLE users (
 
 ALTER SEQUENCE users_id_seq OWNED BY users.id;
 
-CREATE UNIQUE INDEX users_access_token ON users(access_token);
-CREATE UNIQUE INDEX users_email ON users(email);
-CREATE UNIQUE INDEX users_reset_password_token ON users(reset_password_token);
-CREATE UNIQUE INDEX users_uuid ON users(uuid);
+CREATE UNIQUE INDEX users_access_token_idx ON users(access_token);
+CREATE UNIQUE INDEX users_email_idx ON users(email);
+CREATE UNIQUE INDEX users_reset_password_token_idx ON users(reset_password_token);
+CREATE UNIQUE INDEX users_uuid_idx ON users(uuid);
 
-CREATE INDEX users_activation_state ON users(activation_state);
-CREATE INDEX users_username ON users(username);
+CREATE INDEX users_activation_state_idx ON users(activation_state);
+CREATE INDEX users_username_idx ON users(username);
