@@ -6,12 +6,12 @@ use run_test;
 fn test_login() {
     run_test(|client, _| {
         let req = client
-            .post("/login")
+            .post("/_api/login")
             .header(ContentType::JSON)
             .body("{\"username\": \"u$ername\", \"password\": \"pa$$w0rd\"}");
         let mut res = req.dispatch();
 
         assert_eq!(res.status(), Status::Unauthorized);
         assert_eq!("null", res.body_string().unwrap());
-    })
+    });
 }

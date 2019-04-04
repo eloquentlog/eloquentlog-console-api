@@ -11,10 +11,10 @@ extern crate rocket;
 
 extern crate eloquentlog_backend_api;
 
-mod login;
+mod authentication;
 mod message;
 mod error;
-mod user;
+mod registration;
 mod top;
 
 use std::panic::{self, AssertUnwindSafe};

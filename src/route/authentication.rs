@@ -26,3 +26,10 @@ pub fn login(conn: DbConn, data: Json<RequestData>) -> Response {
         None => res.status(Status::Unauthorized),
     }
 }
+
+#[post("/logout", format = "json")]
+pub fn logout(_conn: DbConn) -> Response {
+    // TODO
+    let res: Response = Default::default();
+    res.status(Status::UnprocessableEntity)
+}

@@ -9,11 +9,11 @@ use {minify, run_test};
 #[test]
 fn test_get_no_message() {
     run_test(|client, _| {
-        let mut res = client.get("/api/messages").dispatch();
+        let mut res = client.get("/_api/messages").dispatch();
 
         assert_eq!(res.status(), Status::Ok);
         assert!(res.body_string().unwrap().contains("[]"));
-    })
+    });
 }
 
 #[test]
@@ -38,7 +38,7 @@ fn test_get_recent_messages() {
             .get_result::<i64>(conn)
             .unwrap_or_else(|_| panic!("Error inserting: {}", m));
 
-        let mut res = client.get("/api/messages").dispatch();
+        let mut res = client.get("/_api/messages").dispatch();
 
         assert_eq!(res.status(), Status::Ok);
 
@@ -61,14 +61,14 @@ fn test_get_recent_messages() {
                 id
             ))
         );
-    })
+    });
 }
 
 #[test]
 fn test_post_with_validation_errors() {
     run_test(|client, _| {
         let mut res = client
-            .post("/api/messages")
+            .post("/_api/messages")
             .header(ContentType::JSON)
             .body(
                 r#"{
@@ -81,14 +81,14 @@ fn test_post_with_validation_errors() {
 
         assert_eq!(res.status(), Status::UnprocessableEntity);
         assert!(res.body_string().unwrap().contains("errors"));
-    })
+    });
 }
 
 #[test]
 fn test_post() {
     run_test(|client, _| {
         let mut res = client
-            .post("/api/messages")
+            .post("/_api/messages")
             .header(ContentType::JSON)
             .body(
                 r#"{
@@ -102,7 +102,7 @@ fn test_post() {
 
         assert_eq!(res.status(), Status::Ok);
         assert!(res.body_string().unwrap().contains("id"));
-    })
+    });
 }
 
 #[test]
@@ -124,7 +124,7 @@ fn test_put() {
             .unwrap_or_else(|_| panic!("Error inserting: {}", m));
 
         let mut res = client
-            .put(format!("/api/messages/{}", id))
+            .put(format!("/_api/messages/{}", id))
             .header(ContentType::JSON)
             .body(format!(
                 r#"{{
@@ -148,5 +148,5 @@ fn test_put() {
             .body_string()
             .unwrap()
             .contains(&format!("\"id\":{}", id)));
-    })
+    });
 }

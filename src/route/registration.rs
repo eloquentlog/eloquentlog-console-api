@@ -7,7 +7,7 @@ use response::Response;
 use request::User as RequestData;
 use validation::user::Validator;
 
-#[post("/signup", format = "json", data = "<data>")]
+#[post("/register", format = "json", data = "<data>")]
 pub fn register(data: Json<RequestData>, conn: DbConn) -> Response {
     let res: Response = Default::default();
 
@@ -29,4 +29,11 @@ pub fn register(data: Json<RequestData>, conn: DbConn) -> Response {
             res.status(Status::InternalServerError)
         },
     }
+}
+
+#[post("/deregister", format = "json")]
+pub fn deregister(_conn: DbConn) -> Response {
+    // TODO
+    let res: Response = Default::default();
+    res.status(Status::UnprocessableEntity)
 }

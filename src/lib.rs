@@ -45,17 +45,14 @@ pub mod model;
 
 pub fn server() -> rocket::Rocket {
     rocket::ignite()
+        .mount("/", routes![route::top::index])
         .mount(
-            "/",
+            "/_api",
             routes![
-                route::top::index,
-                route::auth::login,
-                route::user::register,
-            ],
-        )
-        .mount(
-            "/api",
-            routes![
+                route::authentication::login,
+                route::authentication::logout,
+                route::registration::register,
+                route::registration::deregister,
                 route::message::get,
                 route::message::post,
                 route::message::put,
