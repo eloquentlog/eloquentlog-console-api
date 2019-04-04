@@ -3,10 +3,10 @@ use rocket::http::{ContentType, Status};
 use run_test;
 
 #[test]
-fn test_signup_failure() {
+fn test_register() {
     run_test(|client, _| {
         let res = client
-            .post("/signup")
+            .post("/_api/register")
             .header(ContentType::JSON)
             .body(
                 r#"{
@@ -18,5 +18,5 @@ fn test_signup_failure() {
 
         // TODO
         assert_eq!(res.status(), Status::InternalServerError);
-    })
+    });
 }

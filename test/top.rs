@@ -8,5 +8,5 @@ fn test_index() {
         let mut res = client.get("/").dispatch();
         assert_eq!(res.status(), Status::Ok);
         assert!(res.body_string().unwrap().contains("Eloquentlog"));
-    })
+    });
 }
