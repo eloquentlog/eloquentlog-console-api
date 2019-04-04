@@ -39,11 +39,7 @@ Setup
     # set env variables for {production|testing|development}
     % cp .env.sample .env
 
-    % psql -U postgres eloquent_development \
-        -c 'CREATE EXTENSION IF NOT EXISTS "uuid-ossp";'
-    % psql -U postgres eloquent_test \
-        -c 'CREATE EXTENSION IF NOT EXISTS "uuid-ossp";'
-
+    # give SUPERUSER to migration user for `CREATE EXTENSION`
     % make schema:migration:commit
 
 
