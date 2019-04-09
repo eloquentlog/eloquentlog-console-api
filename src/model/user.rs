@@ -2,9 +2,13 @@ use std::fmt;
 use std::str;
 
 use bcrypt::{hash, verify};
-use chrono::NaiveDateTime;
+use chrono::{NaiveDateTime, Utc};
 use diesel::{Identifiable, Insertable, prelude::*};
+use diesel::pg::PgConnection;
 use uuid::Uuid;
+
+// use diesel::pg::Pg;
+// use diesel::debug_query;
 
 pub use model::user_activation_state::*;
 pub use schema::users;
@@ -22,6 +26,8 @@ pub struct NewUser {
     pub email: String,
     pub password: Vec<u8>,
     pub activation_state: UserActivationState,
+    pub access_token: String,
+    pub access_token_expires_at: NaiveDateTime,
 }
 
 impl fmt::Display for NewUser {
@@ -38,6 +44,10 @@ impl Default for NewUser {
             email: "".to_string(), // validation error
             password: vec![],      // validation error
             activation_state: UserActivationState::Pending,
+
+            // TODO
+            access_token: "".to_string(),
+            access_token_expires_at: Utc::now().naive_utc(),
         }
     }
 }
@@ -56,7 +66,7 @@ impl From<RequestData> for NewUser {
 
 impl NewUser {
     /// Returns encrypted password hash as bytes using bcrypt.
-    pub fn encrypt_password(password: &str) -> Option<Vec<u8>> {
+    fn encrypt_password(password: &str) -> Option<Vec<u8>> {
         match hash(password, BCRYPT_COST) {
             Ok(v) => Some(v.into_bytes()),
             Err(e) => {
@@ -64,6 +74,11 @@ impl NewUser {
                 None
             },
         }
+    }
+
+    pub fn generate_access_token() -> String {
+        // TODO
+        "test".to_string()
     }
 
     // NOTE:
@@ -108,9 +123,34 @@ impl User {
         None
     }
 
-    pub fn insert(_user: &NewUser, _conn: &PgConnection) -> Option<i64> {
+    /// Save a new user into users.
+    pub fn insert(user: &NewUser, conn: &PgConnection) -> Option<i64> {
         // TODO
-        None
+        // * set valid access_token
+        // * update access_token_expires_at
+        let q = diesel::insert_into(users::table)
+            .values((
+                Some(users::name.eq(&user.name)),
+                Some(users::username.eq(&user.username)),
+                users::email.eq(&user.email),
+                users::password.eq(&user.password),
+                users::activation_state.eq(UserActivationState::Pending),
+                users::access_token.eq(NewUser::generate_access_token()),
+                users::access_token_expires_at.eq(Utc::now().naive_utc()),
+            ))
+            .returning(users::id);
+
+        // TODO
+        // let sql = debug_query::<Pg, _>(&q).to_string();
+        // println!("sql: {}", sql);
+
+        match q.get_result::<i64>(conn) {
+            Err(e) => {
+                println!("err: {}", e);
+                None
+            },
+            Ok(id) => Some(id),
+        }
     }
 
     pub fn verify_password(&self, password: &str) -> bool {

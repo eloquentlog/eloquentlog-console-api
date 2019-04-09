@@ -1,6 +1,6 @@
 use std::result::Result;
 
-use accord::validators::{length_if_present, max};
+use accord::validators::{length_if_present, max, min};
 use rocket_contrib::json::Json;
 
 use validation::max_if_present;
@@ -29,8 +29,9 @@ impl<'a> Validator<'a> {
             "name" => u.name => [max_if_present(64)],
             "username" => u.username => [length_if_present(3, 32)],
             "email" => u.email => [max(255)],
-            "password" => self.data.0.password => [max(255)]
+            "password" => self.data.0.password => [min(8), max(255)]
         };
+        // TODO: check uniqueness
         if let Err(v) = result {
             // MultipleError to Vec<ValidationError>
             let errors =

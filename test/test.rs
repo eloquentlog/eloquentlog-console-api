@@ -68,29 +68,33 @@ where T: FnOnce(Client, &PgConnection) -> () + panic::UnwindSafe {
 }
 
 fn setup(conn: &PgConnection) {
-    truncate_messages(conn);
+    truncate_tables(conn);
 }
 
 fn teardown(conn: &PgConnection) {
-    truncate_messages(conn);
+    truncate_tables(conn);
 }
 
-pub fn truncate_messages(conn: &PgConnection) {
+pub fn truncate_tables(conn: &PgConnection) {
     let _: std::result::Result<(), diesel::result::Error> = conn
         .build_transaction()
         .serializable()
         .deferrable()
         .read_write()
         .run(|| {
-            let _ = diesel::sql_query("TRUNCATE TABLE messages;")
-                .execute(conn)
-                .expect("Failed to truncate");
+            // TODO: back to TRUNCATE with ALTER TABLE for REFERENCES
+            for table in ["messages", "user_emails", "users"].iter() {
+                let _ = diesel::sql_query(format!("DELETE FROM {};", table))
+                    .execute(conn)
+                    .expect("Failed to delete");
 
-            let _ = diesel::sql_query(
-                "ALTER SEQUENCE messages_id_seq RESTART WITH 1;",
-            )
-            .execute(conn)
-            .expect("Failed to reset sequence");
+                let _ = diesel::sql_query(format!(
+                    "ALTER SEQUENCE {}_id_seq RESTART WITH 1;",
+                    table
+                ))
+                .execute(conn)
+                .expect("Failed to reset sequence");
+            }
             Ok(())
         });
 }
