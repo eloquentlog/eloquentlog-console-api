@@ -10,7 +10,7 @@ setup\:vendor:  ## Install cargo vendor and run it [alias: setup]
 	@mkdir -p .cargo
 	@which cargo-vendor >/dev/null 2>&1 || cargo install \
 	  cargo-vendor --force
-	@cargo vendor > .cargo/vendor
+	@cargo vendor > .cargo/config
 .PHONY: setup\:vendor
 
 setup\:tool:  ## Install development tools
