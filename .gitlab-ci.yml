@@ -1,6 +1,6 @@
 stages:
   - setup
-  - vet
+  - verify
   - test
   - build
 
@@ -75,26 +75,26 @@ setup-checksum:
       --form "value=${VALUE}"
 
 check:
-  stage: vet
+  stage: verify
   <<: *vet-tools
   before_script:
     - rustc --version
     - cargo --version
   script:
-    - make vet:check
+    - make verify:check
 
 format:
-  stage: vet
+  stage: verify
   <<: *vet-tools
   before_script:
     - rustc --version
     - cargo --version
     - cargo fmt --version
   script:
-    - make vet:format
+    - make verify:format
 
 lint:
-  stage: vet
+  stage: verify
   <<: *vet-tools
   before_script:
     - *postgresql
@@ -103,7 +103,7 @@ lint:
     - cargo clippy --version
     - *vendor
   script:
-    - make vet:lint
+    - make verify:lint
   <<: *cache
 
 test:

@@ -24,39 +24,39 @@ setup: | setup\:vendor
 .PHONY: setup
 # }}}
 
-# vet -- {{{
-vet\:check:  ## Check rust syntax [alias: check]
+# verify -- {{{
+verify\:check:  ## Check rust syntax [alias: check]
 	@cargo check --all --verbose
-.PHONY: vet\:check
+.PHONY: verify\:check
 
-check: | vet\:check
+check: | verify\:check
 .PHONY: check
 
-vet\:format:  ## Check format without changes [alias: vet:fmt, format, fmt]
+verify\:format:  ## Check format without changes [alias: verify:fmt, format, fmt]
 	@cargo fmt --all -- --check
-.PHONY: vet\:format
+.PHONY: verify\:format
 
-vet\:fmt: | vet\:format
-.PHONY: vet\:fmt
+verify\:fmt: | verify\:format
+.PHONY: verify\:fmt
 
-format: | vet\:format
+format: | verify\:format
 .PHONY: format
 
-fmt: | vet\:format
+fmt: | verify\:format
 .PHONY: fmt
 
-vet\:lint:  ## Check style using clippy [alias: lint]
+verify\:lint:  ## Check style using clippy [alias: lint]
 	@cargo clippy --all-targets
-.PHONY: vet\:lint
+.PHONY: verify\:lint
 
-lint: | vet\:lint
+lint: | verify\:lint
 .PHONY: lint
 
-vet\:all: | vet\:check vet\:format vet\:lint  ## Check code using all vet:xxx targets [alias: vet]
-.PHONY: vet\:all
+verify\:all: | verify\:check verify\:format verify\:lint  ## Check code using all verify:xxx targets [alias: verify]
+.PHONY: verify\:all
 
-vet: | vet\:all
-.PHONY: vet
+verify: | verify\:all
+.PHONY: verify
 # }}}
 
 # test -- {{{

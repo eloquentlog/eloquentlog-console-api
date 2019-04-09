@@ -61,7 +61,7 @@ Vet
 .. code:: zsh
 
     # see make help about details
-    % make vet
+    % make verify
 
 Run
 ~~~
