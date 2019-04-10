@@ -55,7 +55,7 @@ impl<'a> Validator<'a> {
 }
 
 #[cfg(test)]
-mod message_test {
+mod test {
     use super::*;
 
     use rocket_contrib::json::Json;
