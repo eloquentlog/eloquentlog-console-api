@@ -157,3 +157,31 @@ impl User {
         verify(password, &str::from_utf8(&self.password).unwrap()).unwrap()
     }
 }
+
+#[cfg(test)]
+mod user_test {
+    use model::test::run;
+    use super::*;
+
+    #[test]
+    fn test_insert() {
+        run(|conn| {
+            let mut u = NewUser {
+                name: None,
+                username: None,
+                email: "foo@example.org".to_string(),
+
+                ..Default::default()
+            };
+            u.set_password("password");
+            let result = User::insert(&u, conn);
+            assert!(result.is_some());
+
+            let rows_count: i64 = users::table
+                .count()
+                .first(conn)
+                .expect("Failed to count rows");
+            assert_eq!(1, rows_count);
+        })
+    }
+}

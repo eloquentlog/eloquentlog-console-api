@@ -68,14 +68,14 @@ where T: FnOnce(Client, &PgConnection) -> () + panic::UnwindSafe {
 }
 
 fn setup(conn: &PgConnection) {
-    truncate_tables(conn);
+    clean(conn);
 }
 
 fn teardown(conn: &PgConnection) {
-    truncate_tables(conn);
+    clean(conn);
 }
 
-pub fn truncate_tables(conn: &PgConnection) {
+fn clean(conn: &PgConnection) {
     let _: std::result::Result<(), diesel::result::Error> = conn
         .build_transaction()
         .serializable()

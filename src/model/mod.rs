@@ -25,11 +25,8 @@ mod test {
     where T: FnOnce(&PgConnection) -> () + panic::UnwindSafe {
         let conn = establish_connection();
 
-        let _: std::result::Result<(), diesel::result::Error> = conn
-            .build_transaction()
-            .serializable()
-            .read_write()
-            .run(|| {
+        let _: std::result::Result<(), diesel::result::Error> =
+            conn.build_transaction().read_write().run(|| {
                 setup(&conn);
 
                 let result =
@@ -43,22 +40,27 @@ mod test {
     }
 
     fn setup(conn: &PgConnection) {
-        truncate_messages(conn);
+        clean(conn);
     }
 
     fn teardown(conn: &PgConnection) {
-        truncate_messages(conn);
+        clean(conn);
     }
 
-    pub fn truncate_messages(conn: &PgConnection) {
-        let _ = diesel::sql_query("TRUNCATE TABLE messages;")
-            .execute(conn)
-            .expect("Failed to truncate");
-
-        let _ =
-            diesel::sql_query("ALTER SEQUENCE messages_id_seq RESTART WITH 1;")
+    pub fn clean(conn: &PgConnection) {
+        // TODO: back to TRUNCATE with ALTER TABLE for REFERENCES
+        for table in ["messages", "user_emails", "users"].iter() {
+            let _ = diesel::sql_query(format!("DELETE FROM {};", table))
                 .execute(conn)
-                .expect("Failed to reset sequence");
+                .expect("Failed to delete");
+
+            let _ = diesel::sql_query(format!(
+                "ALTER SEQUENCE {}_id_seq RESTART WITH 1;",
+                table
+            ))
+            .execute(conn)
+            .expect("Failed to reset sequence");
+        }
     }
 
     pub fn establish_connection() -> PgConnection {
