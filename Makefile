@@ -88,7 +88,7 @@ cov: | coverage
 # }}}
 
 # build -- {{{
-build\:debug:  ## build debug [alias: debug]
+build\:debug:  ## build debug [alias: build]
 	cargo build
 .PHONY: build\:debug
 
