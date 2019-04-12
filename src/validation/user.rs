@@ -3,7 +3,7 @@ use std::result::Result;
 use accord::validators::{contains, length, length_if_present, max, min};
 use rocket_contrib::json::Json;
 
-use validation::max_if_present;
+use validation::{max_if_present, not_contain_if_given};
 use request::User as RequestData;
 use model::user::NewUser;
 
@@ -30,11 +30,15 @@ impl<'a> Validator<'a> {
         // * username format
         // * uniqueness (email, username)
         // * password format
+        // * don't include input in validation message (not_contain_if_given)
         let result = rules! {
             "name" => u.name => [max_if_present(64)],
             "username" => u.username => [length_if_present(3, 32)],
             "email" => u.email => [contains("@"), contains("."), length(6, 128)],
-            "password" => self.data.0.password => [min(8), max(255)]
+            "password" => self.data.0.password => [
+                min(8),
+                max(1024),
+                not_contain_if_given(u.username)]
         };
         if let Err(v) = result {
             // MultipleError to Vec<ValidationError>
@@ -317,6 +321,125 @@ mod test {
                 vec!["Must contain less than 32 characters"],
                 errors[0].messages
             );
+        } else {
+            panic!("must fail");
+        }
+    }
+
+    #[test]
+    fn test_validate_password_is_too_short() {
+        let data = &Json(RequestData {
+            email: "postmaster@example.org".to_string(),
+            password: "short".to_string(),
+
+            ..Default::default()
+        });
+        let v = Validator { data };
+
+        let result = v.validate();
+        assert!(result.is_err());
+
+        if let Err(errors) = &result {
+            assert_eq!(1, errors.len());
+            assert_eq!("password", errors[0].field);
+            assert_eq!(
+                vec!["Must contain more than 8 characters"],
+                errors[0].messages
+            );
+        } else {
+            panic!("must fail");
+        }
+    }
+
+    #[test]
+    fn test_validate_password_is_too_long() {
+        let data = &Json(RequestData {
+            email: "postmaster@example.org".to_string(),
+            password: "long".repeat(257).to_string(),
+
+            ..Default::default()
+        });
+        let v = Validator { data };
+
+        let result = v.validate();
+        assert!(result.is_err());
+
+        if let Err(errors) = &result {
+            assert_eq!(1, errors.len());
+            assert_eq!("password", errors[0].field);
+            assert_eq!(
+                vec!["Must contain less than 1024 characters"],
+                errors[0].messages
+            );
+        } else {
+            panic!("must fail");
+        }
+    }
+
+    #[test]
+    fn test_validate_password_equals_username() {
+        let data = &Json(RequestData {
+            username: Some("password".to_string()),
+            email: "postmaster@example.org".to_string(),
+            password: "password".to_string(),
+
+            ..Default::default()
+        });
+        let v = Validator { data };
+
+        let result = v.validate();
+        assert!(result.is_err());
+
+        if let Err(errors) = &result {
+            assert_eq!(1, errors.len());
+            assert_eq!("password", errors[0].field);
+            assert_eq!(vec!["Must not contain 'password'"], errors[0].messages);
+        } else {
+            panic!("must fail");
+        }
+    }
+
+    #[test]
+    fn test_validate_password_contains_username() {
+        let data = &Json(RequestData {
+            username: Some("username".to_string()),
+            email: "postmaster@example.org".to_string(),
+            password: "myusernameispassword".to_string(),
+
+            ..Default::default()
+        });
+        let v = Validator { data };
+
+        let result = v.validate();
+        assert!(result.is_err());
+
+        if let Err(errors) = &result {
+            assert_eq!(1, errors.len());
+            assert_eq!("password", errors[0].field);
+            assert_eq!(vec!["Must not contain 'username'"], errors[0].messages);
+        } else {
+            panic!("must fail");
+        }
+    }
+
+    #[test]
+    fn test_validate_password_is_included_in_username() {
+        let data = &Json(RequestData {
+            username: Some("mypassword".to_string()),
+            email: "postmaster@example.org".to_string(),
+            password: "password".to_string(),
+
+            ..Default::default()
+        });
+        let v = Validator { data };
+
+        let result = v.validate();
+        assert!(result.is_err());
+
+        if let Err(errors) = &result {
+            assert_eq!(1, errors.len());
+            assert_eq!("password", errors[0].field);
+            assert_eq!(vec!["Must not contain 'password'"], errors[0].messages);
         } else {
             panic!("must fail");
         }
