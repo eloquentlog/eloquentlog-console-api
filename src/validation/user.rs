@@ -3,7 +3,11 @@ use std::result::Result;
 use accord::validators::{contains, length, length_if_present, max, min};
 use rocket_contrib::json::Json;
 
-use validation::{max_if_present, not_contain_if_given};
+use validation::{
+alphanumeric_underscore_if_present,
+max_if_present,
+not_contain_if_given,
+};
 use request::User as RequestData;
 use model::user::NewUser;
 
@@ -27,13 +31,15 @@ impl<'a> Validator<'a> {
         let u = NewUser::from(self.data.0.clone());
         // TODO:
         // * email format
-        // * username format
+        // * username format (don't allow only digits)
+        // * (reserved) username
         // * uniqueness (email, username)
         // * password format
-        // * don't include input in validation message (not_contain_if_given)
         let result = rules! {
             "name" => u.name => [max_if_present(64)],
-            "username" => u.username => [length_if_present(3, 32)],
+            "username" => u.username => [
+                alphanumeric_underscore_if_present(),
+                length_if_present(3, 32)],
             "email" => u.email => [contains("@"), contains("."), length(6, 128)],
             "password" => self.data.0.password => [
                 min(8),
@@ -323,6 +329,72 @@ mod test {
             );
         } else {
             panic!("must fail");
+        }
+    }
+
+    #[test]
+    fn test_validate_username_is_invalid() {
+        let tests: [(&'static str, &'static str); 3] = [
+            ("-invalid", "Must not contain '-'"),
+            ("@invalid", "Must not contain '@'"),
+            ("!(-$#@)%", "Must not contain '!'"),
+        ];
+
+        for (value, message) in tests.iter() {
+            let data = &Json(RequestData {
+                username: Some(value.to_string()),
+                email: "postmaster@example.org".to_string(),
+                password: "password".to_string(),
+
+                ..Default::default()
+            });
+            let v = Validator { data };
+
+            let result = v.validate();
+            assert!(result.is_err());
+
+            if let Err(errors) = &result {
+                assert_eq!(1, errors.len());
+                assert_eq!("username", errors[0].field);
+                assert_eq!(vec![message.to_string()], errors[0].messages);
+            } else {
+                panic!("must fail");
+            }
+        }
+    }
+
+    #[test]
+    fn test_validate_username_is_none() {
+        let data = &Json(RequestData {
+            username: None,
+            email: "postmaster@example.org".to_string(),
+            password: "password".to_string(),
+
+            ..Default::default()
+        });
+        let v = Validator { data };
+
+        let result = v.validate();
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_validate_username() {
+        let tests: [&str; 4] =
+            ["u123456789", "_underscore", "username009", "0oO"];
+
+        for value in tests.iter() {
+            let data = &Json(RequestData {
+                username: Some(value.to_string()),
+                email: "postmaster@example.org".to_string(),
+                password: "password".to_string(),
+
+                ..Default::default()
+            });
+            let v = Validator { data };
+
+            let result = v.validate();
+            assert!(result.is_ok());
         }
     }
 
