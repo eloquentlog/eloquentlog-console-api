@@ -2,7 +2,20 @@ pub mod message;
 pub mod user;
 
 use accord::{Invalid, ValidatorResult};
-use accord::validators::max as original_max;
+use accord::validators::{
+alphanumeric as original_alphanumeric,
+max as original_max,
+};
+
+fn alphanumeric_underscore_if_present(
+) -> Box<Fn(&Option<String>) -> ValidatorResult> {
+    Box::new(move |s: &Option<String>| {
+        match &s {
+            Some(v) => original_alphanumeric()(&v.replace("_", "")),
+            None => Ok(()),
+        }
+    })
+}
 
 fn not_contain_if_given(
     needle: Option<String>,
