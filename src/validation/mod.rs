@@ -3,17 +3,43 @@ pub mod user;
 
 use accord::{Invalid, ValidatorResult};
 use accord::validators::{
-alphanumeric as original_alphanumeric,
+alphanumeric,
 max as original_max,
 };
 
 type SV = Box<Fn(&String) -> ValidatorResult>;
 
+const DIGITS: &[char] = &['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'];
+
 pub fn alphanumeric_underscore_if_present(
 ) -> Box<Fn(&Option<String>) -> ValidatorResult> {
     Box::new(move |s: &Option<String>| {
         match &s {
-            Some(v) => original_alphanumeric()(&v.replace("_", "")),
+            Some(v) => alphanumeric()(&v.replace("_", "")),
+            None => Ok(()),
+        }
+    })
+}
+
+pub fn not_contain_only_digits_or_underscore_if_present(
+) -> Box<Fn(&Option<String>) -> ValidatorResult> {
+    Box::new(move |s: &Option<String>| {
+        match &s {
+            Some(v) => {
+                for c in v.replace("_", "").chars() {
+                    if !DIGITS.contains(&c) {
+                        return Ok(());
+                    }
+                }
+                Err(Invalid {
+                    msg: "Must not contain only digits or underscore"
+                        .to_string(),
+                    args: vec![],
+                    human_readable: "Must not contain only digits or \
+                                     underscore"
+                        .to_string(),
+                })
+            },
             None => Ok(()),
         }
     })

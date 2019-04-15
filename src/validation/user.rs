@@ -27,7 +27,7 @@ impl<'a> Validator<'a> {
         let u = NewUser::from(self.data.0.clone());
         // TODO:
         // * email format
-        // * username format (don't allow only digits)
+        // * username format (don't allow only digits + _)
         // * (reserved) username
         // * uniqueness (email, username)
         // * password format
@@ -35,7 +35,9 @@ impl<'a> Validator<'a> {
             "name" => u.name => [max_if_present(64)],
             "username" => u.username => [
                 alphanumeric_underscore_if_present(),
-                length_if_present(3, 32)],
+                not_contain_only_digits_or_underscore_if_present(),
+                length_if_present(3, 32)
+            ],
             "email" => u.email => [contains("@"), contains("."), length(6, 128)],
             "password" => self.data.0.password => [
                 min(8),
@@ -354,6 +356,37 @@ mod test {
                 assert_eq!(1, errors.len());
                 assert_eq!("username", errors[0].field);
                 assert_eq!(vec![message.to_string()], errors[0].messages);
+            } else {
+                panic!("must fail");
+            }
+        }
+    }
+
+    #[test]
+    fn test_validate_username_contains_only_digits() {
+        let tests: [&'static str; 5] =
+            ["01234567890", "_1234", "12_2345", "98765432_", "___"];
+
+        for value in tests.iter() {
+            let data = &Json(RequestData {
+                username: Some(value.to_string()),
+                email: "postmaster@example.org".to_string(),
+                password: "password".to_string(),
+
+                ..Default::default()
+            });
+            let v = Validator { data };
+
+            let result = v.validate();
+            assert!(result.is_err());
+
+            if let Err(errors) = &result {
+                assert_eq!(1, errors.len());
+                assert_eq!("username", errors[0].field);
+                assert_eq!(
+                    vec!["Must not contain only digits or underscore"],
+                    errors[0].messages
+                );
             } else {
                 panic!("must fail");
             }
