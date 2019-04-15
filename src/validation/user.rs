@@ -3,11 +3,7 @@ use std::result::Result;
 use accord::validators::{contains, length, length_if_present, max, min};
 use rocket_contrib::json::Json;
 
-use validation::{
-alphanumeric_underscore_if_present,
-max_if_present,
-not_contain_if_given,
-};
+use validation::*;
 use request::User as RequestData;
 use model::user::NewUser;
 
@@ -44,7 +40,8 @@ impl<'a> Validator<'a> {
             "password" => self.data.0.password => [
                 min(8),
                 max(1024),
-                not_contain_if_given(u.username)]
+                not_overlap_with("username")(u.username)
+            ]
         };
         if let Err(v) = result {
             // MultipleError to Vec<ValidationError>
@@ -465,7 +462,10 @@ mod test {
         if let Err(errors) = &result {
             assert_eq!(1, errors.len());
             assert_eq!("password", errors[0].field);
-            assert_eq!(vec!["Must not contain 'password'"], errors[0].messages);
+            assert_eq!(
+                vec!["Must not overlap with username"],
+                errors[0].messages
+            );
         } else {
             panic!("must fail");
         }
@@ -488,7 +488,10 @@ mod test {
         if let Err(errors) = &result {
             assert_eq!(1, errors.len());
             assert_eq!("password", errors[0].field);
-            assert_eq!(vec!["Must not contain 'username'"], errors[0].messages);
+            assert_eq!(
+                vec!["Must not overlap with username"],
+                errors[0].messages
+            );
         } else {
             panic!("must fail");
         }
@@ -511,7 +514,10 @@ mod test {
         if let Err(errors) = &result {
             assert_eq!(1, errors.len());
             assert_eq!("password", errors[0].field);
-            assert_eq!(vec!["Must not contain 'password'"], errors[0].messages);
+            assert_eq!(
+                vec!["Must not overlap with username"],
+                errors[0].messages
+            );
         } else {
             panic!("must fail");
         }
