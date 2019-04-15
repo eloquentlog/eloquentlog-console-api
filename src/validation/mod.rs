@@ -24,8 +24,8 @@ fn not_contain_if_given(needle: Option<String>) -> SV {
     Box::new(move |s: &String| {
         // not contain and not included in
         if !n.is_empty() && (s.contains(&n) || n.contains(s)) {
-            let o = s.to_string();
-            let v = if n > o { &n } else { &o };
+            let s = s.to_string();
+            let v = if n > s { &n } else { &s };
             return Err(Invalid {
                 msg: "Must not contain %1.".to_string(),
                 args: vec![v.to_string()],
