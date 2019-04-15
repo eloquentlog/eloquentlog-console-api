@@ -3,7 +3,7 @@ use std::result::Result;
 use accord::validators::{either, length_if_present};
 use rocket_contrib::json::Json;
 
-use validation::{required, max_if_present};
+use validation::*;
 use request::Message as RequestData;
 use model::message::{LogFormat, LogLevel, NewMessage};
 
