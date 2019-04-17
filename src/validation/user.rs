@@ -27,7 +27,6 @@ impl<'a> Validator<'a> {
         let u = NewUser::from(self.data.0.clone());
         // TODO:
         // * email format
-        // * username format (don't allow only digits + _)
         // * (reserved) username
         // * uniqueness (email, username)
         // * password format
@@ -35,8 +34,10 @@ impl<'a> Validator<'a> {
             "name" => u.name => [max_if_present(64)],
             "username" => u.username => [
                 alphanumeric_underscore_if_present(),
+                length_if_present(3, 32),
                 not_contain_only_digits_or_underscore_if_present(),
-                length_if_present(3, 32)
+                not_start_with_digits_if_present(),
+                not_start_with_if_present("_")
             ],
             "email" => u.email => [contains("@"), contains("."), length(6, 128)],
             "password" => self.data.0.password => [
@@ -339,35 +340,7 @@ mod test {
             ("!(-$#@)%", "Must not contain '!'"),
         ];
 
-        for (value, message) in tests.iter() {
-            let data = &Json(RequestData {
-                username: Some(value.to_string()),
-                email: "postmaster@example.org".to_string(),
-                password: "password".to_string(),
-
-                ..Default::default()
-            });
-            let v = Validator { data };
-
-            let result = v.validate();
-            assert!(result.is_err());
-
-            if let Err(errors) = &result {
-                assert_eq!(1, errors.len());
-                assert_eq!("username", errors[0].field);
-                assert_eq!(vec![message.to_string()], errors[0].messages);
-            } else {
-                panic!("must fail");
-            }
-        }
-    }
-
-    #[test]
-    fn test_validate_username_contains_only_digits() {
-        let tests: [&'static str; 5] =
-            ["01234567890", "_1234", "12_2345", "98765432_", "___"];
-
-        for value in tests.iter() {
+        for (i, (value, message)) in tests.iter().enumerate() {
             let data = &Json(RequestData {
                 username: Some(value.to_string()),
                 email: "postmaster@example.org".to_string(),
@@ -384,8 +357,65 @@ mod test {
                 assert_eq!(1, errors.len());
                 assert_eq!("username", errors[0].field);
                 assert_eq!(
-                    vec!["Must not contain only digits or underscore"],
-                    errors[0].messages
+                    vec![message.to_string()],
+                    errors[0].messages,
+                    "#{} username: {}",
+                    i,
+                    value
+                );
+            } else {
+                panic!("must fail");
+            }
+        }
+    }
+
+    #[test]
+    fn test_validate_username_contains_only_digits() {
+        let tests: [(&'static str, Vec<String>); 3] = [
+            (
+                "98765432_",
+                vec![
+                    "Must not contain only digits or underscore".to_string(),
+                    "Must not start with digits".to_string(),
+                ],
+            ),
+            (
+                "01234567890",
+                vec![
+                    "Must not contain only digits or underscore".to_string(),
+                    "Must not start with digits".to_string(),
+                ],
+            ),
+            (
+                "122345",
+                vec![
+                    "Must not contain only digits or underscore".to_string(),
+                    "Must not start with digits".to_string(),
+                ],
+            ),
+        ];
+
+        for (i, (value, messages)) in tests.iter().enumerate() {
+            let data = &Json(RequestData {
+                username: Some(value.to_string()),
+                email: "postmaster@example.org".to_string(),
+                password: "password".to_string(),
+
+                ..Default::default()
+            });
+            let v = Validator { data };
+
+            let result = v.validate();
+            assert!(result.is_err());
+
+            if let Err(errors) = &result {
+                dbg!(errors);
+                assert_eq!(1, errors.len());
+                assert_eq!("username", errors[0].field);
+                assert_eq!(
+                    messages, &errors[0].messages,
+                    "#{} username: {}",
+                    i, value
                 );
             } else {
                 panic!("must fail");
@@ -411,7 +441,7 @@ mod test {
     #[test]
     fn test_validate_username() {
         let tests: [&str; 4] =
-            ["u123456789", "_underscore", "username009", "0oO"];
+            ["u123456789", "under_score", "username009", "oO0"];
 
         for value in tests.iter() {
             let data = &Json(RequestData {
@@ -425,6 +455,39 @@ mod test {
 
             let result = v.validate();
             assert!(result.is_ok());
+        }
+    }
+
+    #[test]
+    fn test_validate_username_starts_with_digits() {
+        let tests: [&'static str; 3] = ["0name", "123four", "99999a"];
+
+        for (i, value) in tests.iter().enumerate() {
+            let data = &Json(RequestData {
+                username: Some(value.to_string()),
+                email: "postmaster@example.org".to_string(),
+                password: "password".to_string(),
+
+                ..Default::default()
+            });
+            let v = Validator { data };
+
+            let result = v.validate();
+            assert!(result.is_err());
+
+            if let Err(errors) = &result {
+                assert_eq!(1, errors.len());
+                assert_eq!("username", errors[0].field);
+                assert_eq!(
+                    vec!["Must not start with digits"],
+                    errors[0].messages,
+                    "#{} username: {}",
+                    i,
+                    value
+                );
+            } else {
+                panic!("must fail");
+            }
         }
     }
 
