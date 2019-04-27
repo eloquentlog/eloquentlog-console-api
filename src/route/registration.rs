@@ -11,7 +11,7 @@ use validation::user::Validator;
 pub fn register(data: Json<RequestData>, conn: DbConn) -> Response {
     let res: Response = Default::default();
 
-    let v = Validator::new(&data);
+    let v = Validator::new(&conn, &data);
     match v.validate() {
         Err(errors) => {
             res.status(Status::UnprocessableEntity).format(json!({

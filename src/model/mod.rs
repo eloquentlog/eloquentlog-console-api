@@ -12,7 +12,7 @@ pub mod message;
 pub mod user;
 
 #[cfg(test)]
-mod test {
+pub mod test {
     use std::panic::{self, AssertUnwindSafe};
 
     use diesel::{self, prelude::*};

@@ -5,7 +5,7 @@ use bcrypt::{hash, verify};
 use chrono::{NaiveDateTime, Utc};
 use diesel::{Identifiable, Insertable, prelude::*};
 use diesel::pg::PgConnection;
-use uuid::Uuid;
+use diesel::pg::types::sql_types::Uuid;
 
 // use diesel::pg::Pg;
 // use diesel::debug_query;
@@ -89,7 +89,7 @@ impl NewUser {
 }
 
 /// User
-#[derive(Debug, Deserialize, Identifiable, Serialize)]
+#[derive(Debug, Identifiable, Queryable)]
 pub struct User {
     pub id: i64,
     pub uuid: Uuid,
@@ -109,7 +109,7 @@ pub struct User {
 
 impl fmt::Display for User {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "<User {uuid}>", uuid = self.uuid)
+        write!(f, "<User {id}>", id = self.id)
     }
 }
 
@@ -150,6 +150,22 @@ impl User {
                 None
             },
             Ok(id) => Some(id),
+        }
+    }
+
+    pub fn check_email_uniqueness(email: &str, conn: &PgConnection) -> bool {
+        let q = users::table
+            .select(users::id)
+            .filter(users::email.eq(email))
+            .limit(1);
+
+        // TODO
+        // let sql = debug_query::<Pg, _>(&q).to_string();
+        // println!("sql: {}", sql);
+
+        match q.load::<i64>(conn) {
+            Ok(ref v) if v.is_empty() => true,
+            _ => false,
         }
     }
 
