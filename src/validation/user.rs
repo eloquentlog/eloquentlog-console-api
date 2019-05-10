@@ -41,14 +41,27 @@ impl<'a> Validator<'a> {
         Ok(())
     }
 
+    fn validate_username_uniqueness(&self) -> Result<(), ValidationError> {
+        match self.data.0.username {
+            Some(ref username)
+                if !User::check_username_uniqueness(&username, self.conn) =>
+            {
+                Err(ValidationError {
+                    field: "username".to_string(),
+                    messages: vec!["That username is already taken".to_string()],
+                })
+            },
+            _ => Ok(()),
+        }
+    }
+
     #[allow(clippy::redundant_closure)]
     pub fn validate(&self) -> Result<(), Vec<ValidationError>> {
         let u = NewUser::from(self.data.0.clone());
         // TODO:
         // * email format
-        // * (reserved) username
-        // * uniqueness (username)
         // * password format
+        // * reserved username
         let result = rules! {
             "name" => u.name => [max_if_present(64)],
             "username" => u.username => [
@@ -90,6 +103,9 @@ impl<'a> Validator<'a> {
         }
 
         if let Err(e) = self.validate_email_uniqueness() {
+            errors.push(e);
+        }
+        if let Err(e) = self.validate_username_uniqueness() {
             errors.push(e);
         }
 
@@ -733,6 +749,48 @@ mod test {
                 assert_eq!(1, errors.len());
                 assert_eq!("email", errors[0].field);
                 assert_eq!(vec!["Already exists"], errors[0].messages);
+            } else {
+                panic!("must fail");
+            }
+        })
+    }
+
+    #[test]
+    fn test_validate_username_uniqueness() {
+        run(|conn| {
+            let data = &Json(RequestData {
+                username: Some("username".to_string()),
+                email: "postmaster@example.org".to_string(),
+                password: "password".to_string(),
+
+                ..Default::default()
+            });
+
+            let mut u = NewUser::from(data.0.clone());
+            u.set_password(&data.password);
+
+            let _id = User::insert(&u, conn)
+                .unwrap_or_else(|| panic!("Error inserting: {}", u));
+
+            let data = &Json(RequestData {
+                username: Some(u.username.unwrap()),
+                email: "newpostmaster@example.org".to_string(),
+                password: "newpassword".to_string(),
+
+                ..Default::default()
+            });
+            let v = Validator { conn, data };
+
+            let result = v.validate();
+            assert!(result.is_err());
+
+            if let Err(errors) = &result {
+                assert_eq!(1, errors.len());
+                assert_eq!("username", errors[0].field);
+                assert_eq!(
+                    vec!["That username is already taken"],
+                    errors[0].messages
+                );
             } else {
                 panic!("must fail");
             }
