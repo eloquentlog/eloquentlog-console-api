@@ -2,10 +2,7 @@ pub mod message;
 pub mod user;
 
 use accord::{Invalid, ValidatorResult};
-use accord::validators::{
-alphanumeric,
-max as original_max,
-};
+use accord::validators::{alphanumeric, max as original_max};
 
 type SV = Box<Fn(&String) -> ValidatorResult>;
 
