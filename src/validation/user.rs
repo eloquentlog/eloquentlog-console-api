@@ -5,12 +5,9 @@ use diesel::PgConnection;
 use rocket_contrib::json::Json;
 
 use validation::{
-    alphanumeric_underscore_if_present,
-    max_if_present,
-    not_contain_only_digits_or_underscore_if_present,
-    not_overlap_with,
-    not_start_with_digits_if_present,
-    not_start_with_if_present,
+    alphanumeric_underscore_if_present, max_if_present,
+    not_contain_only_digits_or_underscore_if_present, not_overlap_with,
+    not_start_with_digits_if_present, not_start_with_if_present,
 };
 use request::User as RequestData;
 use model::user::{NewUser, User};
