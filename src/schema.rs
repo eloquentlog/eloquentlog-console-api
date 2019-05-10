@@ -17,6 +17,7 @@ table! {
 
 table! {
     use diesel::sql_types::*;
+    use diesel::pg::types::sql_types::Uuid;
     use model::user::EUserActivationState;
 
     users (id) {
