@@ -98,19 +98,20 @@ impl<'a> Validator<'a> {
                     })
                     .collect();
         }
+        if !errors.is_empty() {
+            return Err(errors);
+        }
 
         if let Err(e) = self.validate_email_uniqueness() {
             errors.push(e);
+            return Err(errors);
         }
         if let Err(e) = self.validate_username_uniqueness() {
             errors.push(e);
+            return Err(errors);
         }
 
-        if errors.is_empty() {
-            Ok(())
-        } else {
-            Err(errors)
-        }
+        Ok(())
     }
 }
 
