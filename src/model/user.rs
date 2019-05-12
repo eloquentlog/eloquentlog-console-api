@@ -169,6 +169,26 @@ impl User {
         }
     }
 
+    pub fn check_username_uniqueness(
+        username: &str,
+        conn: &PgConnection,
+    ) -> bool
+    {
+        let q = users::table
+            .select(users::id)
+            .filter(users::username.eq(username))
+            .limit(1);
+
+        // TODO
+        // let sql = debug_query::<Pg, _>(&q).to_string();
+        // println!("sql: {}", sql);
+
+        match q.load::<i64>(conn) {
+            Ok(ref v) if v.is_empty() => true,
+            _ => false,
+        }
+    }
+
     pub fn verify_password(&self, password: &str) -> bool {
         verify(password, &str::from_utf8(&self.password).unwrap()).unwrap()
     }
