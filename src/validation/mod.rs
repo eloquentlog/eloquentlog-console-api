@@ -6,8 +6,15 @@ use accord::validators::{alphanumeric, max as original_max};
 
 type SV = Box<Fn(&String) -> ValidatorResult>;
 
+const CHARS_LOWER: &[char] = &[
+    'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o',
+    'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z',
+];
+const CHARS_UPPER: &[char] = &[
+    'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O',
+    'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z',
+];
 const DIGITS: &[char] = &['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'];
-const SIGNS: &[char] = &['_'];
 
 fn alphanumeric_underscore_if_present(
 ) -> Box<Fn(&Option<String>) -> ValidatorResult> {
@@ -19,13 +26,28 @@ fn alphanumeric_underscore_if_present(
     })
 }
 
+fn contain_any(accepted: &'static [char], text: &'static str) -> SV {
+    Box::new(move |s: &String| {
+        for c in s.chars() {
+            if accepted.contains(&c) {
+                return Ok(());
+            }
+        }
+        Err(Invalid {
+            msg: "Must contain %1".to_string(),
+            args: vec![text.to_string()],
+            human_readable: format!("Must contain '{}'", text),
+        })
+    })
+}
+
 fn not_contain_only_digits_or_underscore_if_present(
 ) -> Box<Fn(&Option<String>) -> ValidatorResult> {
     Box::new(move |s: &Option<String>| {
         match &s {
             Some(v) => {
                 for c in v.chars() {
-                    if !DIGITS.contains(&c) && !SIGNS.contains(&c) {
+                    if !DIGITS.contains(&c) && c != '_' {
                         return Ok(());
                     }
                 }

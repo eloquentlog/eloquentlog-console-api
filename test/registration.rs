@@ -11,7 +11,7 @@ fn test_register_with_validation_error() {
             .body(
                 r#"{
           "email": "postmaster@example.org",
-          "password": ""
+          "password": "password"
         }"#,
             )
             .dispatch();
@@ -29,7 +29,7 @@ fn test_register() {
             .body(
                 r#"{
           "email": "postmaster@example.org",
-          "password": "pa$$w0rd"
+          "password": "pa$$w0rD"
         }"#,
             )
             .dispatch();
