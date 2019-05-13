@@ -4,11 +4,7 @@ use accord::validators::{contains, length, length_if_present, max, min};
 use diesel::PgConnection;
 use rocket_contrib::json::Json;
 
-use validation::{
-    alphanumeric_underscore_if_present, max_if_present,
-    not_contain_only_digits_or_underscore_if_present, not_overlap_with,
-    not_start_with_digits_if_present, not_start_with_if_present,
-};
+use validation::*;
 use request::User as RequestData;
 use model::user::{NewUser, User};
 
@@ -56,9 +52,8 @@ impl<'a> Validator<'a> {
     pub fn validate(&self) -> Result<(), Vec<ValidationError>> {
         let u = NewUser::from(self.data.0.clone());
         // TODO:
-        // * email format
-        // * password format
-        // * reserved username
+        // * check email format
+        // * check whether username is reserved or not
         let result = rules! {
             "name" => u.name => [max_if_present(64)],
             "username" => u.username => [
@@ -76,6 +71,9 @@ impl<'a> Validator<'a> {
             "password" => self.data.0.password => [
                 min(8),
                 max(1024),
+                contain_any(CHARS_LOWER, "a-z"),
+                contain_any(CHARS_UPPER, "A-Z"),
+                contain_any(DIGITS, "0-9"),
                 not_overlap_with("username")(u.username)
             ]
         };
@@ -128,7 +126,7 @@ mod test {
         run(|conn| {
             let data = &Json(RequestData {
                 email: "".to_string(),
-                password: "password".to_string(),
+                password: "Passw0rd".to_string(),
 
                 ..Default::default()
             });
@@ -159,7 +157,7 @@ mod test {
         run(|conn| {
             let data = &Json(RequestData {
                 email: "this-is-not-email".to_string(),
-                password: "password".to_string(),
+                password: "Passw0rd".to_string(),
 
                 ..Default::default()
             });
@@ -186,7 +184,7 @@ mod test {
         run(|conn| {
             let data = &Json(RequestData {
                 email: "short".to_string(),
-                password: "password".to_string(),
+                password: "Passw0rd".to_string(),
 
                 ..Default::default()
             });
@@ -217,7 +215,7 @@ mod test {
         run(|conn| {
             let data = &Json(RequestData {
                 email: "long@example.org".repeat(9).to_string(),
-                password: "password".to_string(),
+                password: "Passw0rd".to_string(),
 
                 ..Default::default()
             });
@@ -244,7 +242,7 @@ mod test {
         run(|conn| {
             let data = &Json(RequestData {
                 email: "long".repeat(33).to_string(),
-                password: "password".to_string(),
+                password: "Passw0rd".to_string(),
 
                 ..Default::default()
             });
@@ -275,7 +273,7 @@ mod test {
         run(|conn| {
             let data = &Json(RequestData {
                 email: "postmaster@example.org".to_string(),
-                password: "password".to_string(),
+                password: "Passw0rd".to_string(),
 
                 ..Default::default()
             });
@@ -292,7 +290,7 @@ mod test {
             let data = &Json(RequestData {
                 name: Some("long".repeat(26).to_string()),
                 email: "postmaster@example.org".to_string(),
-                password: "password".to_string(),
+                password: "Passw0rd".to_string(),
 
                 ..Default::default()
             });
@@ -320,7 +318,7 @@ mod test {
             let data = &Json(RequestData {
                 name: None,
                 email: "postmaster@example.org".to_string(),
-                password: "password".to_string(),
+                password: "Passw0rd".to_string(),
 
                 ..Default::default()
             });
@@ -337,7 +335,7 @@ mod test {
             let data = &Json(RequestData {
                 name: Some("Lorem ipsum".to_string()),
                 email: "postmaster@example.org".to_string(),
-                password: "password".to_string(),
+                password: "Passw0rd".to_string(),
 
                 ..Default::default()
             });
@@ -354,7 +352,7 @@ mod test {
             let data = &Json(RequestData {
                 username: Some("hi".to_string()),
                 email: "postmaster@example.org".to_string(),
-                password: "password".to_string(),
+                password: "Passw0rd".to_string(),
 
                 ..Default::default()
             });
@@ -382,7 +380,7 @@ mod test {
             let data = &Json(RequestData {
                 username: Some("username".repeat(5).to_string()),
                 email: "postmaster@example.org".to_string(),
-                password: "password".to_string(),
+                password: "Passw0rd".to_string(),
 
                 ..Default::default()
             });
@@ -417,7 +415,7 @@ mod test {
                 let data = &Json(RequestData {
                     username: Some(value.to_string()),
                     email: "postmaster@example.org".to_string(),
-                    password: "password".to_string(),
+                    password: "Passw0rd".to_string(),
 
                     ..Default::default()
                 });
@@ -477,7 +475,7 @@ mod test {
                 let data = &Json(RequestData {
                     username: Some(value.to_string()),
                     email: "postmaster@example.org".to_string(),
-                    password: "password".to_string(),
+                    password: "Passw0rd".to_string(),
 
                     ..Default::default()
                 });
@@ -508,7 +506,7 @@ mod test {
             let data = &Json(RequestData {
                 username: None,
                 email: "postmaster@example.org".to_string(),
-                password: "password".to_string(),
+                password: "Passw0rd".to_string(),
 
                 ..Default::default()
             });
@@ -529,7 +527,7 @@ mod test {
                 let data = &Json(RequestData {
                     username: Some(value.to_string()),
                     email: "postmaster@example.org".to_string(),
-                    password: "password".to_string(),
+                    password: "Passw0rd".to_string(),
 
                     ..Default::default()
                 });
@@ -550,7 +548,7 @@ mod test {
                 let data = &Json(RequestData {
                     username: Some(value.to_string()),
                     email: "postmaster@example.org".to_string(),
-                    password: "password".to_string(),
+                    password: "Passw0rd".to_string(),
 
                     ..Default::default()
                 });
@@ -581,7 +579,7 @@ mod test {
         run(|conn| {
             let data = &Json(RequestData {
                 email: "postmaster@example.org".to_string(),
-                password: "short".to_string(),
+                password: "Sh0rt".to_string(),
 
                 ..Default::default()
             });
@@ -608,7 +606,7 @@ mod test {
         run(|conn| {
             let data = &Json(RequestData {
                 email: "postmaster@example.org".to_string(),
-                password: "long".repeat(257).to_string(),
+                password: "L0ng".repeat(257).to_string(),
 
                 ..Default::default()
             });
@@ -634,9 +632,9 @@ mod test {
     fn test_validate_password_equals_username() {
         run(|conn| {
             let data = &Json(RequestData {
-                username: Some("password".to_string()),
+                username: Some("Passw0rd".to_string()),
                 email: "postmaster@example.org".to_string(),
-                password: "password".to_string(),
+                password: "Passw0rd".to_string(),
 
                 ..Default::default()
             });
@@ -664,7 +662,7 @@ mod test {
             let data = &Json(RequestData {
                 username: Some("username".to_string()),
                 email: "postmaster@example.org".to_string(),
-                password: "myusernameispassword".to_string(),
+                password: "Myusername1sAPartOfpassw0rd".to_string(),
 
                 ..Default::default()
             });
@@ -690,9 +688,9 @@ mod test {
     fn test_validate_password_is_included_in_username() {
         run(|conn| {
             let data = &Json(RequestData {
-                username: Some("mypassword".to_string()),
+                username: Some("myPassw0rd".to_string()),
                 email: "postmaster@example.org".to_string(),
-                password: "password".to_string(),
+                password: "Passw0rd".to_string(),
 
                 ..Default::default()
             });
@@ -715,12 +713,51 @@ mod test {
     }
 
     #[test]
+    fn test_validate_password_is_not_formatted_according_rules() {
+        run(|conn| {
+            let tests: [(&'static str, &'static str); 3] = [
+                ("passw0rd", "Must contain 'A-Z'"),
+                ("PASSW0RD", "Must contain 'a-z'"),
+                ("passworD", "Must contain '0-9'"),
+            ];
+
+            for (i, (value, message)) in tests.iter().enumerate() {
+                let data = &Json(RequestData {
+                    username: Some("username".to_string()),
+                    email: "postmaster@example.org".to_string(),
+                    password: value.to_string(),
+
+                    ..Default::default()
+                });
+                let v = Validator { conn, data };
+
+                let result = v.validate();
+                assert!(result.is_err());
+
+                if let Err(errors) = &result {
+                    assert_eq!(1, errors.len());
+                    assert_eq!("password", errors[0].field);
+                    assert_eq!(
+                        vec![message.to_string()],
+                        errors[0].messages,
+                        "#{} password: {}",
+                        i,
+                        value
+                    );
+                } else {
+                    panic!("must fail");
+                }
+            }
+        })
+    }
+
+    #[test]
     fn test_validate_email_uniqueness() {
         run(|conn| {
             let data = &Json(RequestData {
                 username: Some("username".to_string()),
                 email: "postmaster@example.org".to_string(),
-                password: "password".to_string(),
+                password: "Passw0rd".to_string(),
 
                 ..Default::default()
             });
@@ -734,7 +771,7 @@ mod test {
             let data = &Json(RequestData {
                 username: Some("newusername".to_string()),
                 email: u.email.to_string(),
-                password: "newpassword".to_string(),
+                password: "newPassw0rd".to_string(),
 
                 ..Default::default()
             });
@@ -759,7 +796,7 @@ mod test {
             let data = &Json(RequestData {
                 username: Some("username".to_string()),
                 email: "postmaster@example.org".to_string(),
-                password: "password".to_string(),
+                password: "Passw0rd".to_string(),
 
                 ..Default::default()
             });
@@ -773,7 +810,7 @@ mod test {
             let data = &Json(RequestData {
                 username: Some(u.username.unwrap()),
                 email: "newpostmaster@example.org".to_string(),
-                password: "newpassword".to_string(),
+                password: "newPassw0rd".to_string(),
 
                 ..Default::default()
             });
