@@ -1,5 +1,6 @@
 use rocket::http::Status;
 use rocket_contrib::json::Json;
+use rocket_slog::SyncLogger;
 
 use db::DbConn;
 use model::user::{NewUser, User};
@@ -8,7 +9,12 @@ use request::User as RequestData;
 use validation::user::Validator;
 
 #[post("/register", format = "json", data = "<data>")]
-pub fn register(data: Json<RequestData>, conn: DbConn) -> Response {
+pub fn register(
+    data: Json<RequestData>,
+    conn: DbConn,
+    _logger: SyncLogger,
+) -> Response
+{
     let res: Response = Default::default();
 
     let v = Validator::new(&conn, &data);

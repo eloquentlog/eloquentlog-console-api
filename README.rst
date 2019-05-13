@@ -73,6 +73,12 @@ Use cargo-watch_
     % make watch:server
     % make watch:worker
 
+    % curl \
+      -H "Content-Type: application/json" \
+      -H "Accept: application/json" \
+      -d "{}" \
+      -X POST \
+      http://localhost:8000/_api/login
 
 Testing
 -------
