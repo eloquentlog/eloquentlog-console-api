@@ -2,10 +2,7 @@ use rocket_slog::SlogFairing;
 
 use sloggers::{
     Build,
-    terminal::{
-        TerminalLoggerBuilder,
-        Destination,
-    },
+    terminal::{TerminalLoggerBuilder, Destination},
     types::Severity,
 };
 
