@@ -1,5 +1,6 @@
 use rocket::http::Status;
 use rocket_contrib::json::Json;
+use rocket_slog::SyncLogger;
 
 use db::DbConn;
 use model::message::{LogFormat, LogLevel, Message, NewMessage};
@@ -10,7 +11,7 @@ use validation::message::Validator;
 const MESSAGES_PER_REQUEST: i64 = 100;
 
 #[get("/messages")]
-pub fn get(conn: DbConn) -> Response {
+pub fn get(conn: DbConn, _logger: SyncLogger) -> Response {
     let res: Response = Default::default();
 
     let messages = Message::recent(MESSAGES_PER_REQUEST, &conn);
@@ -28,7 +29,12 @@ pub fn get(conn: DbConn) -> Response {
 // }
 // ```
 #[post("/messages", format = "json", data = "<data>")]
-pub fn post(data: Json<RequestData>, conn: DbConn) -> Response {
+pub fn post(
+    data: Json<RequestData>,
+    conn: DbConn,
+    _logger: SyncLogger,
+) -> Response
+{
     let res: Response = Default::default();
 
     let v = Validator::new(&data);
@@ -39,7 +45,6 @@ pub fn post(data: Json<RequestData>, conn: DbConn) -> Response {
             }))
         },
         Ok(_) => {
-            // TODO
             let m = NewMessage::from(data.0.clone());
             if let Some(id) = Message::insert(&m, &conn) {
                 return res.format(json!({"message": {
@@ -52,11 +57,18 @@ pub fn post(data: Json<RequestData>, conn: DbConn) -> Response {
 }
 
 #[put("/messages/<id>", format = "json", data = "<data>")]
-pub fn put(id: usize, data: Json<RequestData>, conn: DbConn) -> Response {
+pub fn put(
+    id: usize,
+    data: Json<RequestData>,
+    conn: DbConn,
+    logger: SyncLogger,
+) -> Response
+{
     let res: Response = Default::default();
 
     let message_id = data.0.id.unwrap_or_default();
     if message_id == 0 || id != message_id {
+        info!(logger, "message_id: {}", message_id);
         return res.status(Status::NotFound).format(json!(null));
     }
 

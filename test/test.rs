@@ -52,13 +52,16 @@ where T: FnOnce(Client, &PgConnection) -> () + panic::UnwindSafe {
 
     dotenv::dotenv().ok();
 
+    let c = Config::from("testing").unwrap();
+
     // Use same connection pool between test and client
-    let connection_pool = get_pool();
+    let connection_pool = get_pool(&c);
     let conn = get_conn(&connection_pool);
     setup(&conn);
 
     let result = panic::catch_unwind(AssertUnwindSafe(|| {
-        let client = Client::new(server().manage(connection_pool)).unwrap();
+        let server = server(&c).manage(connection_pool);
+        let client = Client::new(server).unwrap();
 
         test(client, &conn)
     }));
@@ -99,9 +102,8 @@ fn clean(conn: &PgConnection) {
         });
 }
 
-pub fn get_pool() -> Pool {
-    let c = Config::from("testing").unwrap();
-    init_pool(&c.database_url)
+pub fn get_pool(c: &Config) -> Pool {
+    init_pool(&(c.database_url))
 }
 
 pub fn get_conn(connection_pool: &Pool) -> DbConn {

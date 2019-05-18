@@ -1,11 +1,15 @@
 extern crate dotenv;
+extern crate rocket;
 
 extern crate eloquentlog_backend_api;
 
 use std::env;
+
 use dotenv::dotenv;
 
-use eloquentlog_backend_api::{server, db, config};
+use eloquentlog_backend_api::server;
+use eloquentlog_backend_api::db::init_pool;
+use eloquentlog_backend_api::config::Config;
 
 fn get_env() -> String {
     match env::var("ENV") {
@@ -19,11 +23,10 @@ fn main() {
     dotenv().ok();
 
     let name = get_env();
-    let config =
-        config::Config::from(name.as_str()).expect("Failed to get config");
+    let c = Config::from(name.as_str()).expect("Failed to get config");
 
     // database
-    let connection_pool = db::init_pool(&config.database_url);
+    let connection_pool = init_pool(&c.database_url);
 
-    server().manage(connection_pool).launch();
+    server(&c).manage(connection_pool).launch();
 }

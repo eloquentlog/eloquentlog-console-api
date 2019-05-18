@@ -6,6 +6,7 @@
 
 #[macro_use]
 extern crate accord;
+
 extern crate bcrypt;
 extern crate chrono;
 
@@ -14,6 +15,7 @@ extern crate diesel;
 
 #[macro_use]
 extern crate lazy_static;
+
 extern crate oppgave;
 extern crate redis;
 extern crate regex;
@@ -24,14 +26,20 @@ extern crate rocket;
 #[macro_use]
 extern crate rocket_contrib;
 
+extern crate rocket_slog;
+
 extern crate serde;
 extern crate serde_json;
 
 #[macro_use]
 extern crate serde_derive;
 
-// extern crate uuid;
+#[macro_use(error, info)]
+extern crate slog;
 
+extern crate sloggers;
+
+mod logger;
 mod response;
 mod request;
 mod validation;
@@ -43,8 +51,18 @@ pub mod db;
 pub mod job;
 pub mod model;
 
-pub fn server() -> rocket::Rocket {
-    rocket::ignite()
+use rocket::config::{Config as RocketConfig, Environment, LoggingLevel};
+
+pub fn server(c: &config::Config) -> rocket::Rocket {
+    let logger = logger::get_logger(c);
+
+    // disable default logger
+    let rocket_config = RocketConfig::build(Environment::Development)
+        .log_level(LoggingLevel::Off)
+        .finalize()
+        .unwrap();
+
+    rocket::custom(rocket_config)
         .mount("/", routes![route::top::index])
         .mount(
             "/_api",
@@ -58,5 +76,6 @@ pub fn server() -> rocket::Rocket {
                 route::message::put,
             ],
         )
+        .attach(logger)
         .register(catchers![route::error::not_found])
 }
