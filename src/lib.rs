@@ -13,6 +13,7 @@ extern crate chrono;
 #[macro_use]
 extern crate diesel;
 
+#[cfg(test)]
 #[macro_use]
 extern crate lazy_static;
 

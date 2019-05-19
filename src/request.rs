@@ -1,5 +1,4 @@
 use std::io::{self, Read};
-use regex::Regex;
 
 use rocket::{Data, Request, Outcome::*};
 use rocket::data::{FromData, Outcome, Transform, Transformed};
@@ -101,46 +100,16 @@ impl<'v> FromData<'v> for UserLogin {
             Ok(v) => v,
             Err(_) => {
                 return Failure((
-                    Status::InternalServerError,
+                    Status::UnprocessableEntity,
                     UserLoginError::Empty,
                 ));
             },
         };
 
         let username = user_login.username;
-        if username == "" {
-            return Failure((
-                Status::UnprocessableEntity,
-                UserLoginError::Empty,
-            ));
-        }
-        // simple check as email
-        if !username.contains('@') || !username.contains('.') {
-            return Failure((
-                Status::UnprocessableEntity,
-                UserLoginError::Empty,
-            ));
-        }
-
         let password = user_login.password;
-        if password == "" {
-            return Failure((
-                Status::UnprocessableEntity,
-                UserLoginError::Empty,
-            ));
-        }
-        // length
-        if password.len() < 8 {
-            return Failure((
-                Status::UnprocessableEntity,
-                UserLoginError::Empty,
-            ));
-        }
-        // format
-        lazy_static! {
-            static ref RE: Regex = Regex::new(r"[A-z_\-\d]+").unwrap();
-        }
-        if !RE.is_match(&password) {
+
+        if username == "" || password == "" {
             return Failure((
                 Status::UnprocessableEntity,
                 UserLoginError::Empty,
