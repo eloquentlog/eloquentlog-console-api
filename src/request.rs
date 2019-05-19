@@ -106,15 +106,15 @@ impl<'v> FromData<'v> for UserLogin {
             },
         };
 
-        let username = user_login.username;
-        let password = user_login.password;
-
-        if username == "" || password == "" {
+        if user_login.username == "" || user_login.password == "" {
             return Failure((
                 Status::UnprocessableEntity,
                 UserLoginError::Empty,
             ));
         }
-        Success(UserLogin { username, password })
+        Success(UserLogin {
+            username: user_login.username,
+            password: user_login.password,
+        })
     }
 }

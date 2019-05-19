@@ -12,6 +12,9 @@ fn test_login() {
         let mut res = req.dispatch();
 
         assert_eq!(res.status(), Status::Unauthorized);
-        assert_eq!("null", res.body_string().unwrap());
+        assert_eq!(
+            "{\"message\":\"The credentials you've entered is incorrect\"}",
+            res.body_string().unwrap()
+        );
     });
 }
