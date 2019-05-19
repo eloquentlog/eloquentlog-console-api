@@ -79,7 +79,7 @@ impl UserActivationState {
 mod user_activation_state_test {
     use super::*;
 
-    #[allow(clippy::cyclomatic_complexity)]
+    #[allow(clippy::cognitive_complexity)]
     #[test]
     fn test_from() {
         assert_eq!(

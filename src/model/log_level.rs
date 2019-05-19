@@ -101,7 +101,7 @@ impl LogLevel {
 mod log_level_test {
     use super::*;
 
-    #[allow(clippy::cyclomatic_complexity)]
+    #[allow(clippy::cognitive_complexity)]
     #[test]
     fn test_from() {
         assert_eq!(LogLevel::Debug, LogLevel::from("debug".to_string()));
