@@ -13,6 +13,7 @@ extern crate chrono;
 #[macro_use]
 extern crate diesel;
 
+#[cfg(test)]
 #[macro_use]
 extern crate lazy_static;
 
@@ -34,7 +35,7 @@ extern crate serde_json;
 #[macro_use]
 extern crate serde_derive;
 
-#[macro_use(error, info)]
+#[macro_use(info, warn)]
 extern crate slog;
 
 extern crate sloggers;
@@ -77,5 +78,8 @@ pub fn server(c: &config::Config) -> rocket::Rocket {
             ],
         )
         .attach(logger)
-        .register(catchers![route::error::not_found])
+        .register(catchers![
+            route::error::not_found,
+            route::error::unprocessable_entity,
+        ])
 }

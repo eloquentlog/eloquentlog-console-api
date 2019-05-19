@@ -13,7 +13,7 @@ pub fn get_logger(config: &Config) -> SlogFairing {
 
     let level = match config.env_name {
         "development" => Severity::Debug,
-        "testing" => Severity::Warning,
+        "testing" => Severity::Error,
         _ => Severity::Critical,
     };
 

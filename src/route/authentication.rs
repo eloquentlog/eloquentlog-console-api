@@ -1,5 +1,4 @@
 use rocket::http::Status;
-use rocket_contrib::json::Json;
 use rocket_slog::SyncLogger;
 
 use db::DbConn;
@@ -8,28 +7,20 @@ use request::UserLogin as RequestData;
 use response::Response;
 
 #[post("/login", data = "<data>", format = "json")]
-pub fn login(
-    conn: DbConn,
-    data: Json<RequestData>,
-    logger: SyncLogger,
-) -> Response
-{
+pub fn login(conn: DbConn, data: RequestData, logger: SyncLogger) -> Response {
     let res: Response = Default::default();
 
-    let user_login = data.0.clone();
-
-    match User::find_by_email_or_username(&user_login.username, &conn) {
-        Some(user) => {
-            if !user.verify_password(&user_login.password) {
-                error!(logger, "login failed: user_id {}", user.id);
-
-                return res.status(Status::Unauthorized).format(json!({
-                    "message": "The credentials you've entered is incorrect."
-                }));
-            }
-            res.format(json!({"message": "Success"}))
+    match User::find_by_email_or_username(&data.username, &conn) {
+        Some(ref user) if user.verify_password(&data.password) => {
+            res.format(json!({ "message": "Success" }))
         },
-        None => res.status(Status::Unauthorized),
+        _ => {
+            warn!(logger, "login failed: username {}", data.username);
+
+            res.status(Status::Unauthorized).format(json!({
+                "message": "The credentials you've entered is incorrect"
+            }))
+        },
     }
 }
 
