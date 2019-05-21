@@ -4,15 +4,14 @@ use std::str;
 use bcrypt::{hash, verify};
 use chrono::{NaiveDateTime, Utc};
 use diesel::{Identifiable, Insertable, prelude::*};
-use diesel::pg::PgConnection;
+use diesel::debug_query;
+use diesel::pg::{Pg, PgConnection};
 use diesel::pg::types::sql_types::Uuid;
-
-// use diesel::pg::Pg;
-// use diesel::debug_query;
 
 pub use model::user_activation_state::*;
 pub use schema::users;
 
+use logger::Logger;
 use request::User as RequestData;
 
 const BCRYPT_COST: u32 = 12;
@@ -124,7 +123,12 @@ impl User {
     }
 
     /// Save a new user into users.
-    pub fn insert(user: &NewUser, conn: &PgConnection) -> Option<i64> {
+    pub fn insert(
+        user: &NewUser,
+        conn: &PgConnection,
+        logger: &Logger,
+    ) -> Option<i64>
+    {
         // TODO
         // * set valid access_token
         // * update access_token_expires_at
@@ -140,9 +144,7 @@ impl User {
             ))
             .returning(users::id);
 
-        // TODO
-        // let sql = debug_query::<Pg, _>(&q).to_string();
-        // println!("sql: {}", sql);
+        info!(logger, "{}", debug_query::<Pg, _>(&q).to_string());
 
         match q.get_result::<i64>(conn) {
             Err(e) => {
@@ -153,15 +155,18 @@ impl User {
         }
     }
 
-    pub fn check_email_uniqueness(email: &str, conn: &PgConnection) -> bool {
+    pub fn check_email_uniqueness(
+        email: &str,
+        conn: &PgConnection,
+        logger: &Logger,
+    ) -> bool
+    {
         let q = users::table
             .select(users::id)
             .filter(users::email.eq(email))
             .limit(1);
 
-        // TODO
-        // let sql = debug_query::<Pg, _>(&q).to_string();
-        // println!("sql: {}", sql);
+        info!(logger, "{}", debug_query::<Pg, _>(&q).to_string());
 
         match q.load::<i64>(conn) {
             Ok(ref v) if v.is_empty() => true,
@@ -172,6 +177,7 @@ impl User {
     pub fn check_username_uniqueness(
         username: &str,
         conn: &PgConnection,
+        logger: &Logger,
     ) -> bool
     {
         let q = users::table
@@ -179,9 +185,7 @@ impl User {
             .filter(users::username.eq(username))
             .limit(1);
 
-        // TODO
-        // let sql = debug_query::<Pg, _>(&q).to_string();
-        // println!("sql: {}", sql);
+        info!(logger, "{}", debug_query::<Pg, _>(&q).to_string());
 
         match q.load::<i64>(conn) {
             Ok(ref v) if v.is_empty() => true,
@@ -201,7 +205,7 @@ mod user_test {
 
     #[test]
     fn test_insert() {
-        run(|conn| {
+        run(|conn, logger| {
             let mut u = NewUser {
                 name: None,
                 username: None,
@@ -210,7 +214,7 @@ mod user_test {
                 ..Default::default()
             };
             u.set_password("password");
-            let result = User::insert(&u, conn);
+            let result = User::insert(&u, conn, logger);
             assert!(result.is_some());
 
             let rows_count: i64 = users::table

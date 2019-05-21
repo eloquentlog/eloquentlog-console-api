@@ -5,12 +5,11 @@ use std::fmt;
 
 use chrono::{NaiveDateTime, Utc};
 use diesel::{self, Insertable, prelude::*};
-use diesel::pg::PgConnection;
+use diesel::debug_query;
+use diesel::pg::{Pg, PgConnection};
 use serde::Serialize;
 
-// use diesel::pg::Pg;
-// use diesel::debug_query;
-
+use logger::Logger;
 pub use model::log_level::*;
 pub use model::log_format::*;
 pub use schema::messages;
@@ -98,12 +97,14 @@ impl fmt::Display for Message {
 }
 
 impl Message {
-    pub fn first(id: i64, conn: &PgConnection) -> Option<Self> {
+    pub fn first(
+        id: i64,
+        conn: &PgConnection,
+        logger: &Logger,
+    ) -> Option<Self>
+    {
         let q = messages::table.find(id);
-
-        // TODO
-        // let sql = debug_query::<Pg, _>(&q).to_string();
-        // println!("sql: {}", sql);
+        info!(logger, "{}", debug_query::<Pg, _>(&q).to_string());
 
         match q.first::<Message>(conn) {
             Err(e) => {
@@ -118,14 +119,16 @@ impl Message {
     ///
     /// `created_at` and `updated_at` will be filled on PostgreSQL side
     /// using timezone('utc'::text, now()).
-    pub fn insert(message: &NewMessage, conn: &PgConnection) -> Option<i64> {
+    pub fn insert(
+        message: &NewMessage,
+        conn: &PgConnection,
+        logger: &Logger,
+    ) -> Option<i64>
+    {
         let q = diesel::insert_into(messages::table)
             .values(message)
             .returning(messages::id);
-
-        // TODO
-        // let sql = debug_query::<Pg, _>(&q).to_string();
-        // println!("sql: {}", sql);
+        info!(logger, "{}", debug_query::<Pg, _>(&q).to_string());
 
         match q.get_result::<i64>(conn) {
             Err(e) => {
@@ -136,14 +139,16 @@ impl Message {
         }
     }
 
-    pub fn recent(count: i64, conn: &PgConnection) -> Vec<Message> {
+    pub fn recent(
+        count: i64,
+        conn: &PgConnection,
+        logger: &Logger,
+    ) -> Vec<Message>
+    {
         let q = messages::table
             .limit(count)
             .order(messages::created_at.desc());
-
-        // TODO
-        // let sql = debug_query::<Pg, _>(&q).to_string();
-        // println!("sql: {}", sql);
+        info!(logger, "{}", debug_query::<Pg, _>(&q).to_string());
 
         match q.load::<Message>(conn) {
             Err(e) => {
@@ -155,16 +160,18 @@ impl Message {
     }
 
     /// Update a message.
-    pub fn update(message: &mut Message, conn: &PgConnection) -> Option<i64> {
+    pub fn update(
+        message: &mut Message,
+        conn: &PgConnection,
+        logger: &Logger,
+    ) -> Option<i64>
+    {
         message.updated_at = Utc::now().naive_utc();
         let q = diesel::update(messages::table)
             .set(&*message)
             .filter(messages::id.eq(message.id))
             .returning(messages::id);
-
-        // TODO
-        // let sql = debug_query::<Pg, _>(&q).to_string();
-        // println!("sql: {}", sql);
+        info!(logger, "{}", debug_query::<Pg, _>(&q).to_string());
 
         match q.get_result::<i64>(conn) {
             Err(e) => {
@@ -183,7 +190,7 @@ mod message_test {
 
     #[test]
     fn test_insert() {
-        run(|conn| {
+        run(|conn, logger| {
             let m = NewMessage {
                 code: None,
                 lang: "en".to_string(),
@@ -192,7 +199,7 @@ mod message_test {
                 title: Some("title".to_string()),
                 content: None,
             };
-            let result = Message::insert(&m, conn);
+            let result = Message::insert(&m, conn, logger);
             assert!(result.is_some());
 
             let rows_count: i64 = messages::table
@@ -205,7 +212,7 @@ mod message_test {
 
     #[test]
     fn test_update() {
-        run(|conn| {
+        run(|conn, logger| {
             let m = NewMessage {
                 code: Some("200".to_string()),
                 lang: "en".to_string(),
@@ -240,7 +247,7 @@ mod message_test {
                 created_at: Utc::now().naive_utc(),
                 updated_at: Utc::now().naive_utc(),
             };
-            let result = Message::update(&mut m, conn);
+            let result = Message::update(&mut m, conn, logger);
             assert!(result.is_some());
 
             let value = messages::table

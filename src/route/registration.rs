@@ -12,12 +12,12 @@ use validation::user::Validator;
 pub fn register(
     data: Json<RequestData>,
     conn: DbConn,
-    _logger: SyncLogger,
+    logger: SyncLogger,
 ) -> Response
 {
     let res: Response = Default::default();
 
-    let v = Validator::new(&conn, &data);
+    let v = Validator::new(&conn, &data, &logger);
     match v.validate() {
         Err(errors) => {
             res.status(Status::UnprocessableEntity).format(json!({
@@ -27,7 +27,7 @@ pub fn register(
         Ok(_) => {
             let mut u = NewUser::from(data.0.clone());
             u.set_password(&data.password);
-            if let Some(id) = User::insert(&u, &conn) {
+            if let Some(id) = User::insert(&u, &conn, &logger) {
                 return res.format(json!({"user": {
                     "id": id,
                 }}));

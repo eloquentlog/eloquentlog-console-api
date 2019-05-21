@@ -9,6 +9,7 @@ extern crate accord;
 
 extern crate bcrypt;
 extern crate chrono;
+extern crate dotenv;
 
 #[macro_use]
 extern crate diesel;
@@ -18,6 +19,10 @@ extern crate diesel;
 extern crate lazy_static;
 
 extern crate oppgave;
+
+#[cfg(test)]
+extern crate parking_lot;
+
 extern crate redis;
 extern crate regex;
 
@@ -28,6 +33,10 @@ extern crate rocket;
 extern crate rocket_contrib;
 
 extern crate rocket_slog;
+
+#[cfg(test)]
+#[macro_use]
+extern crate rusty_fork;
 
 extern crate serde;
 extern crate serde_json;
@@ -53,6 +62,7 @@ pub mod job;
 pub mod model;
 
 use rocket::config::{Config as RocketConfig, Environment, LoggingLevel};
+use rocket_slog::SlogFairing;
 
 pub fn server(c: &config::Config) -> rocket::Rocket {
     let logger = logger::get_logger(c);
@@ -77,7 +87,7 @@ pub fn server(c: &config::Config) -> rocket::Rocket {
                 route::message::put,
             ],
         )
-        .attach(logger)
+        .attach(SlogFairing::new(logger))
         .register(catchers![
             route::error::not_found,
             route::error::unprocessable_entity,

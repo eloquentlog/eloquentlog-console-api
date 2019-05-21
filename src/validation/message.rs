@@ -3,9 +3,10 @@ use std::result::Result;
 use accord::validators::{either, length_if_present};
 use rocket_contrib::json::Json;
 
-use validation::*;
-use request::Message as RequestData;
+use logger::Logger;
 use model::message::{LogFormat, LogLevel, NewMessage};
+use request::Message as RequestData;
+use validation::*;
 
 #[derive(Debug, Clone, Serialize)]
 pub struct ValidationError {
@@ -15,11 +16,12 @@ pub struct ValidationError {
 
 pub struct Validator<'a> {
     data: &'a Json<RequestData>,
+    _logger: &'a Logger,
 }
 
 impl<'a> Validator<'a> {
-    pub fn new(data: &'a Json<RequestData>) -> Self {
-        Self { data }
+    pub fn new(data: &'a Json<RequestData>, _logger: &'a Logger) -> Self {
+        Self { data, _logger }
     }
 
     #[allow(clippy::redundant_closure)]
@@ -58,360 +60,414 @@ impl<'a> Validator<'a> {
 mod test {
     use super::*;
 
+    use std::panic::{self, AssertUnwindSafe};
+
     use rocket_contrib::json::Json;
+
+    use config::Config;
+    use logger::{Logger, get_logger};
+
+    pub fn run<T>(test: T)
+    where T: FnOnce(&Logger) -> () + panic::UnwindSafe {
+        let config = Config::from("testing").unwrap();
+        let logger = get_logger(&config);
+
+        let result = panic::catch_unwind(AssertUnwindSafe(|| test(&logger)));
+        assert!(result.is_ok());
+    }
 
     #[test]
     fn test_validate_code_is_empty() {
-        let data = &Json(RequestData {
-            code: Some("".to_string()),
-            title: Some("title".to_string()),
+        run(|logger| {
+            let data = Json(RequestData {
+                code: Some("".to_string()),
+                title: Some("title".to_string()),
 
-            ..Default::default()
-        });
-        let v = Validator { data };
+                ..Default::default()
+            });
+            let v = Validator::new(&data, &logger);
 
-        let result = v.validate();
-        assert!(result.is_err());
+            let result = v.validate();
+            assert!(result.is_err());
 
-        if let Err(errors) = &result {
-            assert_eq!(1, errors.len());
-            assert_eq!("code", errors[0].field);
-            assert_eq!(
-                vec!["Must contain more than 1 characters"],
-                errors[0].messages
-            );
-        } else {
-            panic!("must fail");
-        }
+            if let Err(errors) = &result {
+                assert_eq!(1, errors.len());
+                assert_eq!("code", errors[0].field);
+                assert_eq!(
+                    vec!["Must contain more than 1 characters"],
+                    errors[0].messages
+                );
+            } else {
+                panic!("must fail");
+            }
+        })
     }
 
     #[test]
     fn test_validate_code_is_too_long() {
-        let data = &Json(RequestData {
-            code: Some("long".repeat(9).to_string()),
-            title: Some("title".to_string()),
+        run(|logger| {
+            let data = Json(RequestData {
+                code: Some("long".repeat(9).to_string()),
+                title: Some("title".to_string()),
 
-            ..Default::default()
-        });
-        let v = Validator { data };
+                ..Default::default()
+            });
+            let v = Validator::new(&data, &logger);
 
-        let result = v.validate();
-        assert!(result.is_err());
+            let result = v.validate();
+            assert!(result.is_err());
 
-        if let Err(errors) = &result {
-            assert_eq!(1, errors.len());
-            assert_eq!("code", errors[0].field);
-            assert_eq!(
-                vec!["Must contain less than 32 characters"],
-                errors[0].messages
-            );
-        } else {
-            panic!("must fail");
-        }
+            if let Err(errors) = &result {
+                assert_eq!(1, errors.len());
+                assert_eq!("code", errors[0].field);
+                assert_eq!(
+                    vec!["Must contain less than 32 characters"],
+                    errors[0].messages
+                );
+            } else {
+                panic!("must fail");
+            }
+        })
     }
 
     #[test]
     fn test_validate_code_is_none() {
-        let data = &Json(RequestData {
-            code: None,
-            title: Some("title".to_string()),
+        run(|logger| {
+            let data = Json(RequestData {
+                code: None,
+                title: Some("title".to_string()),
 
-            ..Default::default()
-        });
-        let v = Validator { data };
+                ..Default::default()
+            });
+            let v = Validator::new(&data, &logger);
 
-        let result = v.validate();
-        assert!(result.is_ok());
+            let result = v.validate();
+            assert!(result.is_ok());
+        })
     }
 
     #[test]
     fn test_validate_code() {
-        let data = &Json(RequestData {
-            code: Some("200".to_string()),
-            title: Some("title".to_string()),
+        run(|logger| {
+            let data = Json(RequestData {
+                code: Some("200".to_string()),
+                title: Some("title".to_string()),
 
-            ..Default::default()
-        });
-        let v = Validator { data };
+                ..Default::default()
+            });
+            let v = Validator::new(&data, &logger);
 
-        let result = v.validate();
-        assert!(result.is_ok());
+            let result = v.validate();
+            assert!(result.is_ok());
+        })
     }
 
     #[test]
     fn test_validate_lang_in_invalid() {
-        let data = &Json(RequestData {
-            lang: Some("unknown".to_string()),
-            title: Some("title".to_string()),
+        run(|logger| {
+            let data = Json(RequestData {
+                lang: Some("unknown".to_string()),
+                title: Some("title".to_string()),
 
-            ..Default::default()
-        });
-        let v = Validator { data };
+                ..Default::default()
+            });
+            let v = Validator::new(&data, &logger);
 
-        let result = v.validate();
-        assert!(result.is_err());
+            let result = v.validate();
+            assert!(result.is_err());
 
-        if let Err(errors) = &result {
-            assert_eq!(1, errors.len());
-            assert_eq!("lang", errors[0].field);
-            assert_eq!(vec!["Must be one of , en"], errors[0].messages);
-        } else {
-            panic!("must fail");
-        }
+            if let Err(errors) = &result {
+                assert_eq!(1, errors.len());
+                assert_eq!("lang", errors[0].field);
+                assert_eq!(vec!["Must be one of , en"], errors[0].messages);
+            } else {
+                panic!("must fail");
+            }
+        })
     }
 
     #[test]
     fn test_validate_lang() {
-        let data = &Json(RequestData {
-            lang: Some("en".to_string()),
-            title: Some("title".to_string()),
+        run(|logger| {
+            let data = Json(RequestData {
+                lang: Some("en".to_string()),
+                title: Some("title".to_string()),
 
-            ..Default::default()
-        });
-        let v = Validator { data };
+                ..Default::default()
+            });
+            let v = Validator::new(&data, &logger);
 
-        let result = v.validate();
-        assert!(result.is_ok());
+            let result = v.validate();
+            assert!(result.is_ok());
+        })
     }
 
     #[test]
     fn test_validate_level_is_invalid() {
-        let data = &Json(RequestData {
-            level: Some("unknown".to_string()),
-            title: Some("title".to_string()),
+        run(|logger| {
+            let data = Json(RequestData {
+                level: Some("unknown".to_string()),
+                title: Some("title".to_string()),
 
-            ..Default::default()
-        });
-        let v = Validator { data };
+                ..Default::default()
+            });
+            let v = Validator::new(&data, &logger);
 
-        let result = v.validate();
-        assert!(result.is_ok());
+            let result = v.validate();
+            assert!(result.is_ok());
+        })
     }
 
     #[test]
     fn test_validate_level_is_none() {
-        let data = &Json(RequestData {
-            level: None,
-            title: Some("title".to_string()),
+        run(|logger| {
+            let data = Json(RequestData {
+                level: None,
+                title: Some("title".to_string()),
 
-            ..Default::default()
-        });
-        let v = Validator { data };
+                ..Default::default()
+            });
+            let v = Validator::new(&data, &logger);
 
-        let result = v.validate();
-        assert!(result.is_ok());
+            let result = v.validate();
+            assert!(result.is_ok());
+        })
     }
 
     #[test]
     fn test_validate_level() {
-        let data = &Json(RequestData {
-            level: Some("debug".to_string()),
-            title: Some("title".to_string()),
+        run(|logger| {
+            let data = Json(RequestData {
+                level: Some("debug".to_string()),
+                title: Some("title".to_string()),
 
-            ..Default::default()
-        });
-        let v = Validator { data };
+                ..Default::default()
+            });
+            let v = Validator::new(&data, &logger);
 
-        let result = v.validate();
-        assert!(result.is_ok());
+            let result = v.validate();
+            assert!(result.is_ok());
+        })
     }
 
     #[test]
     fn test_validation_format_is_invalid() {
-        let data = &Json(RequestData {
-            format: Some("unknown".to_string()),
-            title: Some("title".to_string()),
+        run(|logger| {
+            let data = Json(RequestData {
+                format: Some("unknown".to_string()),
+                title: Some("title".to_string()),
 
-            ..Default::default()
-        });
-        let v = Validator { data };
+                ..Default::default()
+            });
+            let v = Validator::new(&data, &logger);
 
-        let result = v.validate();
-        assert!(result.is_ok());
+            let result = v.validate();
+            assert!(result.is_ok());
+        })
     }
 
     #[test]
     fn test_validation_format_is_none() {
-        let data = &Json(RequestData {
-            format: None,
-            title: Some("title".to_string()),
+        run(|logger| {
+            let data = Json(RequestData {
+                format: None,
+                title: Some("title".to_string()),
 
-            ..Default::default()
-        });
-        let v = Validator { data };
+                ..Default::default()
+            });
+            let v = Validator::new(&data, &logger);
 
-        let result = v.validate();
-        assert!(result.is_ok());
+            let result = v.validate();
+            assert!(result.is_ok());
+        })
     }
 
     #[test]
     fn test_validation_format() {
-        let data = &Json(RequestData {
-            format: Some("TOML".to_string()),
-            title: Some("title".to_string()),
+        run(|logger| {
+            let data = Json(RequestData {
+                format: Some("TOML".to_string()),
+                title: Some("title".to_string()),
 
-            ..Default::default()
-        });
-        let v = Validator { data };
+                ..Default::default()
+            });
+            let v = Validator::new(&data, &logger);
 
-        let result = v.validate();
-        assert!(result.is_ok());
+            let result = v.validate();
+            assert!(result.is_ok());
+        })
     }
 
     #[test]
     fn test_validate_title_is_none() {
-        let data = &Json(RequestData {
-            title: None,
+        run(|logger| {
+            let data = Json(RequestData {
+                title: None,
 
-            ..Default::default()
-        });
-        let v = Validator { data };
+                ..Default::default()
+            });
+            let v = Validator::new(&data, &logger);
 
-        let result = v.validate();
-        assert!(result.is_err());
+            let result = v.validate();
+            assert!(result.is_err());
 
-        if let Err(errors) = &result {
-            assert_eq!(1, errors.len());
-            assert_eq!("title", errors[0].field);
-            assert_eq!(vec!["Must exist"], errors[0].messages);
-        } else {
-            panic!("must fail");
-        }
+            if let Err(errors) = &result {
+                assert_eq!(1, errors.len());
+                assert_eq!("title", errors[0].field);
+                assert_eq!(vec!["Must exist"], errors[0].messages);
+            } else {
+                panic!("must fail");
+            }
+        })
     }
 
     #[test]
     fn test_validate_title_is_too_long() {
-        let data = &Json(RequestData {
-            title: Some("title".repeat(52).to_string()),
+        run(|logger| {
+            let data = Json(RequestData {
+                title: Some("title".repeat(52).to_string()),
 
-            ..Default::default()
-        });
-        let v = Validator { data };
+                ..Default::default()
+            });
+            let v = Validator::new(&data, &logger);
 
-        let result = v.validate();
-        assert!(result.is_err());
+            let result = v.validate();
+            assert!(result.is_err());
 
-        if let Err(errors) = &result {
-            assert_eq!(1, errors.len());
-            assert_eq!("title", errors[0].field);
-            assert_eq!(
-                vec!["Must contain less than 255 characters"],
-                errors[0].messages
-            );
-        } else {
-            panic!("must fail");
-        }
+            if let Err(errors) = &result {
+                assert_eq!(1, errors.len());
+                assert_eq!("title", errors[0].field);
+                assert_eq!(
+                    vec!["Must contain less than 255 characters"],
+                    errors[0].messages
+                );
+            } else {
+                panic!("must fail");
+            }
+        })
     }
 
     #[test]
     fn test_validate_title() {
-        let data = &Json(RequestData {
-            title: Some("title".repeat(51).to_string()),
+        run(|logger| {
+            let data = Json(RequestData {
+                title: Some("title".repeat(51).to_string()),
 
-            ..Default::default()
-        });
-        let v = Validator { data };
+                ..Default::default()
+            });
+            let v = Validator::new(&data, &logger);
 
-        let result = v.validate();
-        assert!(result.is_ok());
+            let result = v.validate();
+            assert!(result.is_ok());
+        })
     }
 
     #[test]
     fn test_validate_content_is_too_long() {
-        let data = &Json(RequestData {
-            content: Some("text".repeat(2001).to_string()),
-            title: Some("title".to_string()),
+        run(|logger| {
+            let data = Json(RequestData {
+                content: Some("text".repeat(2001).to_string()),
+                title: Some("title".to_string()),
 
-            ..Default::default()
-        });
-        let v = Validator { data };
+                ..Default::default()
+            });
+            let v = Validator::new(&data, &logger);
 
-        let result = v.validate();
-        assert!(result.is_err());
+            let result = v.validate();
+            assert!(result.is_err());
 
-        if let Err(errors) = &result {
-            assert_eq!(1, errors.len());
-            assert_eq!("content", errors[0].field);
-            assert_eq!(
-                vec!["Must contain less than 8000 characters"],
-                errors[0].messages
-            );
-        } else {
-            panic!("must fail");
-        }
+            if let Err(errors) = &result {
+                assert_eq!(1, errors.len());
+                assert_eq!("content", errors[0].field);
+                assert_eq!(
+                    vec!["Must contain less than 8000 characters"],
+                    errors[0].messages
+                );
+            } else {
+                panic!("must fail");
+            }
+        })
     }
 
     #[test]
     fn test_validate_content_is_none() {
-        let data = &Json(RequestData {
-            content: None,
-            title: Some("title".to_string()),
+        run(|logger| {
+            let data = Json(RequestData {
+                content: None,
+                title: Some("title".to_string()),
 
-            ..Default::default()
-        });
-        let v = Validator { data };
+                ..Default::default()
+            });
+            let v = Validator::new(&data, &logger);
 
-        let result = v.validate();
-        assert!(result.is_ok());
+            let result = v.validate();
+            assert!(result.is_ok());
+        })
     }
 
     #[test]
     fn test_validate_content() {
-        let data = &Json(RequestData {
-            content: Some("text".repeat(2000).to_string()),
-            title: Some("title".to_string()),
+        run(|logger| {
+            let data = Json(RequestData {
+                content: Some("text".repeat(2000).to_string()),
+                title: Some("title".to_string()),
 
-            ..Default::default()
-        });
-        let v = Validator { data };
+                ..Default::default()
+            });
+            let v = Validator::new(&data, &logger);
 
-        let result = v.validate();
-        assert!(result.is_ok());
+            let result = v.validate();
+            assert!(result.is_ok());
+        })
     }
 
     #[test]
     fn test_validate_fields_are_default() {
-        let data = &Json(RequestData {
-            ..Default::default()
-        });
-        let v = Validator { data };
+        run(|logger| {
+            let data = Json(RequestData {
+                ..Default::default()
+            });
+            let v = Validator::new(&data, &logger);
 
-        let result = v.validate();
-        assert!(result.is_err());
+            let result = v.validate();
+            assert!(result.is_err());
 
-        if let Err(errors) = &result {
-            assert_eq!(1, errors.len());
-            assert_eq!("title", errors[0].field);
-            assert_eq!(vec!["Must exist"], errors[0].messages);
-        } else {
-            panic!("must fail");
-        }
+            if let Err(errors) = &result {
+                assert_eq!(1, errors.len());
+                assert_eq!("title", errors[0].field);
+                assert_eq!(vec!["Must exist"], errors[0].messages);
+            } else {
+                panic!("must fail");
+            }
+        })
     }
 
     #[test]
     fn test_validate() {
-        let data = &Json(RequestData {
-            id: None,
+        run(|logger| {
+            let data = &Json(RequestData {
+                id: None,
 
-            code: Some("301".to_string()),
-            lang: Some("en".to_string()),
-            level: Some("warn".to_string()),
-            format: Some("TOML".to_string()),
-            title: Some("deprecated method".to_string()),
-            content: Some(
-                r#"
+                code: Some("301".to_string()),
+                lang: Some("en".to_string()),
+                level: Some("warn".to_string()),
+                format: Some("TOML".to_string()),
+                title: Some("deprecated method".to_string()),
+                content: Some(
+                    r#"
 [method]
 name = "message::Validator::validate()"
 
 [[reason]]
 description = "It's deprecated. Use panic!() instead"
 "#
-                .to_string(),
-            ),
-        });
-        let v = Validator { data };
+                    .to_string(),
+                ),
+            });
+            let v = Validator::new(&data, &logger);
 
-        let result = v.validate();
-        assert!(result.is_ok());
+            let result = v.validate();
+            assert!(result.is_ok());
+        })
     }
 }

@@ -1,5 +1,7 @@
 use std::env;
 
+use dotenv::dotenv;
+
 pub struct Config {
     pub database_url: String,
     pub env_name: &'static str,
@@ -19,6 +21,8 @@ impl Default for Config {
 
 impl Config {
     pub fn from(config_name: &str) -> Result<Config, String> {
+        dotenv().ok();
+
         match config_name {
             "production" => Ok(Config::production_config()),
             "testing" => Ok(Config::testing_config()),
@@ -54,10 +58,12 @@ impl Config {
 
 #[cfg(test)]
 mod config_test {
-    use std::collections::HashMap;
-    use std::panic;
-
     use super::*;
+
+    use std::collections::HashMap;
+    use std::panic::{self, AssertUnwindSafe};
+
+    use parking_lot::Mutex;
 
     macro_rules! map(
         { $($key:expr => $value:expr),+ } => {
@@ -75,6 +81,7 @@ mod config_test {
     fn with_env_vars<T>(keys: &'static str, test: T)
     where T: FnOnce() -> () + panic::UnwindSafe {
         lazy_static! {
+            static ref ENV_LOCK: Mutex<()> = Mutex::new(());
             static ref DEFAULTS: HashMap<&'static str, &'static str> = map! {
                 "DATABASE_URL" =>
                     "postgresql://u$er:pa$$w0rd@localhost:5432/dbname",
@@ -86,53 +93,60 @@ mod config_test {
             };
         }
 
-        let mut origins: HashMap<&str, Result<String, env::VarError>> =
-            HashMap::new();
+        let _lock = ENV_LOCK.lock();
 
-        let inputs: Vec<&str> = keys.split(',').collect();
-        for key in inputs {
-            origins.insert(key, env::var(key));
+        let result = panic::catch_unwind(AssertUnwindSafe(|| {
+            let mut origins: HashMap<&str, Result<String, env::VarError>> =
+                HashMap::new();
 
-            let var = DEFAULTS.get(key).unwrap();
-            env::set_var(key, var);
-        }
+            let inputs: Vec<&str> = keys.split(',').collect();
+            for key in inputs {
+                origins.insert(key, env::var(key));
 
-        let result = panic::catch_unwind(test);
-
-        for (key, origin) in origins {
-            match origin {
-                Ok(v) => env::set_var(key, v),
-                Err(_) => env::remove_var(key),
+                let var = DEFAULTS.get(key).unwrap();
+                env::set_var(key, var);
             }
-        }
+
+            test();
+
+            for (key, origin) in origins {
+                match origin {
+                    Ok(v) => env::set_var(key, v),
+                    Err(_) => env::remove_var(key),
+                }
+            }
+        }));
+
         assert!(result.is_ok());
     }
 
-    #[test]
-    fn test_from() {
-        // without any env vars
-        let c = Config::from("unknown");
-        assert!(c.is_err());
-
-        // with TEST_ prefix
-        with_env_vars("TEST_DATABASE_URL,TEST_QUEUE_URL", || {
+    rusty_fork_test! {
+        #[test]
+        fn test_from() {
+            // without any env vars
             let c = Config::from("unknown");
             assert!(c.is_err());
 
-            let c = Config::from("testing");
-            assert_eq!(c.unwrap().env_name, "testing");
-        });
+            // with TEST_ prefix
+            with_env_vars("TEST_DATABASE_URL,TEST_QUEUE_URL", || {
+                let c = Config::from("unknown");
+                assert!(c.is_err());
 
-        // production or development
-        with_env_vars("DATABASE_URL,QUEUE_URL", || {
-            let c = Config::from("unknown");
-            assert!(c.is_err());
+                let c = Config::from("testing");
+                assert_eq!(c.unwrap().env_name, "testing");
+            });
 
-            let c = Config::from("development");
-            assert_eq!(c.unwrap().env_name, "development");
+            // production or development
+            with_env_vars("DATABASE_URL,QUEUE_URL", || {
+                let c = Config::from("unknown");
+                assert!(c.is_err());
 
-            let c = Config::from("production");
-            assert_eq!(c.unwrap().env_name, "production");
-        });
+                let c = Config::from("development");
+                assert_eq!(c.unwrap().env_name, "development");
+
+                let c = Config::from("production");
+                assert_eq!(c.unwrap().env_name, "production");
+            });
+        }
     }
 }
