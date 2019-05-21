@@ -120,6 +120,8 @@ test:
     POSTGRES_PASSWORD: eloquentlog
     TEST_DATABASE_URL: "postgresql://eloquentlog:eloquentlog@postgres:5432/eloquentlog_test"
     TEST_QUEUE_URL: "redis://redis:6379/0"
+    TEST_JWT_SECRET: "secret"
+    TEST_JWT_ISSUER: "issuer"
   before_script:
     - *postgresql
     - rustc --version
