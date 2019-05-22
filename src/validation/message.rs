@@ -5,7 +5,7 @@ use rocket_contrib::json::Json;
 
 use logger::Logger;
 use model::message::{LogFormat, LogLevel, NewMessage};
-use request::Message as RequestData;
+use request::message::Message as RequestData;
 use validation::*;
 
 #[derive(Debug, Clone, Serialize)]

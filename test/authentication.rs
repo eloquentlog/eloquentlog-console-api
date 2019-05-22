@@ -7,7 +7,7 @@ use run_test;
 
 #[test]
 fn test_login() {
-    run_test(|client, conn| {
+    run_test(|client, conn, _| {
         let password = "pa$$w0rD";
         let mut u = user::NewUser {
             name: None,

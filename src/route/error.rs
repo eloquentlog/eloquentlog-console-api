@@ -3,6 +3,18 @@ use rocket::http::Status;
 
 use response::Response;
 
+#[catch(400)]
+pub fn bad_request(_req: &Request) -> Response {
+    Response {
+        status: Status::BadRequest,
+        data: json!({
+            "data": {
+                "message": "The request header/body is invalid".to_string(),
+            }
+        }),
+    }
+}
+
 #[catch(404)]
 pub fn not_found(req: &Request) -> Response {
     Response {

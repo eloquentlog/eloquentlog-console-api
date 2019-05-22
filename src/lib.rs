@@ -1,4 +1,9 @@
-#![feature(proc_macro_hygiene, decl_macro, custom_attribute)]
+#![feature(
+    proc_macro_hygiene,
+    decl_macro,
+    custom_attribute,
+    type_alias_enum_variants
+)]
 
 //! Eloquentlog Backend API
 //!
@@ -54,7 +59,6 @@ extern crate uuid;
 
 mod logger;
 mod response;
-mod request;
 mod validation;
 mod route;
 mod schema;
@@ -63,12 +67,13 @@ pub mod config;
 pub mod db;
 pub mod job;
 pub mod model;
+pub mod request;
 
 use rocket::config::{Config as RocketConfig, Environment, LoggingLevel};
 use rocket_slog::SlogFairing;
 
-pub fn server(c: config::Config) -> rocket::Rocket {
-    let logger = logger::get_logger(&c);
+pub fn server(c: &config::Config) -> rocket::Rocket {
+    let logger = logger::get_logger(c);
 
     // disable default logger
     let rocket_config = RocketConfig::build(Environment::Development)
@@ -90,9 +95,10 @@ pub fn server(c: config::Config) -> rocket::Rocket {
                 route::message::put,
             ],
         )
-        .manage(c)
+        .manage(c.clone()) // TODO: not good?
         .attach(SlogFairing::new(logger))
         .register(catchers![
+            route::error::bad_request,
             route::error::not_found,
             route::error::unprocessable_entity,
         ])

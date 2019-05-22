@@ -1,11 +1,14 @@
+use rocket::State;
 use rocket::http::Status;
 use rocket_contrib::json::Json;
 use rocket_slog::SyncLogger;
 
+use config::Config;
 use db::DbConn;
 use model::user::{NewUser, User};
 use response::Response;
-use request::User as RequestData;
+use request::auth::AuthToken;
+use request::user::User as RequestData;
 use validation::user::Validator;
 
 #[post("/register", format = "json", data = "<data>")]
@@ -38,8 +41,25 @@ pub fn register(
 }
 
 #[post("/deregister", format = "json")]
-pub fn deregister(_conn: DbConn) -> Response {
-    // TODO
+pub fn deregister(
+    token: AuthToken,
+    conn: DbConn,
+    logger: SyncLogger,
+    config: State<Config>,
+) -> Response
+{
     let res: Response = Default::default();
+
+    let user = User::find_by_jwt(
+        &token,
+        &config.jwt_issuer,
+        &config.jwt_secret,
+        &conn,
+    )
+    .unwrap();
+
+    // TODO
+    info!(logger, "deregister: {}", user.id);
+
     res.status(Status::UnprocessableEntity)
 }

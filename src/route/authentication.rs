@@ -5,7 +5,8 @@ use rocket_slog::SyncLogger;
 use config::Config;
 use db::DbConn;
 use model::user::User;
-use request::UserLogin as RequestData;
+use request::auth::AuthToken;
+use request::user::UserLogin as RequestData;
 use response::Response;
 
 #[post("/login", data = "<data>", format = "json")]
@@ -13,7 +14,7 @@ pub fn login(
     conn: DbConn,
     data: RequestData,
     logger: SyncLogger,
-    state: State<Config>,
+    config: State<Config>,
 ) -> Response
 {
     let res: Response = Default::default();
@@ -22,11 +23,16 @@ pub fn login(
         Some(ref user) if user.verify_password(&data.password) => {
             // TODO
             let token = user.to_jwt(
-                &state.jwt_key_id,
-                &state.jwt_issuer,
-                &state.jwt_secret,
+                &config.jwt_key_id,
+                &config.jwt_issuer,
+                &config.jwt_secret,
             );
-            res.format(json!({ "message": token.to_string() }))
+            res.format(json!({
+                "user": {
+                    "id":  user.id,
+                    "token": token.to_string(),
+                },
+            }))
         },
         _ => {
             warn!(logger, "login failed: username {}", data.username);
@@ -39,8 +45,25 @@ pub fn login(
 }
 
 #[post("/logout", format = "json")]
-pub fn logout(_conn: DbConn) -> Response {
-    // TODO
+pub fn logout(
+    token: AuthToken,
+    conn: DbConn,
+    logger: SyncLogger,
+    config: State<Config>,
+) -> Response
+{
     let res: Response = Default::default();
+
+    let user = User::find_by_jwt(
+        &token,
+        &config.jwt_issuer,
+        &config.jwt_secret,
+        &conn,
+    )
+    .unwrap();
+
+    // TODO
+    info!(logger, "logout: {}", user.id);
+
     res.status(Status::UnprocessableEntity)
 }

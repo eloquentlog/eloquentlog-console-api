@@ -28,5 +28,5 @@ fn main() {
     // database
     let connection_pool = init_pool(&config.database_url);
 
-    server(config).manage(connection_pool).launch();
+    server(&config).manage(connection_pool).launch();
 }

@@ -1,37 +1,9 @@
 use std::io::{self, Read};
 
 use rocket::{Data, Request, Outcome::*};
-use rocket::data::{FromData, Outcome, Transform, Transformed};
+use rocket::data::{self, FromData, Transform, Transformed};
 use rocket::http::Status;
 use serde_json;
-
-type ID = usize;
-
-/// Message
-#[derive(Clone, Deserialize)]
-pub struct Message {
-    pub id: Option<ID>,
-    pub code: Option<String>,
-    pub lang: Option<String>,
-    pub level: Option<String>,
-    pub format: Option<String>,
-    pub title: Option<String>,
-    pub content: Option<String>,
-}
-
-impl Default for Message {
-    fn default() -> Self {
-        Self {
-            id: None,
-            code: None,
-            lang: None,
-            level: None,
-            format: None,
-            title: None,
-            content: None,
-        }
-    }
-}
 
 /// User
 #[derive(Clone, Deserialize)]
@@ -75,7 +47,7 @@ impl<'v> FromData<'v> for UserLogin {
     fn transform(
         _: &Request,
         data: Data,
-    ) -> Transform<Outcome<Self::Owned, Self::Error>>
+    ) -> Transform<data::Outcome<Self::Owned, Self::Error>>
     {
         let mut stream = data.open().take(USER_LOGIN_LENGTH_LIMIT);
         let mut string =
@@ -93,7 +65,7 @@ impl<'v> FromData<'v> for UserLogin {
     fn from_data(
         _: &Request,
         outcome: Transformed<'v, Self>,
-    ) -> Outcome<Self, Self::Error>
+    ) -> data::Outcome<Self, Self::Error>
     {
         let input = outcome.borrowed()?;
         let user_login: UserLogin = match serde_json::from_str(input) {

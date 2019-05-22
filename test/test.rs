@@ -40,7 +40,7 @@ pub fn minify(s: String) -> String {
 
 /// A test runner for integration tests
 pub fn run_test<T>(test: T)
-where T: FnOnce(Client, &PgConnection) -> () + panic::UnwindSafe {
+where T: FnOnce(Client, &PgConnection, &Config) -> () + panic::UnwindSafe {
     // NOTE:
     // For now, run tests sequencially :'(
     // The usage of transactions for the same connection between tests and
@@ -60,10 +60,10 @@ where T: FnOnce(Client, &PgConnection) -> () + panic::UnwindSafe {
     setup(&conn);
 
     let result = panic::catch_unwind(AssertUnwindSafe(|| {
-        let server = server(config).manage(connection_pool);
+        let server = server(&config).manage(connection_pool);
         let client = Client::new(server).unwrap();
 
-        test(client, &conn)
+        test(client, &conn, &config)
     }));
     assert!(result.is_ok());
 
