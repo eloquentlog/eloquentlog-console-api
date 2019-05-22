@@ -9,7 +9,8 @@ use dotenv::dotenv;
 use oppgave::Queue;
 use redis::Client;
 
-use eloquentlog_backend_api::{config, job};
+use eloquentlog_backend_api::job;
+use eloquentlog_backend_api::config::Config;
 
 fn get_env() -> String {
     match env::var("ENV") {
@@ -23,8 +24,7 @@ fn main() {
     dotenv().ok();
 
     let name = get_env();
-    let config =
-        config::Config::from(name.as_str()).expect("Failed to get config");
+    let config = Config::from(name.as_str()).expect("Failed to get config");
 
     // redis
     let client = Client::open(config.queue_url.as_str()).unwrap();

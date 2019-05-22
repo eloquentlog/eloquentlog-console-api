@@ -13,6 +13,8 @@ extern crate chrono;
 #[macro_use]
 extern crate diesel;
 
+extern crate jsonwebtoken;
+
 #[cfg(test)]
 #[macro_use]
 extern crate lazy_static;
@@ -39,6 +41,7 @@ extern crate serde_derive;
 extern crate slog;
 
 extern crate sloggers;
+extern crate uuid;
 
 mod logger;
 mod response;
@@ -54,8 +57,8 @@ pub mod model;
 
 use rocket::config::{Config as RocketConfig, Environment, LoggingLevel};
 
-pub fn server(c: &config::Config) -> rocket::Rocket {
-    let logger = logger::get_logger(c);
+pub fn server(c: config::Config) -> rocket::Rocket {
+    let logger = logger::get_logger(&c);
 
     // disable default logger
     let rocket_config = RocketConfig::build(Environment::Development)
@@ -77,6 +80,7 @@ pub fn server(c: &config::Config) -> rocket::Rocket {
                 route::message::put,
             ],
         )
+        .manage(c)
         .attach(logger)
         .register(catchers![
             route::error::not_found,

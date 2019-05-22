@@ -23,10 +23,10 @@ fn main() {
     dotenv().ok();
 
     let name = get_env();
-    let c = Config::from(name.as_str()).expect("Failed to get config");
+    let config = Config::from(name.as_str()).expect("Failed to get config");
 
     // database
-    let connection_pool = init_pool(&c.database_url);
+    let connection_pool = init_pool(&config.database_url);
 
-    server(&c).manage(connection_pool).launch();
+    server(config).manage(connection_pool).launch();
 }
