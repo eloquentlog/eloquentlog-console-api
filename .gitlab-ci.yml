@@ -8,7 +8,7 @@ stages:
   - &postgresql
     # /usr/include/postgresql is symlink to postgresql-11
     if [ ! -d ".postgresql" ]; then
-      USE="readline ssl zlib server uuid" emerge -v dev-db/postgresql:11;
+      USE="readline ssl zlib uuid -perl -python" emerge -v dev-db/postgresql:11;
       mkdir .postgresql;
       cp -R /usr/include/postgresql-11/ .postgresql/include;
       cp -R /usr/lib64/postgresql-11/ .postgresql/lib;
