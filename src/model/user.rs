@@ -3,10 +3,10 @@ use std::str;
 
 use bcrypt::{hash, verify};
 use chrono::{NaiveDateTime, Utc};
-use diesel::{Identifiable, Insertable, prelude::*};
-use diesel::debug_query;
+use diesel::{Identifiable, Insertable, debug_query, prelude::*};
 use diesel::pg::{Pg, PgConnection};
-use diesel::pg::types::sql_types::Uuid;
+use jsonwebtoken::{encode, decode, Header, Validation, TokenData};
+use uuid::Uuid;
 
 pub use model::user_activation_state::*;
 pub use schema::users;
@@ -15,6 +15,30 @@ use logger::Logger;
 use request::User as RequestData;
 
 const BCRYPT_COST: u32 = 12;
+
+/// Claims
+#[derive(Debug, Deserialize, Serialize)]
+pub struct Claims {
+    pub uuid: String,
+    pub email: String,
+    pub issuer: String,
+}
+
+impl Claims {
+    pub fn decode(
+        jwt: &str,
+        jwt_secret: &str,
+    ) -> Result<TokenData<Claims>, jsonwebtoken::errors::Error>
+    {
+        let v = Validation {
+            // TODO
+            validate_exp: false,
+
+            ..Validation::default()
+        };
+        decode::<Claims>(&jwt, jwt_secret.as_ref(), &v)
+    }
+}
 
 /// NewUser
 #[derive(Debug, Deserialize, Insertable)]
@@ -114,12 +138,34 @@ impl fmt::Display for User {
 
 impl User {
     pub fn find_by_email_or_username(
-        _s: &str,
-        _conn: &PgConnection,
+        s: &str,
+        conn: &PgConnection,
     ) -> Option<Self>
     {
+        let q = users::table
+            .filter(users::email.eq(s).or(users::username.eq(s)))
+            .limit(1);
+
         // TODO
-        None
+        // let sql = debug_query::<Pg, _>(&q).to_string();
+        // println!("sql: {}", sql);
+
+        match q.first::<User>(conn) {
+            Ok(v) => Some(v),
+            _ => None,
+        }
+    }
+
+    pub fn find_by_jwt(
+        jwt: &str,
+        jwt_secret: &str,
+        conn: &PgConnection,
+    ) -> Option<Self>
+    {
+        let c = Claims::decode(jwt, jwt_secret)
+            .expect("Invalid token")
+            .claims;
+        Self::find_by_email_or_username(&c.email, conn)
     }
 
     /// Save a new user into users.
@@ -191,6 +237,16 @@ impl User {
             Ok(ref v) if v.is_empty() => true,
             _ => false,
         }
+    }
+
+    pub fn to_jwt(&self, issuer: &str, secret: &str) -> String {
+        let c = Claims {
+            uuid: self.uuid.to_urn().to_string(),
+            email: self.email.clone(),
+            issuer: issuer.to_string(),
+        };
+
+        encode(&Header::default(), &c, secret.as_ref()).unwrap()
     }
 
     pub fn verify_password(&self, password: &str) -> bool {

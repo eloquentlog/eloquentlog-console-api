@@ -58,7 +58,7 @@ where T: FnOnce(Client, &PgConnection) -> () + panic::UnwindSafe {
     setup(&conn);
 
     let result = panic::catch_unwind(AssertUnwindSafe(|| {
-        let server = server(&config).manage(connection_pool);
+        let server = server(config).manage(connection_pool);
         let client = Client::new(server).unwrap();
 
         test(client, &conn)

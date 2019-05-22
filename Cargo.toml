@@ -25,12 +25,13 @@ accord = { git = "https://github.com/ChrisBuchholz/accord.git", rev = "e56cecc" 
 bcrypt = "0.3"
 chrono = { version = "0.4.6", features = ["serde"] }
 dotenv = "0.10"
+jsonwebtoken = "5.0"
 lazy_static = "1.0"
 oppgave = { git = "https://github.com/badboy/oppgave.git", rev = "3128dc6" }
 parking_lot = "0.7.1"
 redis = "0.9.0"
 regex = "0.2"
-rocket = "0.4.0"
+rocket = "0.4.1"
 rocket_codegen = "*"
 rocket-slog = "0.4"
 rusty-fork = "0.2"
@@ -39,11 +40,12 @@ serde_derive = "1.0"
 serde_json = "1.0"
 slog = "2.4"
 sloggers = "0.3"
+uuid = "0.7"
 
 [dependencies.diesel]
 version = "1.4.2"
 default-features = false
-features = ["chrono", "postgres", "r2d2", "uuid"]
+features = ["chrono", "postgres", "r2d2", "uuidv07"]
 
 [dependencies.rocket_contrib]
 version = "*"

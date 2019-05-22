@@ -5,6 +5,8 @@ use dotenv::dotenv;
 pub struct Config {
     pub database_url: String,
     pub env_name: &'static str,
+    pub jwt_issuer: String,
+    pub jwt_secret: String,
     pub queue_url: String,
 }
 
@@ -14,6 +16,8 @@ impl Default for Config {
             database_url: env::var("DATABASE_URL")
                 .expect("DATABASE_URL is not set"),
             env_name: &"undefined",
+            jwt_issuer: env::var("JWT_ISSUER").expect("JWT_ISSUER is not set"),
+            jwt_secret: env::var("JWT_SECRET").expect("JWT_SECRET is not set"),
             queue_url: env::var("QUEUE_URL").expect("QUEUE_URL is not set"),
         }
     }
@@ -43,6 +47,10 @@ impl Config {
             database_url: env::var("TEST_DATABASE_URL")
                 .expect("TEST_DATABASE_URL is not set"),
             env_name: &"testing",
+            jwt_issuer: env::var("TEST_JWT_ISSUER")
+                .expect("TEST_JWT_ISSUER is not set"),
+            jwt_secret: env::var("TEST_JWT_SECRET")
+                .expect("TEST_JWT_SECRET is not set"),
             queue_url: env::var("TEST_QUEUE_URL")
                 .expect("TEST_QUEUE_URL is not set"),
         }
@@ -85,10 +93,14 @@ mod config_test {
             static ref DEFAULTS: HashMap<&'static str, &'static str> = map! {
                 "DATABASE_URL" =>
                     "postgresql://u$er:pa$$w0rd@localhost:5432/dbname",
+                "JWT_ISSUER" => "com.eloquentlog",
+                "JWT_SECRET" => "secret",
                 "QUEUE_URL" => "redis://u$er:pa$$w0rd@localhost:6379/queue",
 
                 "TEST_DATABASE_URL" =>
                     "postgresql://u$er:pa$$w0rd@localhost:5432/dbname",
+                "TEST_JWT_ISSUER" => "com.eloquentlog",
+                "TEST_JWT_SECRET" => "test-secret",
                 "TEST_QUEUE_URL" => "redis://u$er:pa$$w0rd@localhost:6379/queue"
             };
         }
@@ -128,7 +140,9 @@ mod config_test {
             assert!(c.is_err());
 
             // with TEST_ prefix
-            with_env_vars("TEST_DATABASE_URL,TEST_QUEUE_URL", || {
+            with_env_vars(
+                "TEST_DATABASE_URL,TEST_JWT_ISSUER,TEST_JWT_SECRET,TEST_QUEUE_URL",
+                || {
                 let c = Config::from("unknown");
                 assert!(c.is_err());
 
@@ -137,7 +151,7 @@ mod config_test {
             });
 
             // production or development
-            with_env_vars("DATABASE_URL,QUEUE_URL", || {
+            with_env_vars("DATABASE_URL,JWT_ISSUER,JWT_SECRET,QUEUE_URL", || {
                 let c = Config::from("unknown");
                 assert!(c.is_err());
 
