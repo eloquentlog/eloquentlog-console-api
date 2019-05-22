@@ -16,32 +16,60 @@ use request::user::User as RequestData;
 
 const BCRYPT_COST: u32 = 12;
 
-/// Claims
+/// ActivationClaims
 #[derive(Debug, Deserialize, Serialize)]
-pub struct Claims {
+pub struct ActivationClaims {
+    pub sub: String,
+    pub exp: usize,
+    pub iss: String,
+}
+
+impl ActivationClaims {
+    pub fn decode(
+        jwt: &str,
+        jwt_issuer: &str,
+        jwt_secret: &str,
+    ) -> Result<TokenData<ActivationClaims>, jsonwebtoken::errors::Error>
+    {
+        let v = Validation {
+            algorithms: vec![Algorithm::HS256],
+            iss: Some(jwt_issuer.to_string()),
+            leeway: 30, // seconds
+            validate_exp: true,
+
+            ..Validation::default()
+        };
+        decode::<ActivationClaims>(&jwt, jwt_secret.as_ref(), &v)
+    }
+}
+
+/// AuthorizationClaims
+#[derive(Debug, Deserialize, Serialize)]
+pub struct AuthorizationClaims {
     pub uuid: String,
     pub email: String,
 
     pub iss: String,
 }
 
-impl Claims {
+impl AuthorizationClaims {
     pub fn decode(
         jwt: &str,
         jwt_issuer: &str,
         jwt_secret: &str,
-    ) -> Result<TokenData<Claims>, jsonwebtoken::errors::Error>
+    ) -> Result<TokenData<AuthorizationClaims>, jsonwebtoken::errors::Error>
     {
         let v = Validation {
             algorithms: vec![Algorithm::HS512],
             iss: Some(jwt_issuer.to_string()),
 
             // TODO
+            leeway: 0,
             validate_exp: false,
 
             ..Validation::default()
         };
-        decode::<Claims>(&jwt, jwt_secret.as_ref(), &v)
+        decode::<AuthorizationClaims>(&jwt, jwt_secret.as_ref(), &v)
     }
 }
 
@@ -117,6 +145,7 @@ impl NewUser {
 }
 
 /// User
+// FIXME
 #[derive(Debug, Identifiable, Queryable)]
 pub struct User {
     pub id: i64,
@@ -161,14 +190,38 @@ impl User {
         }
     }
 
-    pub fn find_by_jwt(
+    pub fn find_by_activation_token(
+        token: &str,
+        issuer: &str,
+        secret: &str,
+        conn: &PgConnection,
+        logger: &Logger,
+    ) -> Option<Self>
+    {
+        let c = ActivationClaims::decode(token, issuer, secret)
+            .expect("Invalid token")
+            .claims;
+
+        let q = users::table
+            .filter(users::email.eq(c.sub))
+            .limit(1);
+
+        info!(logger, "{}", debug_query::<Pg, _>(&q).to_string());
+
+        match q.first::<User>(conn) {
+            Ok(v) => Some(v),
+            _ => None,
+        }
+    }
+
+    pub fn find_by_authorization_token(
         jwt: &str,
         jwt_issuer: &str,
         jwt_secret: &str,
         conn: &PgConnection,
     ) -> Option<Self>
     {
-        let c = Claims::decode(jwt, jwt_issuer, jwt_secret)
+        let c = AuthorizationClaims::decode(jwt, jwt_issuer, jwt_secret)
             .expect("Invalid token")
             .claims;
         Self::find_by_email_or_username(&c.email, conn)
@@ -243,6 +296,25 @@ impl User {
             Ok(ref v) if v.is_empty() => true,
             _ => false,
         }
+    }
+
+    pub fn generate_activation_token(
+        &self,
+        key_id: &str,
+        issuer: &str,
+        secret: &str,
+    ) -> String
+    {
+        let c = Claims {
+            uuid: self.uuid.to_urn().to_string(),
+            email: self.email.clone(),
+
+            iss: issuer.to_string(),
+        };
+        let mut h = Header::default();
+        h.kid = Some(key_id.to_string());
+        h.alg = Algorithm::HS512;
+        encode(&h, &c, secret.as_ref()).unwrap()
     }
 
     pub fn to_jwt(&self, key_id: &str, issuer: &str, secret: &str) -> String {

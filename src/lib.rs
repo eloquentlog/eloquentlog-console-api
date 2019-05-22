@@ -88,6 +88,7 @@ pub fn server(c: &config::Config) -> rocket::Rocket {
             routes![
                 route::authentication::login,
                 route::authentication::logout,
+                route::registration::activate,
                 route::registration::register,
                 route::registration::deregister,
                 route::message::get,

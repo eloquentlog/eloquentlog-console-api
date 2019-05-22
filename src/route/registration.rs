@@ -40,6 +40,19 @@ pub fn register(
     }
 }
 
+// FIXME
+#[get("/activate/<access_token>")]
+pub fn activate(
+    access_token: String,
+    conn: DbConn,
+    logger: SyncLogger,
+    config: State<Config>,
+) -> Response
+{
+    let res: Response = Default::default();
+    res.status(Status::Ok)
+}
+
 #[post("/deregister", format = "json")]
 pub fn deregister(
     token: AuthToken,
