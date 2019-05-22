@@ -4,7 +4,7 @@ use run_test;
 
 #[test]
 fn test_register_with_validation_error() {
-    run_test(|client, _| {
+    run_test(|client, _, _| {
         let res = client
             .post("/_api/register")
             .header(ContentType::JSON)
@@ -22,7 +22,7 @@ fn test_register_with_validation_error() {
 
 #[test]
 fn test_register() {
-    run_test(|client, _| {
+    run_test(|client, _, _| {
         let res = client
             .post("/_api/register")
             .header(ContentType::JSON)

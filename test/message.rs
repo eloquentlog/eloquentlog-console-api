@@ -1,15 +1,44 @@
 use chrono::{Utc, TimeZone};
 use diesel::{self, prelude::*};
-use rocket::http::{ContentType, Status};
+use diesel::pg::PgConnection;
+use rocket::http::{ContentType, Header, Status};
 
-use eloquentlog_backend_api::model::message;
+use eloquentlog_backend_api::request::auth::X_ELOQUENTLOG_AUTH_KEY;
+use eloquentlog_backend_api::model::{message, user};
 
 use {minify, run_test};
 
+fn build_test_user(conn: &PgConnection) -> user::User {
+    let password = "pa$$w0rD";
+    let mut u = user::NewUser {
+        name: None,
+        username: None,
+        email: "foo@example.org".to_string(),
+
+        ..Default::default()
+    };
+    u.set_password(&password);
+
+    diesel::insert_into(user::users::table)
+        .values(&u)
+        .get_result::<user::User>(conn)
+        .unwrap_or_else(|_| panic!("Error inserting: {}", u))
+}
+
 #[test]
 fn test_get_no_message() {
-    run_test(|client, _| {
-        let mut res = client.get("/_api/messages").dispatch();
+    run_test(|client, conn, config| {
+        let user = build_test_user(&conn);
+        let auth = Header::new(
+            X_ELOQUENTLOG_AUTH_KEY,
+            user.to_jwt(
+                &config.jwt_key_id,
+                &config.jwt_issuer,
+                &config.jwt_secret,
+            ),
+        );
+
+        let mut res = client.get("/_api/messages").header(auth).dispatch();
 
         assert_eq!(res.status(), Status::Ok);
         assert!(res.body_string().unwrap().contains("[]"));
@@ -18,7 +47,17 @@ fn test_get_no_message() {
 
 #[test]
 fn test_get_recent_messages() {
-    run_test(|client, conn| {
+    run_test(|client, conn, config| {
+        let user = build_test_user(&conn);
+        let auth = Header::new(
+            X_ELOQUENTLOG_AUTH_KEY,
+            user.to_jwt(
+                &config.jwt_key_id,
+                &config.jwt_issuer,
+                &config.jwt_secret,
+            ),
+        );
+
         let dt = Utc.ymd(2019, 8, 7).and_hms_milli(6, 5, 4, 333); // 2019-08-07T06:05:04.333
         let m = message::Message {
             id: 1,
@@ -38,7 +77,7 @@ fn test_get_recent_messages() {
             .get_result::<i64>(conn)
             .unwrap_or_else(|_| panic!("Error inserting: {}", m));
 
-        let mut res = client.get("/_api/messages").dispatch();
+        let mut res = client.get("/_api/messages").header(auth).dispatch();
 
         assert_eq!(res.status(), Status::Ok);
 
@@ -66,10 +105,21 @@ fn test_get_recent_messages() {
 
 #[test]
 fn test_post_with_validation_errors() {
-    run_test(|client, _| {
+    run_test(|client, conn, config| {
+        let user = build_test_user(&conn);
+        let auth = Header::new(
+            X_ELOQUENTLOG_AUTH_KEY,
+            user.to_jwt(
+                &config.jwt_key_id,
+                &config.jwt_issuer,
+                &config.jwt_secret,
+            ),
+        );
+
         let mut res = client
             .post("/_api/messages")
             .header(ContentType::JSON)
+            .header(auth)
             .body(
                 r#"{
         "code": "",
@@ -86,10 +136,21 @@ fn test_post_with_validation_errors() {
 
 #[test]
 fn test_post() {
-    run_test(|client, _| {
+    run_test(|client, conn, config| {
+        let user = build_test_user(&conn);
+        let auth = Header::new(
+            X_ELOQUENTLOG_AUTH_KEY,
+            user.to_jwt(
+                &config.jwt_key_id,
+                &config.jwt_issuer,
+                &config.jwt_secret,
+            ),
+        );
+
         let mut res = client
             .post("/_api/messages")
             .header(ContentType::JSON)
+            .header(auth)
             .body(
                 r#"{
         "format": "toml",
@@ -107,7 +168,17 @@ fn test_post() {
 
 #[test]
 fn test_put() {
-    run_test(|client, conn| {
+    run_test(|client, conn, config| {
+        let user = build_test_user(&conn);
+        let auth = Header::new(
+            X_ELOQUENTLOG_AUTH_KEY,
+            user.to_jwt(
+                &config.jwt_key_id,
+                &config.jwt_issuer,
+                &config.jwt_secret,
+            ),
+        );
+
         let m = message::NewMessage {
             code: None,
             lang: "en".to_string(),
@@ -126,6 +197,7 @@ fn test_put() {
         let mut res = client
             .put(format!("/_api/messages/{}", id))
             .header(ContentType::JSON)
+            .header(auth)
             .body(format!(
                 r#"{{
         "id": {},

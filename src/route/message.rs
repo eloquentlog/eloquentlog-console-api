@@ -1,18 +1,37 @@
+use rocket::State;
 use rocket::http::Status;
 use rocket_contrib::json::Json;
 use rocket_slog::SyncLogger;
 
+use config::Config;
 use db::DbConn;
 use model::message::{LogFormat, LogLevel, Message, NewMessage};
+use model::user::User;
 use response::Response;
-use request::Message as RequestData;
+use request::auth::AuthToken;
+use request::message::Message as RequestData;
 use validation::message::Validator;
 
 const MESSAGES_PER_REQUEST: i64 = 100;
 
 #[get("/messages")]
-pub fn get(conn: DbConn, logger: SyncLogger) -> Response {
+pub fn get(
+    token: AuthToken,
+    conn: DbConn,
+    logger: SyncLogger,
+    config: State<Config>,
+) -> Response
+{
     let res: Response = Default::default();
+
+    // TODO: fetch messages for the user
+    let _ = User::find_by_jwt(
+        &token,
+        &config.jwt_issuer,
+        &config.jwt_secret,
+        &conn,
+    )
+    .unwrap();
 
     let messages = Message::recent(MESSAGES_PER_REQUEST, &conn, &logger);
     res.format(json!({ "messages": messages }))
@@ -30,12 +49,23 @@ pub fn get(conn: DbConn, logger: SyncLogger) -> Response {
 // ```
 #[post("/messages", format = "json", data = "<data>")]
 pub fn post(
+    token: AuthToken,
     data: Json<RequestData>,
     conn: DbConn,
     logger: SyncLogger,
+    config: State<Config>,
 ) -> Response
 {
     let res: Response = Default::default();
+
+    // TODO: save messages for the user
+    let _ = User::find_by_jwt(
+        &token,
+        &config.jwt_issuer,
+        &config.jwt_secret,
+        &conn,
+    )
+    .unwrap();
 
     let v = Validator::new(&data, &logger);
     match v.validate() {
@@ -58,13 +88,24 @@ pub fn post(
 
 #[put("/messages/<id>", format = "json", data = "<data>")]
 pub fn put(
+    token: AuthToken,
     id: usize,
     data: Json<RequestData>,
     conn: DbConn,
     logger: SyncLogger,
+    config: State<Config>,
 ) -> Response
 {
     let res: Response = Default::default();
+
+    // TODO: update messages for the user
+    let _ = User::find_by_jwt(
+        &token,
+        &config.jwt_issuer,
+        &config.jwt_secret,
+        &conn,
+    )
+    .unwrap();
 
     let message_id = data.0.id.unwrap_or_default();
     if message_id == 0 || id != message_id {

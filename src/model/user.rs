@@ -12,7 +12,7 @@ pub use model::user_activation_state::*;
 pub use schema::users;
 
 use logger::Logger;
-use request::User as RequestData;
+use request::user::User as RequestData;
 
 const BCRYPT_COST: u32 = 12;
 
@@ -21,16 +21,21 @@ const BCRYPT_COST: u32 = 12;
 pub struct Claims {
     pub uuid: String,
     pub email: String,
-    pub issuer: String,
+
+    pub iss: String,
 }
 
 impl Claims {
     pub fn decode(
         jwt: &str,
+        jwt_issuer: &str,
         jwt_secret: &str,
     ) -> Result<TokenData<Claims>, jsonwebtoken::errors::Error>
     {
         let v = Validation {
+            algorithms: vec![Algorithm::HS512],
+            iss: Some(jwt_issuer.to_string()),
+
             // TODO
             validate_exp: false,
 
@@ -158,11 +163,12 @@ impl User {
 
     pub fn find_by_jwt(
         jwt: &str,
+        jwt_issuer: &str,
         jwt_secret: &str,
         conn: &PgConnection,
     ) -> Option<Self>
     {
-        let c = Claims::decode(jwt, jwt_secret)
+        let c = Claims::decode(jwt, jwt_issuer, jwt_secret)
             .expect("Invalid token")
             .claims;
         Self::find_by_email_or_username(&c.email, conn)
@@ -243,7 +249,8 @@ impl User {
         let c = Claims {
             uuid: self.uuid.to_urn().to_string(),
             email: self.email.clone(),
-            issuer: issuer.to_string(),
+
+            iss: issuer.to_string(),
         };
         let mut h = Header::default();
         h.kid = Some(key_id.to_string());

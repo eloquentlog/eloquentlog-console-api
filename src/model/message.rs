@@ -14,7 +14,7 @@ pub use model::log_level::*;
 pub use model::log_format::*;
 pub use schema::messages;
 
-use request::Message as RequestData;
+use request::message::Message as RequestData;
 
 /// NewMessage
 #[derive(Debug, Insertable)]
