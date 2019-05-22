@@ -5,6 +5,8 @@ extern crate eloquentlog_backend_api;
 
 use std::env;
 
+use dotenv::dotenv;
+
 use eloquentlog_backend_api::server;
 use eloquentlog_backend_api::db::init_pool;
 use eloquentlog_backend_api::config::Config;
@@ -19,6 +21,8 @@ fn get_env() -> String {
 
 fn main() {
     let name = get_env();
+
+    dotenv().ok();
     let config = Config::from(name.as_str()).expect("Failed to get config");
 
     // database

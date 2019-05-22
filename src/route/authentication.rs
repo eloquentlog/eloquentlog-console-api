@@ -21,7 +21,11 @@ pub fn login(
     match User::find_by_email_or_username(&data.username, &conn) {
         Some(ref user) if user.verify_password(&data.password) => {
             // TODO
-            let token = user.to_jwt(&state.jwt_issuer, &state.jwt_secret);
+            let token = user.to_jwt(
+                &state.jwt_key_id,
+                &state.jwt_issuer,
+                &state.jwt_secret,
+            );
             res.format(json!({ "message": token.to_string() }))
         },
         _ => {

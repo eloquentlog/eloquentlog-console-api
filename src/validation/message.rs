@@ -62,6 +62,7 @@ mod test {
 
     use std::panic::{self, AssertUnwindSafe};
 
+    use dotenv::dotenv;
     use rocket_contrib::json::Json;
 
     use config::Config;
@@ -69,6 +70,8 @@ mod test {
 
     pub fn run<T>(test: T)
     where T: FnOnce(&Logger) -> () + panic::UnwindSafe {
+        // TODO: remove dotenv from here
+        dotenv().ok();
         let config = Config::from("testing").unwrap();
         let logger = get_logger(&config);
 

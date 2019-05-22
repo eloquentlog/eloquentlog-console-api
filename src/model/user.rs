@@ -5,7 +5,7 @@ use bcrypt::{hash, verify};
 use chrono::{NaiveDateTime, Utc};
 use diesel::{Identifiable, Insertable, debug_query, prelude::*};
 use diesel::pg::{Pg, PgConnection};
-use jsonwebtoken::{encode, decode, Header, Validation, TokenData};
+use jsonwebtoken::{Algorithm, Header, Validation, TokenData, encode, decode};
 use uuid::Uuid;
 
 pub use model::user_activation_state::*;
@@ -239,14 +239,16 @@ impl User {
         }
     }
 
-    pub fn to_jwt(&self, issuer: &str, secret: &str) -> String {
+    pub fn to_jwt(&self, key_id: &str, issuer: &str, secret: &str) -> String {
         let c = Claims {
             uuid: self.uuid.to_urn().to_string(),
             email: self.email.clone(),
             issuer: issuer.to_string(),
         };
-
-        encode(&Header::default(), &c, secret.as_ref()).unwrap()
+        let mut h = Header::default();
+        h.kid = Some(key_id.to_string());
+        h.alg = Algorithm::HS512;
+        encode(&h, &c, secret.as_ref()).unwrap()
     }
 
     pub fn verify_password(&self, password: &str) -> bool {
