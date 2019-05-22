@@ -19,18 +19,22 @@ pub mod test {
     use diesel::PgConnection;
 
     use config::Config;
+    use logger::{Logger, get_logger};
 
     /// A test runner
     pub fn run<T>(test: T)
-    where T: FnOnce(&PgConnection) -> () + panic::UnwindSafe {
-        let conn = establish_connection();
+    where T: FnOnce(&PgConnection, &Logger) -> () + panic::UnwindSafe {
+        let config = Config::from("testing").unwrap();
+        let conn = establish_connection(&config);
+        let logger = get_logger(&config);
 
         let _: std::result::Result<(), diesel::result::Error> =
             conn.build_transaction().read_write().run(|| {
                 setup(&conn);
 
-                let result =
-                    panic::catch_unwind(AssertUnwindSafe(|| test(&conn)));
+                let result = panic::catch_unwind(AssertUnwindSafe(|| {
+                    test(&conn, &logger)
+                }));
 
                 teardown(&conn);
 
@@ -63,12 +67,9 @@ pub mod test {
         }
     }
 
-    pub fn establish_connection() -> PgConnection {
-        dotenv::dotenv().ok();
-
-        let c = Config::from("testing").unwrap();
-        PgConnection::establish(&c.database_url).unwrap_or_else(|_| {
-            panic!("Error connecting to : {}", c.database_url)
+    pub fn establish_connection(config: &Config) -> PgConnection {
+        PgConnection::establish(&config.database_url).unwrap_or_else(|_| {
+            panic!("Error connecting to : {}", &config.database_url)
         })
     }
 }

@@ -4,9 +4,10 @@ use accord::validators::{contains, length, length_if_present, max, min};
 use diesel::PgConnection;
 use rocket_contrib::json::Json;
 
-use validation::*;
-use request::User as RequestData;
+use logger::Logger;
 use model::user::{NewUser, User};
+use request::User as RequestData;
+use validation::*;
 
 #[derive(Debug, Clone, Serialize)]
 pub struct ValidationError {
@@ -17,15 +18,25 @@ pub struct ValidationError {
 pub struct Validator<'a> {
     conn: &'a PgConnection,
     data: &'a Json<RequestData>,
+    logger: &'a Logger,
 }
 
 impl<'a> Validator<'a> {
-    pub fn new(conn: &'a PgConnection, data: &'a Json<RequestData>) -> Self {
-        Self { conn, data }
+    pub fn new(
+        conn: &'a PgConnection,
+        data: &'a Json<RequestData>,
+        logger: &'a Logger,
+    ) -> Self
+    {
+        Self { conn, data, logger }
     }
 
     fn validate_email_uniqueness(&self) -> Result<(), ValidationError> {
-        if !User::check_email_uniqueness(&self.data.0.email, self.conn) {
+        if !User::check_email_uniqueness(
+            &self.data.0.email,
+            self.conn,
+            self.logger,
+        ) {
             return Err(ValidationError {
                 field: "email".to_string(),
                 messages: vec!["Already exists".to_string()],
@@ -37,7 +48,11 @@ impl<'a> Validator<'a> {
     fn validate_username_uniqueness(&self) -> Result<(), ValidationError> {
         match self.data.0.username {
             Some(ref username)
-                if !User::check_username_uniqueness(&username, self.conn) =>
+                if !User::check_username_uniqueness(
+                    &username,
+                    self.conn,
+                    self.logger,
+                ) =>
             {
                 Err(ValidationError {
                     field: "username".to_string(),
@@ -123,14 +138,14 @@ mod test {
 
     #[test]
     fn test_validate_email_is_empty() {
-        run(|conn| {
+        run(|conn, logger| {
             let data = &Json(RequestData {
                 email: "".to_string(),
                 password: "Passw0rd".to_string(),
 
                 ..Default::default()
             });
-            let v = Validator { conn, data };
+            let v = Validator { conn, data, logger };
 
             let result = v.validate();
             assert!(result.is_err());
@@ -154,14 +169,14 @@ mod test {
 
     #[test]
     fn test_validate_email_is_invalid() {
-        run(|conn| {
+        run(|conn, logger| {
             let data = &Json(RequestData {
                 email: "this-is-not-email".to_string(),
                 password: "Passw0rd".to_string(),
 
                 ..Default::default()
             });
-            let v = Validator { conn, data };
+            let v = Validator { conn, data, logger };
 
             let result = v.validate();
             assert!(result.is_err());
@@ -181,14 +196,14 @@ mod test {
 
     #[test]
     fn test_validate_email_is_invalid_and_too_short() {
-        run(|conn| {
+        run(|conn, logger| {
             let data = &Json(RequestData {
                 email: "short".to_string(),
                 password: "Passw0rd".to_string(),
 
                 ..Default::default()
             });
-            let v = Validator { conn, data };
+            let v = Validator { conn, data, logger };
 
             let result = v.validate();
             assert!(result.is_err());
@@ -212,14 +227,14 @@ mod test {
 
     #[test]
     fn test_validate_email_is_too_long() {
-        run(|conn| {
+        run(|conn, logger| {
             let data = &Json(RequestData {
                 email: "long@example.org".repeat(9).to_string(),
                 password: "Passw0rd".to_string(),
 
                 ..Default::default()
             });
-            let v = Validator { conn, data };
+            let v = Validator { conn, data, logger };
 
             let result = v.validate();
             assert!(result.is_err());
@@ -239,14 +254,14 @@ mod test {
 
     #[test]
     fn test_validate_email_is_invalid_and_too_long() {
-        run(|conn| {
+        run(|conn, logger| {
             let data = &Json(RequestData {
                 email: "long".repeat(33).to_string(),
                 password: "Passw0rd".to_string(),
 
                 ..Default::default()
             });
-            let v = Validator { conn, data };
+            let v = Validator { conn, data, logger };
 
             let result = v.validate();
             assert!(result.is_err());
@@ -270,14 +285,14 @@ mod test {
 
     #[test]
     fn test_validate_email() {
-        run(|conn| {
+        run(|conn, logger| {
             let data = &Json(RequestData {
                 email: "postmaster@example.org".to_string(),
                 password: "Passw0rd".to_string(),
 
                 ..Default::default()
             });
-            let v = Validator { conn, data };
+            let v = Validator { conn, data, logger };
 
             let result = v.validate();
             assert!(result.is_ok());
@@ -286,7 +301,7 @@ mod test {
 
     #[test]
     fn test_validate_name_is_too_long() {
-        run(|conn| {
+        run(|conn, logger| {
             let data = &Json(RequestData {
                 name: Some("long".repeat(26).to_string()),
                 email: "postmaster@example.org".to_string(),
@@ -294,7 +309,7 @@ mod test {
 
                 ..Default::default()
             });
-            let v = Validator { conn, data };
+            let v = Validator { conn, data, logger };
 
             let result = v.validate();
             assert!(result.is_err());
@@ -314,7 +329,7 @@ mod test {
 
     #[test]
     fn test_validate_name_is_none() {
-        run(|conn| {
+        run(|conn, logger| {
             let data = &Json(RequestData {
                 name: None,
                 email: "postmaster@example.org".to_string(),
@@ -322,7 +337,7 @@ mod test {
 
                 ..Default::default()
             });
-            let v = Validator { conn, data };
+            let v = Validator { conn, data, logger };
 
             let result = v.validate();
             assert!(result.is_ok());
@@ -331,7 +346,7 @@ mod test {
 
     #[test]
     fn test_validate_name() {
-        run(|conn| {
+        run(|conn, logger| {
             let data = &Json(RequestData {
                 name: Some("Lorem ipsum".to_string()),
                 email: "postmaster@example.org".to_string(),
@@ -339,7 +354,7 @@ mod test {
 
                 ..Default::default()
             });
-            let v = Validator { conn, data };
+            let v = Validator { conn, data, logger };
 
             let result = v.validate();
             assert!(result.is_ok());
@@ -348,7 +363,7 @@ mod test {
 
     #[test]
     fn test_validate_username_is_too_short() {
-        run(|conn| {
+        run(|conn, logger| {
             let data = &Json(RequestData {
                 username: Some("hi".to_string()),
                 email: "postmaster@example.org".to_string(),
@@ -356,7 +371,7 @@ mod test {
 
                 ..Default::default()
             });
-            let v = Validator { conn, data };
+            let v = Validator { conn, data, logger };
 
             let result = v.validate();
             assert!(result.is_err());
@@ -376,7 +391,7 @@ mod test {
 
     #[test]
     fn test_validate_username_is_too_long() {
-        run(|conn| {
+        run(|conn, logger| {
             let data = &Json(RequestData {
                 username: Some("username".repeat(5).to_string()),
                 email: "postmaster@example.org".to_string(),
@@ -384,7 +399,7 @@ mod test {
 
                 ..Default::default()
             });
-            let v = Validator { conn, data };
+            let v = Validator { conn, data, logger };
 
             let result = v.validate();
             assert!(result.is_err());
@@ -404,7 +419,7 @@ mod test {
 
     #[test]
     fn test_validate_username_is_invalid() {
-        run(|conn| {
+        run(|conn, logger| {
             let tests: [(&'static str, &'static str); 3] = [
                 ("-invalid", "Must not contain '-'"),
                 ("@invalid", "Must not contain '@'"),
@@ -419,7 +434,7 @@ mod test {
 
                     ..Default::default()
                 });
-                let v = Validator { conn, data };
+                let v = Validator { conn, data, logger };
 
                 let result = v.validate();
                 assert!(result.is_err());
@@ -443,7 +458,7 @@ mod test {
 
     #[test]
     fn test_validate_username_contains_only_digits() {
-        run(|conn| {
+        run(|conn, logger| {
             let tests: [(&'static str, Vec<String>); 3] = [
                 (
                     "98765432_",
@@ -479,7 +494,7 @@ mod test {
 
                     ..Default::default()
                 });
-                let v = Validator { conn, data };
+                let v = Validator { conn, data, logger };
 
                 let result = v.validate();
                 assert!(result.is_err());
@@ -502,7 +517,7 @@ mod test {
 
     #[test]
     fn test_validate_username_is_none() {
-        run(|conn| {
+        run(|conn, logger| {
             let data = &Json(RequestData {
                 username: None,
                 email: "postmaster@example.org".to_string(),
@@ -510,7 +525,7 @@ mod test {
 
                 ..Default::default()
             });
-            let v = Validator { conn, data };
+            let v = Validator { conn, data, logger };
 
             let result = v.validate();
             assert!(result.is_ok());
@@ -519,7 +534,7 @@ mod test {
 
     #[test]
     fn test_validate_username() {
-        run(|conn| {
+        run(|conn, logger| {
             let tests: [&str; 4] =
                 ["u123456789", "under_score", "username009", "oO0"];
 
@@ -531,7 +546,7 @@ mod test {
 
                     ..Default::default()
                 });
-                let v = Validator { conn, data };
+                let v = Validator { conn, data, logger };
 
                 let result = v.validate();
                 assert!(result.is_ok());
@@ -541,7 +556,7 @@ mod test {
 
     #[test]
     fn test_validate_username_starts_with_digits() {
-        run(|conn| {
+        run(|conn, logger| {
             let tests: [&'static str; 3] = ["0name", "123four", "99999a"];
 
             for (i, value) in tests.iter().enumerate() {
@@ -552,7 +567,7 @@ mod test {
 
                     ..Default::default()
                 });
-                let v = Validator { conn, data };
+                let v = Validator { conn, data, logger };
 
                 let result = v.validate();
                 assert!(result.is_err());
@@ -576,14 +591,14 @@ mod test {
 
     #[test]
     fn test_validate_password_is_too_short() {
-        run(|conn| {
+        run(|conn, logger| {
             let data = &Json(RequestData {
                 email: "postmaster@example.org".to_string(),
                 password: "Sh0rt".to_string(),
 
                 ..Default::default()
             });
-            let v = Validator { conn, data };
+            let v = Validator { conn, data, logger };
 
             let result = v.validate();
             assert!(result.is_err());
@@ -603,14 +618,14 @@ mod test {
 
     #[test]
     fn test_validate_password_is_too_long() {
-        run(|conn| {
+        run(|conn, logger| {
             let data = &Json(RequestData {
                 email: "postmaster@example.org".to_string(),
                 password: "L0ng".repeat(257).to_string(),
 
                 ..Default::default()
             });
-            let v = Validator { conn, data };
+            let v = Validator { conn, data, logger };
 
             let result = v.validate();
             assert!(result.is_err());
@@ -630,7 +645,7 @@ mod test {
 
     #[test]
     fn test_validate_password_equals_username() {
-        run(|conn| {
+        run(|conn, logger| {
             let data = &Json(RequestData {
                 username: Some("Passw0rd".to_string()),
                 email: "postmaster@example.org".to_string(),
@@ -638,7 +653,7 @@ mod test {
 
                 ..Default::default()
             });
-            let v = Validator { conn, data };
+            let v = Validator { conn, data, logger };
 
             let result = v.validate();
             assert!(result.is_err());
@@ -658,7 +673,7 @@ mod test {
 
     #[test]
     fn test_validate_password_contains_username() {
-        run(|conn| {
+        run(|conn, logger| {
             let data = &Json(RequestData {
                 username: Some("username".to_string()),
                 email: "postmaster@example.org".to_string(),
@@ -666,7 +681,7 @@ mod test {
 
                 ..Default::default()
             });
-            let v = Validator { conn, data };
+            let v = Validator { conn, data, logger };
 
             let result = v.validate();
             assert!(result.is_err());
@@ -686,7 +701,7 @@ mod test {
 
     #[test]
     fn test_validate_password_is_included_in_username() {
-        run(|conn| {
+        run(|conn, logger| {
             let data = &Json(RequestData {
                 username: Some("myPassw0rd".to_string()),
                 email: "postmaster@example.org".to_string(),
@@ -694,7 +709,7 @@ mod test {
 
                 ..Default::default()
             });
-            let v = Validator { conn, data };
+            let v = Validator { conn, data, logger };
 
             let result = v.validate();
             assert!(result.is_err());
@@ -714,7 +729,7 @@ mod test {
 
     #[test]
     fn test_validate_password_is_not_formatted_according_rules() {
-        run(|conn| {
+        run(|conn, logger| {
             let tests: [(&'static str, &'static str); 3] = [
                 ("passw0rd", "Must contain 'A-Z'"),
                 ("PASSW0RD", "Must contain 'a-z'"),
@@ -729,7 +744,7 @@ mod test {
 
                     ..Default::default()
                 });
-                let v = Validator { conn, data };
+                let v = Validator { conn, data, logger };
 
                 let result = v.validate();
                 assert!(result.is_err());
@@ -753,7 +768,7 @@ mod test {
 
     #[test]
     fn test_validate_email_uniqueness() {
-        run(|conn| {
+        run(|conn, logger| {
             let data = &Json(RequestData {
                 username: Some("username".to_string()),
                 email: "postmaster@example.org".to_string(),
@@ -765,7 +780,7 @@ mod test {
             let mut u = NewUser::from(data.0.clone());
             u.set_password(&data.password);
 
-            let _id = User::insert(&u, conn)
+            let _id = User::insert(&u, conn, logger)
                 .unwrap_or_else(|| panic!("Error inserting: {}", u));
 
             let data = &Json(RequestData {
@@ -775,7 +790,7 @@ mod test {
 
                 ..Default::default()
             });
-            let v = Validator { conn, data };
+            let v = Validator { conn, data, logger };
 
             let result = v.validate();
             assert!(result.is_err());
@@ -792,7 +807,7 @@ mod test {
 
     #[test]
     fn test_validate_username_uniqueness() {
-        run(|conn| {
+        run(|conn, logger| {
             let data = &Json(RequestData {
                 username: Some("username".to_string()),
                 email: "postmaster@example.org".to_string(),
@@ -804,7 +819,7 @@ mod test {
             let mut u = NewUser::from(data.0.clone());
             u.set_password(&data.password);
 
-            let _id = User::insert(&u, conn)
+            let _id = User::insert(&u, conn, logger)
                 .unwrap_or_else(|| panic!("Error inserting: {}", u));
 
             let data = &Json(RequestData {
@@ -814,7 +829,7 @@ mod test {
 
                 ..Default::default()
             });
-            let v = Validator { conn, data };
+            let v = Validator { conn, data, logger };
 
             let result = v.validate();
             assert!(result.is_err());

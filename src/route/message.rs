@@ -11,10 +11,10 @@ use validation::message::Validator;
 const MESSAGES_PER_REQUEST: i64 = 100;
 
 #[get("/messages")]
-pub fn get(conn: DbConn, _logger: SyncLogger) -> Response {
+pub fn get(conn: DbConn, logger: SyncLogger) -> Response {
     let res: Response = Default::default();
 
-    let messages = Message::recent(MESSAGES_PER_REQUEST, &conn);
+    let messages = Message::recent(MESSAGES_PER_REQUEST, &conn, &logger);
     res.format(json!({ "messages": messages }))
 }
 
@@ -32,12 +32,12 @@ pub fn get(conn: DbConn, _logger: SyncLogger) -> Response {
 pub fn post(
     data: Json<RequestData>,
     conn: DbConn,
-    _logger: SyncLogger,
+    logger: SyncLogger,
 ) -> Response
 {
     let res: Response = Default::default();
 
-    let v = Validator::new(&data);
+    let v = Validator::new(&data, &logger);
     match v.validate() {
         Err(errors) => {
             res.status(Status::UnprocessableEntity).format(json!({
@@ -46,7 +46,7 @@ pub fn post(
         },
         Ok(_) => {
             let m = NewMessage::from(data.0.clone());
-            if let Some(id) = Message::insert(&m, &conn) {
+            if let Some(id) = Message::insert(&m, &conn, &logger) {
                 return res.format(json!({"message": {
                     "id": id,
                 }}));
@@ -72,12 +72,12 @@ pub fn put(
         return res.status(Status::NotFound).format(json!(null));
     }
 
-    let result = Message::first(id as i64, &conn);
+    let result = Message::first(id as i64, &conn, &logger);
     if result.is_none() {
         return res.status(Status::NotFound).format(json!(null));
     }
 
-    let v = Validator::new(&data);
+    let v = Validator::new(&data, &logger);
     match v.validate() {
         Err(errors) => {
             res.status(Status::UnprocessableEntity).format(json!({
@@ -99,7 +99,7 @@ pub fn put(
             m.title = data.title.unwrap_or_default();
             m.content = data.content;
 
-            if let Some(id) = Message::update(&mut m, &conn) {
+            if let Some(id) = Message::update(&mut m, &conn, &logger) {
                 return res.format(json!({"message": {
                     "id": id,
                 }}));

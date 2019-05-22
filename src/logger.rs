@@ -1,5 +1,3 @@
-use rocket_slog::SlogFairing;
-
 use sloggers::{
     Build,
     terminal::{TerminalLoggerBuilder, Destination},
@@ -8,7 +6,9 @@ use sloggers::{
 
 use config::Config;
 
-pub fn get_logger(config: &Config) -> SlogFairing {
+pub type Logger = slog::Logger;
+
+pub fn get_logger(config: &Config) -> Logger {
     let mut builder = TerminalLoggerBuilder::new();
 
     let level = match config.env_name {
@@ -19,7 +19,5 @@ pub fn get_logger(config: &Config) -> SlogFairing {
 
     builder.level(level);
     builder.destination(Destination::Stdout);
-    let logger = builder.build().unwrap();
-
-    SlogFairing::new(logger)
+    builder.build().unwrap()
 }

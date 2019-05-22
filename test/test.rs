@@ -50,8 +50,6 @@ where T: FnOnce(Client, &PgConnection) -> () + panic::UnwindSafe {
     }
     let _lock = DB_LOCK.lock();
 
-    dotenv::dotenv().ok();
-
     let config = Config::from("testing").unwrap();
 
     // Use same connection pool between test and client
@@ -103,7 +101,7 @@ fn clean(conn: &PgConnection) {
 }
 
 pub fn get_pool(config: &Config) -> Pool {
-    init_pool(&(config.database_url))
+    init_pool(&config.database_url)
 }
 
 pub fn get_conn(connection_pool: &Pool) -> DbConn {
