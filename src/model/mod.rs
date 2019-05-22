@@ -15,6 +15,7 @@ pub mod user;
 pub mod test {
     use std::panic::{self, AssertUnwindSafe};
 
+    use dotenv::dotenv;
     use diesel::{self, prelude::*};
     use diesel::PgConnection;
 
@@ -24,6 +25,8 @@ pub mod test {
     /// A test runner
     pub fn run<T>(test: T)
     where T: FnOnce(&PgConnection, &Logger) -> () + panic::UnwindSafe {
+        // TODO: remove dotenv from here
+        dotenv().ok();
         let config = Config::from("testing").unwrap();
         let conn = establish_connection(&config);
         let logger = get_logger(&config);

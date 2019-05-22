@@ -1,9 +1,12 @@
+extern crate dotenv;
 extern crate oppgave;
 extern crate redis;
 
 extern crate eloquentlog_backend_api;
 
 use std::env;
+
+use dotenv::dotenv;
 use oppgave::Queue;
 use redis::Client;
 
@@ -20,6 +23,8 @@ fn get_env() -> String {
 
 fn main() {
     let name = get_env();
+
+    dotenv().ok();
     let config = Config::from(name.as_str()).expect("Failed to get config");
 
     // redis

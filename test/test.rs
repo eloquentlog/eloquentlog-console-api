@@ -22,6 +22,7 @@ use regex::Regex;
 
 use diesel::prelude::*;
 use diesel::PgConnection;
+use dotenv::dotenv;
 use parking_lot::Mutex;
 use rocket::local::Client;
 
@@ -50,6 +51,7 @@ where T: FnOnce(Client, &PgConnection) -> () + panic::UnwindSafe {
     }
     let _lock = DB_LOCK.lock();
 
+    dotenv().ok();
     let config = Config::from("testing").unwrap();
 
     // Use same connection pool between test and client
