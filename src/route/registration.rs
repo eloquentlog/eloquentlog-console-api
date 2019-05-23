@@ -55,6 +55,7 @@ pub fn deregister(
         &config.jwt_issuer,
         &config.jwt_secret,
         &conn,
+        &logger,
     )
     .unwrap();
 

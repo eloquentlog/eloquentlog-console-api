@@ -145,15 +145,13 @@ impl User {
     pub fn find_by_email_or_username(
         s: &str,
         conn: &PgConnection,
+        logger: &Logger,
     ) -> Option<Self>
     {
         let q = users::table
             .filter(users::email.eq(s).or(users::username.eq(s)))
             .limit(1);
-
-        // TODO
-        // let sql = debug_query::<Pg, _>(&q).to_string();
-        // println!("sql: {}", sql);
+        info!(logger, "{}", debug_query::<Pg, _>(&q).to_string());
 
         match q.first::<User>(conn) {
             Ok(v) => Some(v),
@@ -166,12 +164,13 @@ impl User {
         jwt_issuer: &str,
         jwt_secret: &str,
         conn: &PgConnection,
+        logger: &Logger,
     ) -> Option<Self>
     {
         let c = Claims::decode(jwt, jwt_issuer, jwt_secret)
             .expect("Invalid token")
             .claims;
-        Self::find_by_email_or_username(&c.email, conn)
+        Self::find_by_email_or_username(&c.email, conn, logger)
     }
 
     /// Save a new user into users.
@@ -195,7 +194,6 @@ impl User {
                 users::access_token_expires_at.eq(Utc::now().naive_utc()),
             ))
             .returning(users::id);
-
         info!(logger, "{}", debug_query::<Pg, _>(&q).to_string());
 
         match q.get_result::<i64>(conn) {
@@ -217,7 +215,6 @@ impl User {
             .select(users::id)
             .filter(users::email.eq(email))
             .limit(1);
-
         info!(logger, "{}", debug_query::<Pg, _>(&q).to_string());
 
         match q.load::<i64>(conn) {
