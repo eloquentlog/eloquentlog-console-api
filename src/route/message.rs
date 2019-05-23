@@ -30,6 +30,7 @@ pub fn get(
         &config.jwt_issuer,
         &config.jwt_secret,
         &conn,
+        &logger,
     )
     .unwrap();
 
@@ -64,6 +65,7 @@ pub fn post(
         &config.jwt_issuer,
         &config.jwt_secret,
         &conn,
+        &logger,
     )
     .unwrap();
 
@@ -104,6 +106,7 @@ pub fn put(
         &config.jwt_issuer,
         &config.jwt_secret,
         &conn,
+        &logger,
     )
     .unwrap();
 

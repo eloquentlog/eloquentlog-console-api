@@ -19,7 +19,7 @@ pub fn login(
 {
     let res: Response = Default::default();
 
-    match User::find_by_email_or_username(&data.username, &conn) {
+    match User::find_by_email_or_username(&data.username, &conn, &logger) {
         Some(ref user) if user.verify_password(&data.password) => {
             // TODO
             let token = user.to_jwt(
@@ -59,6 +59,7 @@ pub fn logout(
         &config.jwt_issuer,
         &config.jwt_secret,
         &conn,
+        &logger,
     )
     .unwrap();
 
