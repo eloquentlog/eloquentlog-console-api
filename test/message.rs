@@ -3,8 +3,9 @@ use diesel::{self, prelude::*};
 use diesel::pg::PgConnection;
 use rocket::http::{ContentType, Header, Status};
 
-use eloquentlog_backend_api::request::auth::X_ELOQUENTLOG_AUTH_KEY;
+use eloquentlog_backend_api::config;
 use eloquentlog_backend_api::model::{message, user};
+use eloquentlog_backend_api::request::auth::X_ELOQUENTLOG_AUTHORIZATION_KEY;
 
 use {minify, run_test};
 
@@ -25,18 +26,26 @@ fn build_test_user(conn: &PgConnection) -> user::User {
         .unwrap_or_else(|_| panic!("Error inserting: {}", u))
 }
 
+fn build_authorization_header<'a>(
+    user: &user::User,
+    config: &config::Config,
+) -> Header<'a>
+{
+    Header::new(
+        X_ELOQUENTLOG_AUTHORIZATION_KEY,
+        user.generate_authorization_token(
+            &config.jwt_issuer,
+            &config.jwt_key_id,
+            &config.jwt_secret,
+        ),
+    )
+}
+
 #[test]
 fn test_get_no_message() {
     run_test(|client, conn, config| {
         let user = build_test_user(&conn);
-        let auth = Header::new(
-            X_ELOQUENTLOG_AUTH_KEY,
-            user.to_jwt(
-                &config.jwt_key_id,
-                &config.jwt_issuer,
-                &config.jwt_secret,
-            ),
-        );
+        let auth = build_authorization_header(&user, &config);
 
         let mut res = client.get("/_api/messages").header(auth).dispatch();
 
@@ -49,14 +58,7 @@ fn test_get_no_message() {
 fn test_get_recent_messages() {
     run_test(|client, conn, config| {
         let user = build_test_user(&conn);
-        let auth = Header::new(
-            X_ELOQUENTLOG_AUTH_KEY,
-            user.to_jwt(
-                &config.jwt_key_id,
-                &config.jwt_issuer,
-                &config.jwt_secret,
-            ),
-        );
+        let auth = build_authorization_header(&user, &config);
 
         let dt = Utc.ymd(2019, 8, 7).and_hms_milli(6, 5, 4, 333); // 2019-08-07T06:05:04.333
         let m = message::Message {
@@ -107,14 +109,7 @@ fn test_get_recent_messages() {
 fn test_post_with_validation_errors() {
     run_test(|client, conn, config| {
         let user = build_test_user(&conn);
-        let auth = Header::new(
-            X_ELOQUENTLOG_AUTH_KEY,
-            user.to_jwt(
-                &config.jwt_key_id,
-                &config.jwt_issuer,
-                &config.jwt_secret,
-            ),
-        );
+        let auth = build_authorization_header(&user, &config);
 
         let mut res = client
             .post("/_api/messages")
@@ -138,14 +133,7 @@ fn test_post_with_validation_errors() {
 fn test_post() {
     run_test(|client, conn, config| {
         let user = build_test_user(&conn);
-        let auth = Header::new(
-            X_ELOQUENTLOG_AUTH_KEY,
-            user.to_jwt(
-                &config.jwt_key_id,
-                &config.jwt_issuer,
-                &config.jwt_secret,
-            ),
-        );
+        let auth = build_authorization_header(&user, &config);
 
         let mut res = client
             .post("/_api/messages")
@@ -170,14 +158,7 @@ fn test_post() {
 fn test_put() {
     run_test(|client, conn, config| {
         let user = build_test_user(&conn);
-        let auth = Header::new(
-            X_ELOQUENTLOG_AUTH_KEY,
-            user.to_jwt(
-                &config.jwt_key_id,
-                &config.jwt_issuer,
-                &config.jwt_secret,
-            ),
-        );
+        let auth = build_authorization_header(&user, &config);
 
         let m = message::NewMessage {
             code: None,

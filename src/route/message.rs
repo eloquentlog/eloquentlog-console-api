@@ -6,6 +6,7 @@ use rocket_slog::SyncLogger;
 use config::Config;
 use db::DbConn;
 use model::message::{LogFormat, LogLevel, Message, NewMessage};
+use model::token::AuthorizationClaims;
 use model::user::User;
 use response::Response;
 use request::auth::AuthToken;
@@ -25,11 +26,12 @@ pub fn get(
     let res: Response = Default::default();
 
     // TODO: fetch messages for the user
-    let _ = User::find_by_jwt(
+    let _ = User::find_by_token::<AuthorizationClaims>(
         &token,
         &config.jwt_issuer,
         &config.jwt_secret,
         &conn,
+        &logger,
     )
     .unwrap();
 
@@ -59,11 +61,12 @@ pub fn post(
     let res: Response = Default::default();
 
     // TODO: save messages for the user
-    let _ = User::find_by_jwt(
+    let _ = User::find_by_token::<AuthorizationClaims>(
         &token,
         &config.jwt_issuer,
         &config.jwt_secret,
         &conn,
+        &logger,
     )
     .unwrap();
 
@@ -99,11 +102,12 @@ pub fn put(
     let res: Response = Default::default();
 
     // TODO: update messages for the user
-    let _ = User::find_by_jwt(
+    let _ = User::find_by_token::<AuthorizationClaims>(
         &token,
         &config.jwt_issuer,
         &config.jwt_secret,
         &conn,
+        &logger,
     )
     .unwrap();
 

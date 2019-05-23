@@ -6,9 +6,9 @@ use rocket::http::Status;
 use rocket::request::FromRequest;
 
 use config::Config;
-use model::user::Claims;
+use model::token::{AuthorizationClaims, Claims};
 
-pub struct AuthToken(pub String); // JWT
+pub struct AuthToken(pub String);
 
 impl Deref for AuthToken {
     type Target = str;
@@ -18,11 +18,18 @@ impl Deref for AuthToken {
     }
 }
 
-fn decode(value: &str, config: &Config) -> Result<String, String> {
+fn decode_authorization_token(
+    value: &str,
+    config: &Config,
+) -> Result<String, String>
+{
     // with validation
-    let _ = Claims::decode(&value, &config.jwt_issuer, &config.jwt_secret)
-        .expect("Invalid token")
-        .claims;
+    let _ = AuthorizationClaims::decode(
+        &value,
+        &config.jwt_issuer,
+        &config.jwt_secret,
+    )
+    .expect("Invalid token");
     Ok(value.to_string())
 }
 
@@ -33,7 +40,8 @@ pub enum AuthTokenError {
     Missing,
 }
 
-pub const X_ELOQUENTLOG_AUTH_KEY: &str = "X-Eloquentlog-Auth-Token";
+pub const X_ELOQUENTLOG_AUTHORIZATION_KEY: &str =
+    "X-Eloquentlog-Authorization-Token";
 
 impl<'a, 'r> FromRequest<'a, 'r> for AuthToken {
     type Error = AuthTokenError;
@@ -42,7 +50,8 @@ impl<'a, 'r> FromRequest<'a, 'r> for AuthToken {
         req: &'a Request<'r>,
     ) -> request::Outcome<Self, Self::Error> {
         let headers = req.headers();
-        let keys: Vec<_> = headers.get(X_ELOQUENTLOG_AUTH_KEY).collect();
+        let keys: Vec<_> =
+            headers.get(X_ELOQUENTLOG_AUTHORIZATION_KEY).collect();
         match keys.len() {
             0 => {
                 request::Outcome::Failure((
@@ -60,7 +69,7 @@ impl<'a, 'r> FromRequest<'a, 'r> for AuthToken {
                 }
 
                 let config = req.guard::<State<Config>>().unwrap();
-                match decode(value, &config) {
+                match decode_authorization_token(value, &config) {
                     Ok(v) => request::Outcome::Success(AuthToken(v)),
                     _ => {
                         request::Outcome::Failure((
