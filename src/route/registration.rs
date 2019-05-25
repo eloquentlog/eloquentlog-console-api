@@ -5,6 +5,7 @@ use rocket_slog::SyncLogger;
 
 use config::Config;
 use db::DbConn;
+use model::token::AuthorizationClaims;
 use model::user::{NewUser, User};
 use response::Response;
 use request::auth::AuthToken;
@@ -40,6 +41,20 @@ pub fn register(
     }
 }
 
+#[get("/activate/<access_token>")]
+pub fn activate(
+    access_token: String,
+    _conn: DbConn,
+    logger: SyncLogger,
+    _config: State<Config>,
+) -> Response
+{
+    let res: Response = Default::default();
+
+    info!(logger, "access_token: {}", access_token);
+    res.status(Status::Ok)
+}
+
 #[post("/deregister", format = "json")]
 pub fn deregister(
     token: AuthToken,
@@ -50,7 +65,7 @@ pub fn deregister(
 {
     let res: Response = Default::default();
 
-    let user = User::find_by_jwt(
+    let user = User::find_by_token::<AuthorizationClaims>(
         &token,
         &config.jwt_issuer,
         &config.jwt_secret,

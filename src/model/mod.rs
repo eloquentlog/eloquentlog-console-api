@@ -7,6 +7,9 @@ mod log_level;
 mod log_format;
 mod user_activation_state;
 
+// entities
+pub mod token;
+
 // models
 pub mod message;
 pub mod user;

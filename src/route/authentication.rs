@@ -4,6 +4,7 @@ use rocket_slog::SyncLogger;
 
 use config::Config;
 use db::DbConn;
+use model::token::AuthorizationClaims;
 use model::user::User;
 use request::auth::AuthToken;
 use request::user::UserLogin as RequestData;
@@ -19,10 +20,10 @@ pub fn login(
 {
     let res: Response = Default::default();
 
-    match User::find_by_email_or_username(&data.username, &conn, &logger) {
+    match User::find_by_email_or_uuid(&data.username, &conn, &logger) {
         Some(ref user) if user.verify_password(&data.password) => {
             // TODO
-            let token = user.to_jwt(
+            let token = user.generate_authorization_token(
                 &config.jwt_key_id,
                 &config.jwt_issuer,
                 &config.jwt_secret,
@@ -54,7 +55,7 @@ pub fn logout(
 {
     let res: Response = Default::default();
 
-    let user = User::find_by_jwt(
+    let user = User::find_by_token::<AuthorizationClaims>(
         &token,
         &config.jwt_issuer,
         &config.jwt_secret,

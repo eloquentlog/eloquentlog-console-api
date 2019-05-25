@@ -5,45 +5,16 @@ use bcrypt::{hash, verify};
 use chrono::{NaiveDateTime, Utc};
 use diesel::{Identifiable, Insertable, debug_query, prelude::*};
 use diesel::pg::{Pg, PgConnection};
-use jsonwebtoken::{Algorithm, Header, Validation, TokenData, encode, decode};
 use uuid::Uuid;
 
 pub use model::user_activation_state::*;
 pub use schema::users;
 
 use logger::Logger;
+use model::token::{ActivationClaims, AuthorizationClaims, Claims};
 use request::user::User as RequestData;
 
 const BCRYPT_COST: u32 = 12;
-
-/// Claims
-#[derive(Debug, Deserialize, Serialize)]
-pub struct Claims {
-    pub uuid: String,
-    pub email: String,
-
-    pub iss: String,
-}
-
-impl Claims {
-    pub fn decode(
-        jwt: &str,
-        jwt_issuer: &str,
-        jwt_secret: &str,
-    ) -> Result<TokenData<Claims>, jsonwebtoken::errors::Error>
-    {
-        let v = Validation {
-            algorithms: vec![Algorithm::HS512],
-            iss: Some(jwt_issuer.to_string()),
-
-            // TODO
-            validate_exp: false,
-
-            ..Validation::default()
-        };
-        decode::<Claims>(&jwt, jwt_secret.as_ref(), &v)
-    }
-}
 
 /// NewUser
 #[derive(Debug, Deserialize, Insertable)]
@@ -117,6 +88,7 @@ impl NewUser {
 }
 
 /// User
+// FIXME
 #[derive(Debug, Identifiable, Queryable)]
 pub struct User {
     pub id: i64,
@@ -142,15 +114,18 @@ impl fmt::Display for User {
 }
 
 impl User {
-    pub fn find_by_email_or_username(
+    pub fn find_by_email(
         s: &str,
         conn: &PgConnection,
         logger: &Logger,
     ) -> Option<Self>
     {
-        let q = users::table
-            .filter(users::email.eq(s).or(users::username.eq(s)))
-            .limit(1);
+        if s.is_empty() {
+            return None;
+        }
+
+        let q = users::table.filter(users::email.eq(s)).limit(1);
+
         info!(logger, "{}", debug_query::<Pg, _>(&q).to_string());
 
         match q.first::<User>(conn) {
@@ -159,18 +134,54 @@ impl User {
         }
     }
 
-    pub fn find_by_jwt(
-        jwt: &str,
-        jwt_issuer: &str,
-        jwt_secret: &str,
+    pub fn find_by_uuid(
+        s: &str,
         conn: &PgConnection,
         logger: &Logger,
     ) -> Option<Self>
     {
-        let c = Claims::decode(jwt, jwt_issuer, jwt_secret)
-            .expect("Invalid token")
-            .claims;
-        Self::find_by_email_or_username(&c.email, conn, logger)
+        if s.is_empty() {
+            return None;
+        }
+
+        let u = Uuid::parse_str(s).unwrap();
+        let q = users::table.filter(users::uuid.eq(u)).limit(1);
+
+        info!(logger, "{}", debug_query::<Pg, _>(&q).to_string());
+
+        match q.first::<User>(conn) {
+            Ok(v) => Some(v),
+            _ => None,
+        }
+    }
+
+    pub fn find_by_email_or_uuid(
+        s: &str,
+        conn: &PgConnection,
+        logger: &Logger,
+    ) -> Option<Self>
+    {
+        // TODO
+        // refactor find_by_xxx
+        if s.contains('@') {
+            User::find_by_email(s, conn, logger)
+        } else if s.contains('-') {
+            User::find_by_uuid(s, conn, logger)
+        } else {
+            None
+        }
+    }
+
+    pub fn find_by_token<T: Claims>(
+        token: &str,
+        issuer: &str,
+        secret: &str,
+        conn: &PgConnection,
+        logger: &Logger,
+    ) -> Option<Self>
+    {
+        let c = T::decode(token, issuer, secret).expect("Invalid token");
+        Self::find_by_email_or_uuid(c.get_subject().as_ref(), conn, logger)
     }
 
     /// Save a new user into users.
@@ -194,6 +205,7 @@ impl User {
                 users::access_token_expires_at.eq(Utc::now().naive_utc()),
             ))
             .returning(users::id);
+
         info!(logger, "{}", debug_query::<Pg, _>(&q).to_string());
 
         match q.get_result::<i64>(conn) {
@@ -215,6 +227,7 @@ impl User {
             .select(users::id)
             .filter(users::email.eq(email))
             .limit(1);
+
         info!(logger, "{}", debug_query::<Pg, _>(&q).to_string());
 
         match q.load::<i64>(conn) {
@@ -242,17 +255,26 @@ impl User {
         }
     }
 
-    pub fn to_jwt(&self, key_id: &str, issuer: &str, secret: &str) -> String {
-        let c = Claims {
-            uuid: self.uuid.to_urn().to_string(),
-            email: self.email.clone(),
+    pub fn generate_activation_token(
+        &self,
+        issuer: &str,
+        key_id: &str,
+        secret: &str,
+    ) -> String
+    {
+        let subject = self.email.clone();
+        ActivationClaims::encode(subject, issuer, key_id, secret)
+    }
 
-            iss: issuer.to_string(),
-        };
-        let mut h = Header::default();
-        h.kid = Some(key_id.to_string());
-        h.alg = Algorithm::HS512;
-        encode(&h, &c, secret.as_ref()).unwrap()
+    pub fn generate_authorization_token(
+        &self,
+        issuer: &str,
+        key_id: &str,
+        secret: &str,
+    ) -> String
+    {
+        let subject = self.uuid.to_urn().to_string();
+        AuthorizationClaims::encode(subject, issuer, key_id, secret)
     }
 
     pub fn verify_password(&self, password: &str) -> bool {
