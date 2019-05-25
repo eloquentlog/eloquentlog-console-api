@@ -6,7 +6,7 @@ ENV := development
 MIGRATION_DIRECTORY := migration
 
 # setup -- {{{
-setup\:vendor:  ## Install cargo vendor and run it [alias: setup]
+setup\:vendor:  ## Install cargo vendor and run it
 	@mkdir -p .cargo
 	@which cargo-vendor >/dev/null 2>&1 || cargo install \
 	  cargo-vendor --force
@@ -20,7 +20,10 @@ setup\:tool:  ## Install development tools
 	  diesel_cli --no-default-features --features "postgres" --force
 .PHONY: setup\:tool
 
-setup: | setup\:vendor
+setup\:all: | setup\:tool setup\:vendor  ## Setup vendor and tool both [alias: setup]
+.PHONY: setup\:all
+
+setup: | setup\:all
 .PHONY: setup
 # }}}
 
@@ -69,7 +72,7 @@ test\:integration:  ## Run integrations test only
 .PHONY: test\:integration
 
 test\:all:  ## Run unit tests and integration tests [alias: test]
-	@cargo test --tests
+	@cargo test --lib --test integration
 .PHONY: test\:all
 
 test: | test\:all
@@ -186,7 +189,7 @@ help:  ## Display this message
 	  sed --expression='s/\(\s|\(\s[0-9a-z\:\\]*\)*\)  /  /' | \
 	  tr --delete \\\\ | \
 	  awk 'BEGIN {FS = ":  ## "}; \
-	      {printf "\033[38;05;222m%-23s\033[0m %s\n", $$1, $$2}' | \
+	      {printf "\033[38;05;222m%-24s\033[0m %s\n", $$1, $$2}' | \
 	  sort
 .PHONY: help
 # }}}
