@@ -6,7 +6,7 @@ use config::Config;
 use db::DbConn;
 use model::token::AuthorizationClaims;
 use model::user::User;
-use request::auth::AuthToken;
+use request::auth::AuthorizationToken;
 use request::user::UserLogin as RequestData;
 use response::Response;
 
@@ -28,12 +28,7 @@ pub fn login(
                 &config.jwt_issuer,
                 &config.jwt_secret,
             );
-            res.format(json!({
-                "user": {
-                    "id":  user.id,
-                    "token": token.to_string(),
-                },
-            }))
+            res.format(json!({"token": token.to_string()}))
         },
         _ => {
             warn!(logger, "login failed: username {}", data.username);
@@ -47,7 +42,7 @@ pub fn login(
 
 #[post("/logout", format = "json")]
 pub fn logout(
-    token: AuthToken,
+    token: AuthorizationToken,
     conn: DbConn,
     logger: SyncLogger,
     config: State<Config>,

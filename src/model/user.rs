@@ -2,16 +2,17 @@ use std::fmt;
 use std::str;
 
 use bcrypt::{hash, verify};
-use chrono::{NaiveDateTime, Utc};
+use chrono::{NaiveDateTime, Utc, TimeZone};
 use diesel::{Identifiable, Insertable, debug_query, prelude::*};
 use diesel::pg::{Pg, PgConnection};
 use uuid::Uuid;
 
 pub use model::user_activation_state::*;
+pub use model::user_reset_password_state::*;
 pub use schema::users;
 
 use logger::Logger;
-use model::token::{ActivationClaims, AuthorizationClaims, Claims};
+use model::token::{ActivationClaims, AuthorizationClaims, Claims, Token};
 use request::user::User as RequestData;
 
 const BCRYPT_COST: u32 = 12;
@@ -25,8 +26,7 @@ pub struct NewUser {
     pub email: String,
     pub password: Vec<u8>,
     pub activation_state: UserActivationState,
-    pub access_token: String,
-    pub access_token_expires_at: NaiveDateTime,
+    pub reset_password_state: UserResetPasswordState,
 }
 
 impl fmt::Display for NewUser {
@@ -42,11 +42,9 @@ impl Default for NewUser {
             username: None,
             email: "".to_string(), // validation error
             password: vec![],      // validation error
-            activation_state: UserActivationState::Pending,
 
-            // TODO
-            access_token: "".to_string(),
-            access_token_expires_at: Utc::now().naive_utc(),
+            activation_state: UserActivationState::Pending,
+            reset_password_state: UserResetPasswordState::NeverYet,
         }
     }
 }
@@ -77,7 +75,8 @@ impl NewUser {
 
     pub fn generate_access_token() -> String {
         // TODO
-        "test".to_string()
+        // API access token for user
+        "".to_string()
     }
 
     // NOTE:
@@ -88,7 +87,6 @@ impl NewUser {
 }
 
 /// User
-// FIXME
 #[derive(Debug, Identifiable, Queryable)]
 pub struct User {
     pub id: i64,
@@ -97,9 +95,13 @@ pub struct User {
     pub username: Option<String>,
     pub email: String,
     pub password: Vec<u8>,
+    pub access_token: Option<String>,
+    pub access_token_issued_at: Option<NaiveDateTime>,
     pub activation_state: UserActivationState,
-    pub access_token: String,
-    pub access_token_expires_at: NaiveDateTime,
+    pub activation_token: Option<String>,
+    pub activation_token_expires_at: Option<NaiveDateTime>,
+    pub activation_token_sent_at: Option<NaiveDateTime>,
+    pub reset_password_state: UserResetPasswordState,
     pub reset_password_token: Option<String>,
     pub reset_password_token_expires_at: Option<NaiveDateTime>,
     pub reset_password_token_sent_at: Option<NaiveDateTime>,
@@ -114,6 +116,44 @@ impl fmt::Display for User {
 }
 
 impl User {
+    pub fn check_email_uniqueness(
+        email: &str,
+        conn: &PgConnection,
+        logger: &Logger,
+    ) -> bool
+    {
+        let q = users::table
+            .select(users::id)
+            .filter(users::email.eq(email))
+            .limit(1);
+
+        info!(logger, "{}", debug_query::<Pg, _>(&q).to_string());
+
+        match q.load::<i64>(conn) {
+            Ok(ref v) if v.is_empty() => true,
+            _ => false,
+        }
+    }
+
+    pub fn check_username_uniqueness(
+        username: &str,
+        conn: &PgConnection,
+        logger: &Logger,
+    ) -> bool
+    {
+        let q = users::table
+            .select(users::id)
+            .filter(users::username.eq(username))
+            .limit(1);
+
+        info!(logger, "{}", debug_query::<Pg, _>(&q).to_string());
+
+        match q.load::<i64>(conn) {
+            Ok(ref v) if v.is_empty() => true,
+            _ => false,
+        }
+    }
+
     pub fn find_by_email(
         s: &str,
         conn: &PgConnection,
@@ -189,69 +229,26 @@ impl User {
         user: &NewUser,
         conn: &PgConnection,
         logger: &Logger,
-    ) -> Option<i64>
+    ) -> Option<Self>
     {
-        // TODO
-        // * set valid access_token
-        // * update access_token_expires_at
-        let q = diesel::insert_into(users::table)
-            .values((
-                Some(users::name.eq(&user.name)),
-                Some(users::username.eq(&user.username)),
-                users::email.eq(&user.email),
-                users::password.eq(&user.password),
-                users::activation_state.eq(UserActivationState::Pending),
-                users::access_token.eq(NewUser::generate_access_token()),
-                users::access_token_expires_at.eq(Utc::now().naive_utc()),
-            ))
-            .returning(users::id);
+        let q = diesel::insert_into(users::table).values((
+            Some(users::name.eq(&user.name)),
+            Some(users::username.eq(&user.username)),
+            users::email.eq(&user.email),
+            users::password.eq(&user.password),
+            // default
+            users::activation_state.eq(UserActivationState::Pending),
+            users::reset_password_state.eq(UserResetPasswordState::NeverYet),
+        ));
 
         info!(logger, "{}", debug_query::<Pg, _>(&q).to_string());
 
-        match q.get_result::<i64>(conn) {
+        match q.get_result::<Self>(conn) {
             Err(e) => {
-                println!("err: {}", e);
+                error!(logger, "err: {}", e);
                 None
             },
-            Ok(id) => Some(id),
-        }
-    }
-
-    pub fn check_email_uniqueness(
-        email: &str,
-        conn: &PgConnection,
-        logger: &Logger,
-    ) -> bool
-    {
-        let q = users::table
-            .select(users::id)
-            .filter(users::email.eq(email))
-            .limit(1);
-
-        info!(logger, "{}", debug_query::<Pg, _>(&q).to_string());
-
-        match q.load::<i64>(conn) {
-            Ok(ref v) if v.is_empty() => true,
-            _ => false,
-        }
-    }
-
-    pub fn check_username_uniqueness(
-        username: &str,
-        conn: &PgConnection,
-        logger: &Logger,
-    ) -> bool
-    {
-        let q = users::table
-            .select(users::id)
-            .filter(users::username.eq(username))
-            .limit(1);
-
-        info!(logger, "{}", debug_query::<Pg, _>(&q).to_string());
-
-        match q.load::<i64>(conn) {
-            Ok(ref v) if v.is_empty() => true,
-            _ => false,
+            Ok(u) => Some(u),
         }
     }
 
@@ -260,7 +257,7 @@ impl User {
         issuer: &str,
         key_id: &str,
         secret: &str,
-    ) -> String
+    ) -> Token
     {
         let subject = self.email.clone();
         ActivationClaims::encode(subject, issuer, key_id, secret)
@@ -271,10 +268,39 @@ impl User {
         issuer: &str,
         key_id: &str,
         secret: &str,
-    ) -> String
+    ) -> Token
     {
         let subject = self.uuid.to_urn().to_string();
         AuthorizationClaims::encode(subject, issuer, key_id, secret)
+    }
+
+    pub fn grant_activation_token(
+        &self,
+        issuer: &str,
+        key_id: &str,
+        secret: &str,
+        conn: &PgConnection,
+        logger: &Logger,
+    ) -> Option<Self>
+    {
+        let token = self.generate_activation_token(&issuer, &key_id, &secret);
+        // FIXME
+        // save activation_token_xxxx
+        let q = diesel::update(self).set((
+            users::activation_token.eq(Some(token.value.to_string())),
+            users::activation_token_expires_at
+                .eq(Some(Utc.timestamp(token.expires_at, 0).naive_utc())),
+        ));
+
+        info!(logger, "{}", debug_query::<Pg, _>(&q).to_string());
+
+        match q.get_result::<Self>(conn) {
+            Err(e) => {
+                error!(logger, "err: {}", e);
+                None
+            },
+            Ok(u) => Some(u),
+        }
     }
 
     pub fn verify_password(&self, password: &str) -> bool {

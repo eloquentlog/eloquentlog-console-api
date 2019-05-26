@@ -8,7 +8,7 @@ use db::DbConn;
 use model::token::AuthorizationClaims;
 use model::user::{NewUser, User};
 use response::Response;
-use request::auth::AuthToken;
+use request::auth::AuthorizationToken;
 use request::user::User as RequestData;
 use validation::user::Validator;
 
@@ -17,6 +17,7 @@ pub fn register(
     data: Json<RequestData>,
     conn: DbConn,
     logger: SyncLogger,
+    config: State<Config>,
 ) -> Response
 {
     let res: Response = Default::default();
@@ -29,21 +30,35 @@ pub fn register(
             }))
         },
         Ok(_) => {
-            let mut u = NewUser::from(data.0.clone());
-            u.set_password(&data.password);
-            if let Some(id) = User::insert(&u, &conn, &logger) {
-                return res.format(json!({"user": {
-                    "id": id,
-                }}));
+            let mut new_user = NewUser::from(data.0.clone());
+            new_user.set_password(&data.password);
+            if let Some(u) = User::insert(&new_user, &conn, &logger) {
+                // TODO: run it in worker
+                if let Some(user) = u.grant_activation_token(
+                    &config.jwt_issuer,
+                    &config.jwt_key_id,
+                    &config.jwt_secret,
+                    &conn,
+                    &logger,
+                ) {
+                    // TODO
+                    // send mail
+                    info!(
+                        logger,
+                        "activation_token: {}",
+                        user.activation_token.unwrap(),
+                    );
+                    return res;
+                }
             }
             res.status(Status::InternalServerError)
         },
     }
 }
 
-#[get("/activate/<access_token>")]
+#[get("/activate/<activation_token>", format = "json")]
 pub fn activate(
-    access_token: String,
+    activation_token: String,
     _conn: DbConn,
     logger: SyncLogger,
     _config: State<Config>,
@@ -51,13 +66,13 @@ pub fn activate(
 {
     let res: Response = Default::default();
 
-    info!(logger, "access_token: {}", access_token);
+    info!(logger, "activation_token: {}", activation_token);
     res.status(Status::Ok)
 }
 
 #[post("/deregister", format = "json")]
 pub fn deregister(
-    token: AuthToken,
+    token: AuthorizationToken,
     conn: DbConn,
     logger: SyncLogger,
     config: State<Config>,
