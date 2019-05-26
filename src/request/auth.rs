@@ -8,9 +8,9 @@ use rocket::request::FromRequest;
 use config::Config;
 use model::token::{AuthorizationClaims, Claims};
 
-pub struct AuthToken(pub String);
+pub struct AuthorizationToken(pub String);
 
-impl Deref for AuthToken {
+impl Deref for AuthorizationToken {
     type Target = str;
 
     fn deref(&self) -> &str {
@@ -34,29 +34,27 @@ fn decode_authorization_token(
 }
 
 #[derive(Debug)]
-pub enum AuthTokenError {
+pub enum AuthorizationTokenError {
     BadCount,
     Invalid,
     Missing,
 }
 
-pub const X_ELOQUENTLOG_AUTHORIZATION_KEY: &str =
-    "X-Eloquentlog-Authorization-Token";
+pub const AUTHORIZATION_HEADER_KEY: &str = "X-Eloquentlog-Authorization-Token";
 
-impl<'a, 'r> FromRequest<'a, 'r> for AuthToken {
-    type Error = AuthTokenError;
+impl<'a, 'r> FromRequest<'a, 'r> for AuthorizationToken {
+    type Error = AuthorizationTokenError;
 
     fn from_request(
         req: &'a Request<'r>,
     ) -> request::Outcome<Self, Self::Error> {
         let headers = req.headers();
-        let keys: Vec<_> =
-            headers.get(X_ELOQUENTLOG_AUTHORIZATION_KEY).collect();
+        let keys: Vec<_> = headers.get(AUTHORIZATION_HEADER_KEY).collect();
         match keys.len() {
             0 => {
                 request::Outcome::Failure((
                     Status::BadRequest,
-                    AuthTokenError::Missing,
+                    AuthorizationTokenError::Missing,
                 ))
             },
             1 => {
@@ -64,17 +62,17 @@ impl<'a, 'r> FromRequest<'a, 'r> for AuthToken {
                 if !value.contains('.') {
                     return request::Outcome::Failure((
                         Status::BadRequest,
-                        AuthTokenError::Invalid,
+                        AuthorizationTokenError::Invalid,
                     ));
                 }
 
                 let config = req.guard::<State<Config>>().unwrap();
                 match decode_authorization_token(value, &config) {
-                    Ok(v) => request::Outcome::Success(AuthToken(v)),
+                    Ok(v) => request::Outcome::Success(AuthorizationToken(v)),
                     _ => {
                         request::Outcome::Failure((
                             Status::BadRequest,
-                            AuthTokenError::Invalid,
+                            AuthorizationTokenError::Invalid,
                         ))
                     },
                 }
@@ -82,7 +80,7 @@ impl<'a, 'r> FromRequest<'a, 'r> for AuthToken {
             _ => {
                 request::Outcome::Failure((
                     Status::BadRequest,
-                    AuthTokenError::BadCount,
+                    AuthorizationTokenError::BadCount,
                 ))
             },
         }

@@ -6,6 +6,7 @@
 mod log_level;
 mod log_format;
 mod user_activation_state;
+mod user_reset_password_state;
 
 // entities
 pub mod token;

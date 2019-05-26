@@ -51,7 +51,7 @@ extern crate serde_json;
 #[macro_use]
 extern crate serde_derive;
 
-#[macro_use(info, warn)]
+#[macro_use(error, info, warn)]
 extern crate slog;
 
 extern crate sloggers;

@@ -18,7 +18,7 @@ table! {
 table! {
     use diesel::sql_types::*;
     use diesel::pg::types::sql_types::Uuid;
-    use model::user::EUserActivationState;
+    use model::user::{EUserActivationState, EUserResetPasswordState};
 
     users (id) {
         id -> Int8,
@@ -27,9 +27,13 @@ table! {
         username -> Nullable<Varchar>,
         email -> Varchar,
         password -> Bytea,
+        access_token -> Nullable<Varchar>,
+        access_token_issued_at -> Nullable<Timestamp>,
         activation_state -> EUserActivationState,
-        access_token -> Varchar,
-        access_token_expires_at -> Timestamp,
+        activation_token -> Nullable<Varchar>,
+        activation_token_expires_at -> Nullable<Timestamp>,
+        activation_token_sent_at -> Nullable<Timestamp>,
+        reset_password_state -> EUserResetPasswordState,
         reset_password_token -> Nullable<Varchar>,
         reset_password_token_expires_at -> Nullable<Timestamp>,
         reset_password_token_sent_at -> Nullable<Timestamp>,

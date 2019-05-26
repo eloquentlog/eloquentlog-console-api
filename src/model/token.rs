@@ -1,5 +1,19 @@
+use std::fmt;
+
 use chrono::{Utc, Duration};
 use jsonwebtoken::{Algorithm, Header, Validation, decode, encode};
+
+pub struct Token {
+    pub value: String,
+    pub expires_at: i64,
+}
+
+impl fmt::Display for Token {
+    fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
+        fmt.write_str(&self.value)?;
+        Ok(())
+    }
+}
 
 pub trait Claims
 where Self: std::marker::Sized
@@ -18,7 +32,7 @@ where Self: std::marker::Sized
         issuer: &str,
         kei_id: &str,
         secret: &str,
-    ) -> String;
+    ) -> Token;
 
     fn get_subject(&self) -> String;
 }
@@ -32,7 +46,7 @@ pub struct ActivationClaims {
 }
 
 impl Claims for ActivationClaims {
-    const ALGORITHM: Algorithm = Algorithm::RS512;
+    const ALGORITHM: Algorithm = Algorithm::HS512;
     const LEEWAY: i64 = 36; // seconds
 
     fn decode(
@@ -62,19 +76,26 @@ impl Claims for ActivationClaims {
         issuer: &str,
         key_id: &str,
         secret: &str,
-    ) -> String
+    ) -> Token
     {
         // TODO
         // iat (issue_at) and nbf (not before)
+        let expires_at = (Utc::now() + Duration::hours(24)).timestamp();
+
         let c = Self {
             sub: subject,
             iss: issuer.to_string(),
-            exp: (Utc::now() + Duration::hours(24)).timestamp() as usize,
+            exp: expires_at as usize,
         };
+
         let mut h = Header::default();
         h.alg = Self::ALGORITHM;
         h.kid = Some(key_id.to_string());
-        encode(&h, &c, secret.as_ref()).unwrap()
+
+        Token {
+            value: encode(&h, &c, secret.as_ref()).unwrap(),
+            expires_at,
+        }
     }
 
     fn get_subject(&self) -> String {
@@ -122,19 +143,26 @@ impl Claims for AuthorizationClaims {
         issuer: &str,
         key_id: &str,
         secret: &str,
-    ) -> String
+    ) -> Token
     {
         // TODO
         // iat (issue_at) and nbf (not before)
+        let expires_at = (Utc::now() + Duration::hours(24)).timestamp();
+
         let c = Self {
             sub: subject,
             iss: issuer.to_string(),
             exp: (Utc::now() + Duration::weeks(2)).timestamp() as usize,
         };
+
         let mut h = Header::default();
         h.alg = Self::ALGORITHM;
         h.kid = Some(key_id.to_string());
-        encode(&h, &c, secret.as_ref()).unwrap()
+
+        Token {
+            value: encode(&h, &c, secret.as_ref()).unwrap(),
+            expires_at,
+        }
     }
 
     fn get_subject(&self) -> String {

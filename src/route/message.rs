@@ -9,7 +9,7 @@ use model::message::{LogFormat, LogLevel, Message, NewMessage};
 use model::token::AuthorizationClaims;
 use model::user::User;
 use response::Response;
-use request::auth::AuthToken;
+use request::auth::AuthorizationToken;
 use request::message::Message as RequestData;
 use validation::message::Validator;
 
@@ -17,7 +17,7 @@ const MESSAGES_PER_REQUEST: i64 = 100;
 
 #[get("/messages")]
 pub fn get(
-    token: AuthToken,
+    token: AuthorizationToken,
     conn: DbConn,
     logger: SyncLogger,
     config: State<Config>,
@@ -51,7 +51,7 @@ pub fn get(
 // ```
 #[post("/messages", format = "json", data = "<data>")]
 pub fn post(
-    token: AuthToken,
+    token: AuthorizationToken,
     data: Json<RequestData>,
     conn: DbConn,
     logger: SyncLogger,
@@ -91,7 +91,7 @@ pub fn post(
 
 #[put("/messages/<id>", format = "json", data = "<data>")]
 pub fn put(
-    token: AuthToken,
+    token: AuthorizationToken,
     id: usize,
     data: Json<RequestData>,
     conn: DbConn,
