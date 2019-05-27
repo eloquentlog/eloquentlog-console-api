@@ -29,6 +29,7 @@ use rocket::local::Client;
 use eloquentlog_backend_api::server;
 use eloquentlog_backend_api::db::{DbConn, Pool, init_pool};
 use eloquentlog_backend_api::config::Config;
+use eloquentlog_backend_api::logger::{Logger, get_logger};
 
 /// Formats JSON text as one line
 pub fn minify(s: String) -> String {
@@ -40,7 +41,8 @@ pub fn minify(s: String) -> String {
 
 /// A test runner for integration tests
 pub fn run_test<T>(test: T)
-where T: FnOnce(Client, &PgConnection, &Config) -> () + panic::UnwindSafe {
+where T: FnOnce(Client, &PgConnection, &Config, &Logger) -> ()
+        + panic::UnwindSafe {
     // NOTE:
     // For now, run tests sequencially :'(
     // The usage of transactions for the same connection between tests and
@@ -57,13 +59,14 @@ where T: FnOnce(Client, &PgConnection, &Config) -> () + panic::UnwindSafe {
     // Use same connection pool between test and client
     let connection_pool = get_pool(&config);
     let conn = get_conn(&connection_pool);
+    let logger = get_logger(&config);
     setup(&conn);
 
     let result = panic::catch_unwind(AssertUnwindSafe(|| {
         let server = server(&config).manage(connection_pool);
         let client = Client::new(server).unwrap();
 
-        test(client, &conn, &config)
+        test(client, &conn, &config, &logger)
     }));
     assert!(result.is_ok());
 

@@ -7,6 +7,7 @@ use config::Config;
 use db::DbConn;
 use model::token::AuthorizationClaims;
 use model::user::{NewUser, User};
+use model::user_email::{NewUserEmail, UserEmail};
 use response::Response;
 use request::auth::AuthorizationToken;
 use request::user::User as RequestData;
@@ -30,25 +31,29 @@ pub fn register(
             }))
         },
         Ok(_) => {
-            let mut new_user = NewUser::from(data.0.clone());
-            new_user.set_password(&data.password);
-            if let Some(u) = User::insert(&new_user, &conn, &logger) {
+            // TODO: run within a transaction
+            let mut u = NewUser::from(data.0.clone());
+            u.set_password(&data.password);
+            if let Some(user) = User::insert(&u, &conn, &logger) {
                 // TODO: run it in worker
-                if let Some(user) = u.grant_activation_token(
-                    &config.jwt_issuer,
-                    &config.jwt_key_id,
-                    &config.jwt_secret,
-                    &conn,
-                    &logger,
-                ) {
-                    // TODO
-                    // send mail
-                    info!(
-                        logger,
-                        "activation_token: {}",
-                        user.activation_token.unwrap(),
-                    );
-                    return res;
+                let e = NewUserEmail::from(user);
+                // FIXME: reduce queries
+                if let Some(e) = UserEmail::insert(&e, &conn, &logger) {
+                    if let Some(user_email) = e.grant_activation_token(
+                        &config.jwt_issuer,
+                        &config.jwt_key_id,
+                        &config.jwt_secret,
+                        &conn,
+                        &logger,
+                    ) {
+                        // TODO: send email
+                        info!(
+                            logger,
+                            "activation_token: {}",
+                            user_email.activation_token.unwrap(),
+                        );
+                        return res;
+                    }
                 }
             }
             res.status(Status::InternalServerError)

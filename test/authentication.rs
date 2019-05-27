@@ -1,5 +1,4 @@
 use rocket::http::{ContentType, Status};
-use diesel::{self, prelude::*};
 
 use eloquentlog_backend_api::model::user;
 
@@ -7,7 +6,7 @@ use run_test;
 
 #[test]
 fn test_login() {
-    run_test(|client, conn, _| {
+    run_test(|client, conn, _, logger| {
         let password = "pa$$w0rD";
         let mut u = user::NewUser {
             name: None,
@@ -18,11 +17,8 @@ fn test_login() {
         };
         u.set_password(&password);
 
-        let _id = diesel::insert_into(user::users::table)
-            .values(&u)
-            .returning(user::users::id)
-            .get_result::<i64>(conn)
-            .unwrap_or_else(|_| panic!("Error inserting: {}", u));
+        user::User::insert(&u, &conn, &logger)
+            .unwrap_or_else(|| panic!("Error inserting: {}", u));
 
         let req =
             client

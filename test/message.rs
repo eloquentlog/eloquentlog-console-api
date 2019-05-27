@@ -6,10 +6,11 @@ use rocket::http::{ContentType, Header, Status};
 use eloquentlog_backend_api::config;
 use eloquentlog_backend_api::model::{message, user};
 use eloquentlog_backend_api::request::auth::AUTHORIZATION_HEADER_KEY;
+use eloquentlog_backend_api::logger::Logger;
 
 use {minify, run_test};
 
-fn build_test_user(conn: &PgConnection) -> user::User {
+fn build_test_user(conn: &PgConnection, logger: &Logger) -> user::User {
     let password = "pa$$w0rD";
     let mut u = user::NewUser {
         name: None,
@@ -20,10 +21,8 @@ fn build_test_user(conn: &PgConnection) -> user::User {
     };
     u.set_password(&password);
 
-    diesel::insert_into(user::users::table)
-        .values(&u)
-        .get_result::<user::User>(conn)
-        .unwrap_or_else(|_| panic!("Error inserting: {}", u))
+    user::User::insert(&u, &conn, &logger)
+        .unwrap_or_else(|| panic!("Error inserting: {}", u))
 }
 
 fn build_authorization_header<'a>(
@@ -44,8 +43,8 @@ fn build_authorization_header<'a>(
 
 #[test]
 fn test_get_no_message() {
-    run_test(|client, conn, config| {
-        let user = build_test_user(&conn);
+    run_test(|client, conn, config, logger| {
+        let user = build_test_user(&conn, &logger);
         let auth = build_authorization_header(&user, &config);
 
         let mut res = client.get("/_api/messages").header(auth).dispatch();
@@ -57,8 +56,8 @@ fn test_get_no_message() {
 
 #[test]
 fn test_get_recent_messages() {
-    run_test(|client, conn, config| {
-        let user = build_test_user(&conn);
+    run_test(|client, conn, config, logger| {
+        let user = build_test_user(&conn, &logger);
         let auth = build_authorization_header(&user, &config);
 
         let dt = Utc.ymd(2019, 8, 7).and_hms_milli(6, 5, 4, 333); // 2019-08-07T06:05:04.333
@@ -108,8 +107,8 @@ fn test_get_recent_messages() {
 
 #[test]
 fn test_post_with_validation_errors() {
-    run_test(|client, conn, config| {
-        let user = build_test_user(&conn);
+    run_test(|client, conn, config, logger| {
+        let user = build_test_user(&conn, &logger);
         let auth = build_authorization_header(&user, &config);
 
         let mut res = client
@@ -132,8 +131,8 @@ fn test_post_with_validation_errors() {
 
 #[test]
 fn test_post() {
-    run_test(|client, conn, config| {
-        let user = build_test_user(&conn);
+    run_test(|client, conn, config, logger| {
+        let user = build_test_user(&conn, &logger);
         let auth = build_authorization_header(&user, &config);
 
         let mut res = client
@@ -157,8 +156,8 @@ fn test_post() {
 
 #[test]
 fn test_put() {
-    run_test(|client, conn, config| {
-        let user = build_test_user(&conn);
+    run_test(|client, conn, config, logger| {
+        let user = build_test_user(&conn, &logger);
         let auth = build_authorization_header(&user, &config);
 
         let m = message::NewMessage {

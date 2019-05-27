@@ -30,10 +30,10 @@ pub enum UserResetPasswordState {
 impl fmt::Display for UserResetPasswordState {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
-            UserResetPasswordState::NeverYet => write!(f, "never-yet"),
-            UserResetPasswordState::Pending => write!(f, "pending"),
-            UserResetPasswordState::InProgress => write!(f, "in-progress"),
-            UserResetPasswordState::Done => write!(f, "done"),
+            Self::NeverYet => write!(f, "never-yet"),
+            Self::Pending => write!(f, "pending"),
+            Self::InProgress => write!(f, "in-progress"),
+            Self::Done => write!(f, "done"),
         }
     }
 }
@@ -41,12 +41,10 @@ impl fmt::Display for UserResetPasswordState {
 impl ToSql<EUserResetPasswordState, Pg> for UserResetPasswordState {
     fn to_sql<W: Write>(&self, out: &mut Output<W, Pg>) -> serialize::Result {
         match *self {
-            UserResetPasswordState::NeverYet => out.write_all(b"never-yet")?,
-            UserResetPasswordState::Pending => out.write_all(b"pending")?,
-            UserResetPasswordState::InProgress => {
-                out.write_all(b"in-progress")?
-            },
-            UserResetPasswordState::Done => out.write_all(b"done")?,
+            Self::NeverYet => out.write_all(b"never-yet")?,
+            Self::Pending => out.write_all(b"pending")?,
+            Self::InProgress => out.write_all(b"in-progress")?,
+            Self::Done => out.write_all(b"done")?,
         }
         Ok(IsNull::No)
     }
@@ -55,10 +53,10 @@ impl ToSql<EUserResetPasswordState, Pg> for UserResetPasswordState {
 impl FromSql<EUserResetPasswordState, Pg> for UserResetPasswordState {
     fn from_sql(bytes: Option<&[u8]>) -> deserialize::Result<Self> {
         match not_none!(bytes) {
-            b"never-yet" => Ok(UserResetPasswordState::NeverYet),
-            b"pending" => Ok(UserResetPasswordState::Pending),
-            b"in-progress" => Ok(UserResetPasswordState::InProgress),
-            b"done" => Ok(UserResetPasswordState::Done),
+            b"never-yet" => Ok(Self::NeverYet),
+            b"pending" => Ok(Self::Pending),
+            b"in-progress" => Ok(Self::InProgress),
+            b"done" => Ok(Self::Done),
             _ => Err("Unrecognized enum variant".into()),
         }
     }
@@ -67,17 +65,17 @@ impl FromSql<EUserResetPasswordState, Pg> for UserResetPasswordState {
 impl From<String> for UserResetPasswordState {
     fn from(s: String) -> Self {
         match s.to_ascii_lowercase().as_ref() {
-            "never-yet" => UserResetPasswordState::NeverYet,
-            "pending" => UserResetPasswordState::Pending,
-            "in-progress" => UserResetPasswordState::InProgress,
-            "done" => UserResetPasswordState::Done,
-            _ => UserResetPasswordState::NeverYet,
+            "never-yet" => Self::NeverYet,
+            "pending" => Self::Pending,
+            "in-progress" => Self::InProgress,
+            "done" => Self::Done,
+            _ => Self::NeverYet,
         }
     }
 }
 
 impl UserResetPasswordState {
-    pub fn iter() -> Iter<'static, UserResetPasswordState> {
+    pub fn iter() -> Iter<'static, Self> {
         static USER_RESET_PASSWORD_STATES: [UserResetPasswordState; 4] = [
             UserResetPasswordState::NeverYet,
             UserResetPasswordState::Pending,
@@ -87,8 +85,8 @@ impl UserResetPasswordState {
         USER_RESET_PASSWORD_STATES.iter()
     }
 
-    pub fn as_vec() -> Vec<UserResetPasswordState> {
-        UserResetPasswordState::iter().cloned().collect()
+    pub fn as_vec() -> Vec<Self> {
+        Self::iter().cloned().collect()
     }
 }
 

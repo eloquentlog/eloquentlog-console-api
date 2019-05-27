@@ -1,7 +1,7 @@
 -- (AS SUPERUSER)
 -- CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
-CREATE TYPE e_user_activation_state AS ENUM (
+CREATE TYPE e_user_state AS ENUM (
   'pending',
   'active'
 );
@@ -28,12 +28,9 @@ CREATE TABLE users (
   username CHARACTER VARYING(32) NULL,
   email CHARACTER VARYING(128) UNIQUE NOT NULL,
   password BYTEA NOT NULL,
+  state e_user_state NOT NULL DEFAULT 'pending',
   access_token CHARACTER VARYING(256) NULL,
   access_token_issued_at TIMESTAMP WITHOUT TIME ZONE NULL,
-  activation_state e_user_activation_state NOT NULL DEFAULT 'pending',
-  activation_token CHARACTER VARYING(256) NULL,
-  activation_token_expires_at TIMESTAMP WITHOUT TIME ZONE NULL,
-  activation_token_sent_at TIMESTAMP WITHOUT TIME ZONE NULL,
   reset_password_state e_user_reset_password_state NOT NULL DEFAULT 'never-yet',
   reset_password_token CHARACTER VARYING(256) NULL,
   reset_password_token_expires_at TIMESTAMP WITHOUT TIME ZONE NULL,
@@ -47,12 +44,11 @@ CREATE TABLE users (
 ALTER SEQUENCE users_id_seq OWNED BY users.id;
 
 CREATE UNIQUE INDEX users_access_token_idx ON users(access_token);
-CREATE UNIQUE INDEX users_activation_token_idx ON users(activation_token);
 CREATE UNIQUE INDEX users_email_idx ON users(email);
 CREATE UNIQUE INDEX users_reset_password_token_idx ON users(
   reset_password_token);
 CREATE UNIQUE INDEX users_uuid_idx ON users(uuid);
 
-CREATE INDEX users_activation_state_idx ON users(activation_state);
+CREATE INDEX users_state_idx ON users(state);
 CREATE INDEX users_reset_password_state_idx ON users(reset_password_state);
 CREATE INDEX users_username_idx ON users(username);

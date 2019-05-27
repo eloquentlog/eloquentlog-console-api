@@ -57,7 +57,6 @@ extern crate slog;
 extern crate sloggers;
 extern crate uuid;
 
-mod logger;
 mod response;
 mod validation;
 mod route;
@@ -66,6 +65,7 @@ mod schema;
 pub mod config;
 pub mod db;
 pub mod job;
+pub mod logger;
 pub mod model;
 pub mod request;
 
