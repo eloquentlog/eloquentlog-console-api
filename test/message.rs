@@ -33,9 +33,9 @@ fn build_authorization_header<'a>(
     Header::new(
         AUTHORIZATION_HEADER_KEY,
         user.generate_authorization_token(
-            &config.jwt_issuer,
-            &config.jwt_key_id,
-            &config.jwt_secret,
+            &config.authorization_token_issuer,
+            &config.authorization_token_key_id,
+            &config.authorization_token_secret,
         )
         .to_string(),
     )

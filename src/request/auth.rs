@@ -26,8 +26,8 @@ fn decode_authorization_token(
     // with validation
     let _ = AuthorizationClaims::decode(
         &value,
-        &config.jwt_issuer,
-        &config.jwt_secret,
+        &config.authorization_token_issuer,
+        &config.authorization_token_secret,
     )
     .expect("Invalid token");
     Ok(value.to_string())

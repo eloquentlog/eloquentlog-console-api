@@ -2,23 +2,35 @@ use std::env;
 
 #[derive(Clone)]
 pub struct Config {
+    pub activation_token_issuer: String,
+    pub activation_token_key_id: String,
+    pub activation_token_secret: String,
+    pub authorization_token_issuer: String,
+    pub authorization_token_key_id: String,
+    pub authorization_token_secret: String,
     pub database_url: String,
     pub env_name: &'static str,
-    pub jwt_issuer: String,
-    pub jwt_key_id: String,
-    pub jwt_secret: String,
     pub queue_url: String,
 }
 
 impl Default for Config {
     fn default() -> Config {
         Config {
+            activation_token_issuer: env::var("ACTIVATION_TOKEN_ISSUER")
+                .expect("ACTIVATION_TOKEN_ISSUER is not set"),
+            activation_token_key_id: env::var("ACTIVATION_TOKEN_KEY_ID")
+                .expect("ACTIVATION_TOKEN_KEY_ID is not set"),
+            activation_token_secret: env::var("ACTIVATION_TOKEN_SECRET")
+                .expect("ACTIVATION_TOKEN_SECRET is not set"),
+            authorization_token_issuer: env::var("AUTHORIZATION_TOKEN_ISSUER")
+                .expect("AUTHORIZATION_TOKEN_ISSUER is not set"),
+            authorization_token_key_id: env::var("AUTHORIZATION_TOKEN_KEY_ID")
+                .expect("AUTHORIZATION_TOKEN_KEY_ID is not set"),
+            authorization_token_secret: env::var("AUTHORIZATION_TOKEN_SECRET")
+                .expect("AUTHORIZATION_TOKEN_SECRET is not set"),
             database_url: env::var("DATABASE_URL")
                 .expect("DATABASE_URL is not set"),
             env_name: &"undefined",
-            jwt_issuer: env::var("JWT_ISSUER").expect("JWT_ISSUER is not set"),
-            jwt_key_id: env::var("JWT_ISSUER").expect("JWT_KEY_ID is not set"),
-            jwt_secret: env::var("JWT_SECRET").expect("JWT_SECRET is not set"),
             queue_url: env::var("QUEUE_URL").expect("QUEUE_URL is not set"),
         }
     }
@@ -43,15 +55,21 @@ impl Config {
 
     fn testing_config() -> Config {
         Config {
+            activation_token_issuer: env::var("TEST_ACTIVATION_TOKEN_ISSUER")
+                .expect("TEST_ACTIVATION_TOKEN_ISSUER is not set"),
+            activation_token_key_id: env::var("TEST_ACTIVATION_TOKEN_KEY_ID")
+                .expect("TEST_ACTIVATION_TOKEN_KEY_ID is not set"),
+            activation_token_secret: env::var("TEST_ACTIVATION_TOKEN_SECRET")
+                .expect("TEST_ACTIVATION_TOKEN_SECRET is not set"),
+            authorization_token_issuer: env::var("TEST_AUTHORIZATION_TOKEN_ISSUER")
+                .expect("TEST_AUTHORIZATION_TOKEN_ISSUER is not set"),
+            authorization_token_key_id: env::var("TEST_AUTHORIZATION_TOKEN_KEY_ID")
+                .expect("TEST_AUTHORIZATION_TOKEN_KEY_ID is not set"),
+            authorization_token_secret: env::var("TEST_AUTHORIZATION_TOKEN_SECRET")
+                .expect("TEST_AUTHORIZATION_TOKEN_SECRET is not set"),
             database_url: env::var("TEST_DATABASE_URL")
                 .expect("TEST_DATABASE_URL is not set"),
             env_name: &"testing",
-            jwt_issuer: env::var("TEST_JWT_ISSUER")
-                .expect("TEST_JWT_ISSUER is not set"),
-            jwt_key_id: env::var("TEST_JWT_KEY_ID")
-                .expect("TEST_JWT_KEY_ID is not set"),
-            jwt_secret: env::var("TEST_JWT_SECRET")
-                .expect("TEST_JWT_SECRET is not set"),
             queue_url: env::var("TEST_QUEUE_URL")
                 .expect("TEST_QUEUE_URL is not set"),
         }
@@ -92,18 +110,24 @@ mod config_test {
         lazy_static! {
             static ref ENV_LOCK: Mutex<()> = Mutex::new(());
             static ref TESTS: HashMap<&'static str, &'static str> = map! {
+                "ACTIVATION_TOKEN_ISSUER" => "com.eloquentlog",
+                "ACTIVATION_TOKEN_KEY_ID" => "key_id-activation",
+                "ACTIVATION_TOKEN_SECRET" => "secret-activation",
+                "AUTHORIZATION_TOKEN_ISSUER" => "com.eloquentlog",
+                "AUTHORIZATION_TOKEN_KEY_ID" => "key_id-authorization",
+                "AUTHORIZATION_TOKEN_SECRET" => "secret-authorization",
                 "DATABASE_URL" =>
                     "postgresql://u$er:pa$$w0rd@localhost:5432/dbname",
-                "JWT_ISSUER" => "com.eloquentlog",
-                "JWT_KEY_ID" => "user",
-                "JWT_SECRET" => "secret",
                 "QUEUE_URL" => "redis://u$er:pa$$w0rd@localhost:6379/queue",
 
+                "TEST_ACTIVATION_TOKEN_ISSUER" => "com.eloquentlog",
+                "TEST_ACTIVATION_TOKEN_KEY_ID" => "test-key_id-activation",
+                "TEST_ACTIVATION_TOKEN_SECRET" => "test-secret-activation",
+                "TEST_AUTHORIZATION_TOKEN_ISSUER" => "com.eloquentlog",
+                "TEST_AUTHORIZATION_TOKEN_KEY_ID" => "test-key_id-authorization",
+                "TEST_AUTHORIZATION_TOKEN_SECRET" => "test-secret-authorization",
                 "TEST_DATABASE_URL" =>
                     "postgresql://u$er:pa$$w0rd@localhost:5432/dbname",
-                "TEST_JWT_ISSUER" => "com.eloquentlog",
-                "TEST_JWT_KEY_ID" => "test-user",
-                "TEST_JWT_SECRET" => "test-secret",
                 "TEST_QUEUE_URL" => "redis://u$er:pa$$w0rd@localhost:6379/queue"
             };
         }
@@ -147,10 +171,13 @@ mod config_test {
         #[test]
         fn test_from_production_without_valid_env_vars() {
             with(r#"
+TEST_ACTIVATION_TOKEN_ISSUER
+TEST_ACTIVATION_TOKEN_KEY_ID
+TEST_ACTIVATION_TOKEN_SECRET
+TEST_AUTHORIZATION_TOKEN_ISSUER
+TEST_AUTHORIZATION_TOKEN_KEY_ID
+TEST_AUTHORIZATION_TOKEN_SECRET
 TEST_DATABASE_URL
-TEST_JWT_ISSUER
-TEST_JWT_KEY_ID
-TEST_JWT_SECRET
 TEST_QUEUE_URL
 "#, || {
                 let result = panic::catch_unwind(|| {
@@ -166,10 +193,13 @@ TEST_QUEUE_URL
         #[test]
         fn test_from_testing_without_valid_env_vars() {
             with(r#"
+ACTIVATION_TOKEN_ISSUER
+ACTIVATION_TOKEN_KEY_ID
+ACTIVATION_TOKEN_SECRET
+AUTHORIZATION_TOKEN_ISSUER
+AUTHORIZATION_TOKEN_KEY_ID
+AUTHORIZATION_TOKEN_SECRET
 DATABASE_URL
-JWT_ISSUER
-JWT_KEY_ID
-JWT_SECRET
 QUEUE_URL
 "#, || {
                 let result = panic::catch_unwind(|| {
@@ -185,10 +215,13 @@ QUEUE_URL
         #[test]
         fn test_from_development_without_valid_env_vars() {
             with(r#"
+TEST_ACTIVATION_TOKEN_ISSUER
+TEST_ACTIVATION_TOKEN_KEY_ID
+TEST_ACTIVATION_TOKEN_SECRET
+TEST_AUTHORIZATION_TOKEN_ISSUER
+TEST_AUTHORIZATION_TOKEN_KEY_ID
+TEST_AUTHORIZATION_TOKEN_SECRET
 TEST_DATABASE_URL
-TEST_JWT_ISSUER
-TEST_JWT_KEY_ID
-TEST_JWT_SECRET
 TEST_QUEUE_URL
 "#, || {
                 let result = panic::catch_unwind(|| {
@@ -204,10 +237,13 @@ TEST_QUEUE_URL
         #[test]
         fn test_from_production() {
             with(r#"
+ACTIVATION_TOKEN_ISSUER
+ACTIVATION_TOKEN_KEY_ID
+ACTIVATION_TOKEN_SECRET
+AUTHORIZATION_TOKEN_ISSUER
+AUTHORIZATION_TOKEN_KEY_ID
+AUTHORIZATION_TOKEN_SECRET
 DATABASE_URL
-JWT_ISSUER
-JWT_KEY_ID
-JWT_SECRET
 QUEUE_URL
 "#, || {
                 let c = Config::from("production");
@@ -220,10 +256,13 @@ QUEUE_URL
         #[test]
         fn test_from_testing() {
             with(r#"
+TEST_ACTIVATION_TOKEN_ISSUER
+TEST_ACTIVATION_TOKEN_KEY_ID
+TEST_ACTIVATION_TOKEN_SECRET
+TEST_AUTHORIZATION_TOKEN_ISSUER
+TEST_AUTHORIZATION_TOKEN_KEY_ID
+TEST_AUTHORIZATION_TOKEN_SECRET
 TEST_DATABASE_URL
-TEST_JWT_ISSUER
-TEST_JWT_KEY_ID
-TEST_JWT_SECRET
 TEST_QUEUE_URL
 "#, || {
                 let c = Config::from("testing");
@@ -236,10 +275,13 @@ TEST_QUEUE_URL
         #[test]
         fn test_from_development() {
             with(r#"
+ACTIVATION_TOKEN_ISSUER
+ACTIVATION_TOKEN_KEY_ID
+ACTIVATION_TOKEN_SECRET
+AUTHORIZATION_TOKEN_ISSUER
+AUTHORIZATION_TOKEN_KEY_ID
+AUTHORIZATION_TOKEN_SECRET
 DATABASE_URL
-JWT_ISSUER
-JWT_KEY_ID
-JWT_SECRET
 QUEUE_URL
 "#, || {
                 let c = Config::from("development");

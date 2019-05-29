@@ -28,8 +28,8 @@ pub fn get(
     // TODO: fetch messages for the user
     let _ = User::find_by_token::<AuthorizationClaims>(
         &token,
-        &config.jwt_issuer,
-        &config.jwt_secret,
+        &config.authorization_token_issuer,
+        &config.authorization_token_secret,
         &conn,
         &logger,
     )
@@ -63,8 +63,8 @@ pub fn post(
     // TODO: save messages for the user
     let _ = User::find_by_token::<AuthorizationClaims>(
         &token,
-        &config.jwt_issuer,
-        &config.jwt_secret,
+        &config.authorization_token_issuer,
+        &config.authorization_token_secret,
         &conn,
         &logger,
     )
@@ -104,8 +104,8 @@ pub fn put(
     // TODO: update messages for the user
     let _ = User::find_by_token::<AuthorizationClaims>(
         &token,
-        &config.jwt_issuer,
-        &config.jwt_secret,
+        &config.authorization_token_issuer,
+        &config.authorization_token_secret,
         &conn,
         &logger,
     )
