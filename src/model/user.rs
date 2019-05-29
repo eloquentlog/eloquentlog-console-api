@@ -2,36 +2,35 @@ use std::fmt;
 use std::str;
 
 use bcrypt::{hash, verify};
-use chrono::{NaiveDateTime, Utc, TimeZone};
-use diesel::{Identifiable, Insertable, debug_query, prelude::*};
+use chrono::NaiveDateTime;
+use diesel::{Identifiable, Queryable, debug_query, prelude::*};
 use diesel::pg::{Pg, PgConnection};
 use uuid::Uuid;
 
-pub use model::user_activation_state::*;
+pub use model::user_state::*;
 pub use model::user_reset_password_state::*;
 pub use schema::users;
 
 use logger::Logger;
-use model::token::{ActivationClaims, AuthorizationClaims, Claims, Token};
+use model::token::{AuthorizationClaims, Claims, Token};
 use request::user::User as RequestData;
 
 const BCRYPT_COST: u32 = 12;
 
 /// NewUser
-#[derive(Debug, Deserialize, Insertable)]
-#[table_name = "users"]
+#[derive(Debug)]
 pub struct NewUser {
     pub name: Option<String>,
     pub username: Option<String>,
     pub email: String,
     pub password: Vec<u8>,
-    pub activation_state: UserActivationState,
+    pub state: UserState,
     pub reset_password_state: UserResetPasswordState,
 }
 
 impl fmt::Display for NewUser {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "<NewUser {email}>", email = self.email)
+        write!(f, "<NewUser {email}>", email = &self.email)
     }
 }
 
@@ -43,7 +42,7 @@ impl Default for NewUser {
             email: "".to_string(), // validation error
             password: vec![],      // validation error
 
-            activation_state: UserActivationState::Pending,
+            state: UserState::Pending,
             reset_password_state: UserResetPasswordState::NeverYet,
         }
     }
@@ -95,12 +94,9 @@ pub struct User {
     pub username: Option<String>,
     pub email: String,
     pub password: Vec<u8>,
+    pub state: UserState,
     pub access_token: Option<String>,
     pub access_token_issued_at: Option<NaiveDateTime>,
-    pub activation_state: UserActivationState,
-    pub activation_token: Option<String>,
-    pub activation_token_expires_at: Option<NaiveDateTime>,
-    pub activation_token_sent_at: Option<NaiveDateTime>,
     pub reset_password_state: UserResetPasswordState,
     pub reset_password_token: Option<String>,
     pub reset_password_token_expires_at: Option<NaiveDateTime>,
@@ -111,7 +107,7 @@ pub struct User {
 
 impl fmt::Display for User {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "<User {id}>", id = self.id)
+        write!(f, "<User {id}>", id = &self.id)
     }
 }
 
@@ -237,7 +233,7 @@ impl User {
             users::email.eq(&user.email),
             users::password.eq(&user.password),
             // default
-            users::activation_state.eq(UserActivationState::Pending),
+            users::state.eq(UserState::Pending),
             users::reset_password_state.eq(UserResetPasswordState::NeverYet),
         ));
 
@@ -252,17 +248,6 @@ impl User {
         }
     }
 
-    pub fn generate_activation_token(
-        &self,
-        issuer: &str,
-        key_id: &str,
-        secret: &str,
-    ) -> Token
-    {
-        let subject = self.email.clone();
-        ActivationClaims::encode(subject, issuer, key_id, secret)
-    }
-
     pub fn generate_authorization_token(
         &self,
         issuer: &str,
@@ -272,35 +257,6 @@ impl User {
     {
         let subject = self.uuid.to_urn().to_string();
         AuthorizationClaims::encode(subject, issuer, key_id, secret)
-    }
-
-    pub fn grant_activation_token(
-        &self,
-        issuer: &str,
-        key_id: &str,
-        secret: &str,
-        conn: &PgConnection,
-        logger: &Logger,
-    ) -> Option<Self>
-    {
-        let token = self.generate_activation_token(&issuer, &key_id, &secret);
-        // FIXME
-        // save activation_token_xxxx
-        let q = diesel::update(self).set((
-            users::activation_token.eq(Some(token.value.to_string())),
-            users::activation_token_expires_at
-                .eq(Some(Utc.timestamp(token.expires_at, 0).naive_utc())),
-        ));
-
-        info!(logger, "{}", debug_query::<Pg, _>(&q).to_string());
-
-        match q.get_result::<Self>(conn) {
-            Err(e) => {
-                error!(logger, "err: {}", e);
-                None
-            },
-            Ok(u) => Some(u),
-        }
     }
 
     pub fn verify_password(&self, password: &str) -> bool {

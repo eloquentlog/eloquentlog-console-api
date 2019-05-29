@@ -5,7 +5,9 @@
 // sql types
 mod log_level;
 mod log_format;
-mod user_activation_state;
+mod user_email_activation_state;
+mod user_email_role;
+mod user_state;
 mod user_reset_password_state;
 
 // entities
@@ -14,6 +16,7 @@ pub mod token;
 // models
 pub mod message;
 pub mod user;
+pub mod user_email;
 
 #[cfg(test)]
 pub mod test {
