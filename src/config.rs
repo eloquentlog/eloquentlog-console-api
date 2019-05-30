@@ -61,12 +61,18 @@ impl Config {
                 .expect("TEST_ACTIVATION_TOKEN_KEY_ID is not set"),
             activation_token_secret: env::var("TEST_ACTIVATION_TOKEN_SECRET")
                 .expect("TEST_ACTIVATION_TOKEN_SECRET is not set"),
-            authorization_token_issuer: env::var("TEST_AUTHORIZATION_TOKEN_ISSUER")
-                .expect("TEST_AUTHORIZATION_TOKEN_ISSUER is not set"),
-            authorization_token_key_id: env::var("TEST_AUTHORIZATION_TOKEN_KEY_ID")
-                .expect("TEST_AUTHORIZATION_TOKEN_KEY_ID is not set"),
-            authorization_token_secret: env::var("TEST_AUTHORIZATION_TOKEN_SECRET")
-                .expect("TEST_AUTHORIZATION_TOKEN_SECRET is not set"),
+            authorization_token_issuer: env::var(
+                "TEST_AUTHORIZATION_TOKEN_ISSUER",
+            )
+            .expect("TEST_AUTHORIZATION_TOKEN_ISSUER is not set"),
+            authorization_token_key_id: env::var(
+                "TEST_AUTHORIZATION_TOKEN_KEY_ID",
+            )
+            .expect("TEST_AUTHORIZATION_TOKEN_KEY_ID is not set"),
+            authorization_token_secret: env::var(
+                "TEST_AUTHORIZATION_TOKEN_SECRET",
+            )
+            .expect("TEST_AUTHORIZATION_TOKEN_SECRET is not set"),
             database_url: env::var("TEST_DATABASE_URL")
                 .expect("TEST_DATABASE_URL is not set"),
             env_name: &"testing",
