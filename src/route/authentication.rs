@@ -24,9 +24,9 @@ pub fn login(
         Some(ref user) if user.verify_password(&data.password) => {
             // TODO
             let token = user.generate_authorization_token(
-                &config.jwt_key_id,
-                &config.jwt_issuer,
-                &config.jwt_secret,
+                &config.authorization_token_key_id,
+                &config.authorization_token_issuer,
+                &config.authorization_token_secret,
             );
             res.format(json!({"token": token.to_string()}))
         },
@@ -52,8 +52,8 @@ pub fn logout(
 
     let user = User::find_by_token::<AuthorizationClaims>(
         &token,
-        &config.jwt_issuer,
-        &config.jwt_secret,
+        &config.authorization_token_issuer,
+        &config.authorization_token_secret,
         &conn,
         &logger,
     )

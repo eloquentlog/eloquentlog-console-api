@@ -118,11 +118,14 @@ test:
     POSTGRES_DB: eloquentlog_test
     POSTGRES_USER: eloquentlog
     POSTGRES_PASSWORD: eloquentlog
+    TEST_ACTIVATION_TOKEN_ISSUER: "test-activation-issuer"
+    TEST_ACTIVATION_TOKEN_KEY_ID: "test-activation-key_id"
+    TEST_ACTIVATION_TOKEN_SECRET: "test-activation-secret"
+    TEST_AUTHORIZATION_TOKEN_ISSUER: "test-authorization-issuer"
+    TEST_AUTHORIZATION_TOKEN_KEY_ID: "test-authorization-key_id"
+    TEST_AUTHORIZATION_TOKEN_SECRET: "test-authorization-secret"
     TEST_DATABASE_URL: "postgresql://eloquentlog:eloquentlog@postgres:5432/eloquentlog_test"
     TEST_QUEUE_URL: "redis://redis:6379/0"
-    TEST_JWT_ISSUER: "issuer"
-    TEST_JWT_KEY_ID: "key_id"
-    TEST_JWT_SECRET: "secret"
   before_script:
     - *postgresql
     - rustc --version

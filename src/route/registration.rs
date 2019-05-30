@@ -40,9 +40,9 @@ pub fn register(
                 // FIXME: reduce queries
                 if let Some(e) = UserEmail::insert(&e, &conn, &logger) {
                     if let Some(user_email) = e.grant_activation_token(
-                        &config.jwt_issuer,
-                        &config.jwt_key_id,
-                        &config.jwt_secret,
+                        &config.authorization_token_issuer,
+                        &config.authorization_token_key_id,
+                        &config.authorization_token_secret,
                         &conn,
                         &logger,
                     ) {
@@ -87,8 +87,8 @@ pub fn deregister(
 
     let user = User::find_by_token::<AuthorizationClaims>(
         &token,
-        &config.jwt_issuer,
-        &config.jwt_secret,
+        &config.authorization_token_issuer,
+        &config.authorization_token_secret,
         &conn,
         &logger,
     )
