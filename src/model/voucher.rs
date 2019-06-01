@@ -175,7 +175,11 @@ impl Claims for AuthorizationClaims {
     {
         let now = Utc::now();
         let granted_at = now.timestamp();
-        let expires_at = (now + Duration::weeks(2)).timestamp();
+        // TODO
+        // set valid expires_at and impl review mechanism (check also
+        // `validate_exp` for Validation struct)
+        // let expires_at = (now + Duration::weeks(2)).timestamp();
+        let expires_at = 0;
 
         // TODO: aud
         let c = Self {
