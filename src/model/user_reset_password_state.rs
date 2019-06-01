@@ -21,7 +21,7 @@ pub struct EUserResetPasswordState;
 )]
 #[sql_type = "EUserResetPasswordState"]
 pub enum UserResetPasswordState {
-    NeverYet, // default
+    Never, // default
     Pending,
     InProgress,
     Done,
@@ -30,7 +30,7 @@ pub enum UserResetPasswordState {
 impl fmt::Display for UserResetPasswordState {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
-            Self::NeverYet => write!(f, "never-yet"),
+            Self::Never => write!(f, "never"),
             Self::Pending => write!(f, "pending"),
             Self::InProgress => write!(f, "in-progress"),
             Self::Done => write!(f, "done"),
@@ -41,7 +41,7 @@ impl fmt::Display for UserResetPasswordState {
 impl ToSql<EUserResetPasswordState, Pg> for UserResetPasswordState {
     fn to_sql<W: Write>(&self, out: &mut Output<W, Pg>) -> serialize::Result {
         match *self {
-            Self::NeverYet => out.write_all(b"never-yet")?,
+            Self::Never => out.write_all(b"never")?,
             Self::Pending => out.write_all(b"pending")?,
             Self::InProgress => out.write_all(b"in-progress")?,
             Self::Done => out.write_all(b"done")?,
@@ -53,7 +53,7 @@ impl ToSql<EUserResetPasswordState, Pg> for UserResetPasswordState {
 impl FromSql<EUserResetPasswordState, Pg> for UserResetPasswordState {
     fn from_sql(bytes: Option<&[u8]>) -> deserialize::Result<Self> {
         match not_none!(bytes) {
-            b"never-yet" => Ok(Self::NeverYet),
+            b"never" => Ok(Self::Never),
             b"pending" => Ok(Self::Pending),
             b"in-progress" => Ok(Self::InProgress),
             b"done" => Ok(Self::Done),
@@ -65,11 +65,11 @@ impl FromSql<EUserResetPasswordState, Pg> for UserResetPasswordState {
 impl From<String> for UserResetPasswordState {
     fn from(s: String) -> Self {
         match s.to_ascii_lowercase().as_ref() {
-            "never-yet" => Self::NeverYet,
+            "never" => Self::Never,
             "pending" => Self::Pending,
             "in-progress" => Self::InProgress,
             "done" => Self::Done,
-            _ => Self::NeverYet,
+            _ => Self::Never,
         }
     }
 }
@@ -77,7 +77,7 @@ impl From<String> for UserResetPasswordState {
 impl UserResetPasswordState {
     pub fn iter() -> Iter<'static, Self> {
         static USER_RESET_PASSWORD_STATES: [UserResetPasswordState; 4] = [
-            UserResetPasswordState::NeverYet,
+            UserResetPasswordState::Never,
             UserResetPasswordState::Pending,
             UserResetPasswordState::InProgress,
             UserResetPasswordState::Done,
@@ -98,8 +98,8 @@ mod user_reset_password_state_test {
     #[test]
     fn test_from() {
         assert_eq!(
-            UserResetPasswordState::NeverYet,
-            UserResetPasswordState::from("never-yet".to_string())
+            UserResetPasswordState::Never,
+            UserResetPasswordState::from("never".to_string())
         );
         assert_eq!(
             UserResetPasswordState::Pending,
@@ -116,17 +116,14 @@ mod user_reset_password_state_test {
 
         // default
         assert_eq!(
-            UserResetPasswordState::NeverYet,
+            UserResetPasswordState::Never,
             UserResetPasswordState::from("unknown".to_string())
         );
     }
 
     #[test]
     fn test_fmt() {
-        assert_eq!(
-            "never-yet",
-            format!("{}", UserResetPasswordState::NeverYet),
-        );
+        assert_eq!("never", format!("{}", UserResetPasswordState::Never));
         assert_eq!("pending", format!("{}", UserResetPasswordState::Pending));
         assert_eq!(
             "in-progress",
@@ -139,7 +136,7 @@ mod user_reset_password_state_test {
     fn test_as_vec() {
         assert_eq!(
             vec![
-                UserResetPasswordState::NeverYet,
+                UserResetPasswordState::Never,
                 UserResetPasswordState::Pending,
                 UserResetPasswordState::InProgress,
                 UserResetPasswordState::Done,
