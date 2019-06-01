@@ -5,7 +5,7 @@ use rocket::http::{ContentType, Header, Status};
 
 use eloquentlog_backend_api::config;
 use eloquentlog_backend_api::model::{message, user};
-use eloquentlog_backend_api::request::auth::AUTHORIZATION_HEADER_KEY;
+use eloquentlog_backend_api::request::voucher::AUTHORIZATION_HEADER_KEY;
 use eloquentlog_backend_api::logger::Logger;
 
 use {minify, run_test};
@@ -32,10 +32,10 @@ fn build_authorization_header<'a>(
 {
     Header::new(
         AUTHORIZATION_HEADER_KEY,
-        user.generate_authorization_token(
-            &config.authorization_token_issuer,
-            &config.authorization_token_key_id,
-            &config.authorization_token_secret,
+        user.generate_authorization_voucher(
+            &config.authorization_voucher_issuer,
+            &config.authorization_voucher_key_id,
+            &config.authorization_voucher_secret,
         )
         .to_string(),
     )

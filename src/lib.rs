@@ -30,6 +30,7 @@ extern crate oppgave;
 #[cfg(test)]
 extern crate parking_lot;
 
+extern crate rand;
 extern crate redis;
 extern crate regex;
 
@@ -61,6 +62,7 @@ mod response;
 mod validation;
 mod route;
 mod schema;
+mod util;
 
 pub mod config;
 pub mod db;

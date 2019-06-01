@@ -6,7 +6,7 @@ use rocket_contrib::json::Json;
 
 use logger::Logger;
 use model::user::{NewUser, User};
-use request::user::User as RequestData;
+use request::user::UserSignUp as RequestData;
 use validation::*;
 
 #[derive(Debug, Clone, Serialize)]

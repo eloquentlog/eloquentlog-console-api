@@ -11,7 +11,7 @@ mod user_state;
 mod user_reset_password_state;
 
 // entities
-pub mod token;
+pub mod voucher;
 
 // models
 pub mod message;

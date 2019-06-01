@@ -1,14 +1,15 @@
+//! Claims and VoucherData
 use std::fmt;
 
 use chrono::{Utc, Duration};
-use jsonwebtoken::{Algorithm, Header, Validation, decode, encode};
+use jsonwebtoken::{Algorithm, Header, Validation, decode, decode_header, encode};
 
-pub struct Token {
+pub struct VoucherData {
     pub value: String,
     pub expires_at: i64,
 }
 
-impl fmt::Display for Token {
+impl fmt::Display for VoucherData {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
         fmt.write_str(&self.value)?;
         Ok(())
@@ -22,17 +23,17 @@ where Self: std::marker::Sized
     const LEEWAY: i64;
 
     fn decode(
-        token: &str,
+        value: &str, // VoucherData's value
         issuer: &str,
         secret: &str,
     ) -> Result<Self, jsonwebtoken::errors::Error>;
 
     fn encode(
-        subject: String,
+        value: String, // subject
         issuer: &str,
         kei_id: &str,
         secret: &str,
-    ) -> Token;
+    ) -> VoucherData;
 
     fn get_subject(&self) -> String;
 }
@@ -40,7 +41,7 @@ where Self: std::marker::Sized
 /// ActivationClaims
 #[derive(Debug, Deserialize, Serialize)]
 pub struct ActivationClaims {
-    pub sub: String, // email
+    pub sub: String,
     pub iss: String,
     pub exp: usize,
 }
@@ -50,11 +51,19 @@ impl Claims for ActivationClaims {
     const LEEWAY: i64 = 36; // seconds
 
     fn decode(
-        token: &str,
+        value: &str,
         issuer: &str,
         secret: &str,
     ) -> Result<Self, jsonwebtoken::errors::Error>
     {
+        // self check
+        let header = decode_header(&value).expect("Invalid token");
+        if header.alg != Self::ALGORITHM {
+            return Err(jsonwebtoken::errors::Error::from(
+                jsonwebtoken::errors::ErrorKind::InvalidToken,
+            ));
+        }
+
         let v = Validation {
             algorithms: vec![Self::ALGORITHM],
             iss: Some(issuer.to_string()),
@@ -64,26 +73,26 @@ impl Claims for ActivationClaims {
             ..Validation::default()
         };
         // TODO
-        // validate subject is email
-        match decode::<Self>(&token, secret.as_ref(), &v) {
+        // validate subject
+        match decode::<Self>(&value, secret.as_ref(), &v) {
             Ok(v) => Ok(v.claims),
             Err(e) => Err(e),
         }
     }
 
     fn encode(
-        subject: String,
+        value: String,
         issuer: &str,
         key_id: &str,
         secret: &str,
-    ) -> Token
+    ) -> VoucherData
     {
         // TODO
         // iat (issue_at) and nbf (not before)
         let expires_at = (Utc::now() + Duration::hours(24)).timestamp();
 
         let c = Self {
-            sub: subject,
+            sub: value,
             iss: issuer.to_string(),
             exp: expires_at as usize,
         };
@@ -92,7 +101,7 @@ impl Claims for ActivationClaims {
         h.alg = Self::ALGORITHM;
         h.kid = Some(key_id.to_string());
 
-        Token {
+        VoucherData {
             value: encode(&h, &c, secret.as_ref()).unwrap(),
             expires_at,
         }
@@ -106,7 +115,7 @@ impl Claims for ActivationClaims {
 /// AuthorizationClaims
 #[derive(Debug, Deserialize, Serialize)]
 pub struct AuthorizationClaims {
-    pub sub: String, // uuid
+    pub sub: String,
     pub iss: String,
     pub exp: usize,
 }
@@ -116,11 +125,19 @@ impl Claims for AuthorizationClaims {
     const LEEWAY: i64 = 36; // seconds
 
     fn decode(
-        token: &str,
+        value: &str,
         issuer: &str,
         secret: &str,
     ) -> Result<Self, jsonwebtoken::errors::Error>
     {
+        // self check
+        let header = decode_header(&value).expect("Invalid token");
+        if header.alg != Self::ALGORITHM {
+            return Err(jsonwebtoken::errors::Error::from(
+                jsonwebtoken::errors::ErrorKind::InvalidToken,
+            ));
+        }
+
         let v = Validation {
             algorithms: vec![Self::ALGORITHM],
             iss: Some(issuer.to_string()),
@@ -131,26 +148,26 @@ impl Claims for AuthorizationClaims {
         };
 
         // TODO
-        // validate subject is uuid
-        match decode::<Self>(&token, secret.as_ref(), &v) {
+        // validate subject
+        match decode::<Self>(&value, secret.as_ref(), &v) {
             Ok(v) => Ok(v.claims),
             Err(e) => Err(e),
         }
     }
 
     fn encode(
-        subject: String,
+        value: String,
         issuer: &str,
         key_id: &str,
         secret: &str,
-    ) -> Token
+    ) -> VoucherData
     {
         // TODO
-        // iat (issue_at) and nbf (not before)
+        // iat (issue_at), (not before) and aud too
         let expires_at = (Utc::now() + Duration::hours(24)).timestamp();
 
         let c = Self {
-            sub: subject,
+            sub: value,
             iss: issuer.to_string(),
             exp: (Utc::now() + Duration::weeks(2)).timestamp() as usize,
         };
@@ -159,7 +176,7 @@ impl Claims for AuthorizationClaims {
         h.alg = Self::ALGORITHM;
         h.kid = Some(key_id.to_string());
 
-        Token {
+        VoucherData {
             value: encode(&h, &c, secret.as_ref()).unwrap(),
             expires_at,
         }

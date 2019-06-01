@@ -1,20 +1,52 @@
 use std::io::{self, Read};
 
-use rocket::{Data, Request, Outcome::*};
+use rocket::{Data, Outcome::*, Request, State, request};
 use rocket::data::{self, FromData, Transform, Transformed};
 use rocket::http::Status;
+use rocket::request::FromRequest;
+use rocket_slog::SyncLogger;
 use serde_json;
 
+use config::Config;
+use db::DbConn;
+use model::voucher::AuthorizationClaims;
+use model::user::User;
+use request::voucher::AuthorizationVoucher;
+
 /// User
+impl<'a, 'r> FromRequest<'a, 'r> for User {
+    type Error = ();
+
+    fn from_request(req: &'a Request<'r>) -> request::Outcome<User, ()> {
+        let voucher = req.guard::<AuthorizationVoucher>().unwrap();
+
+        let config = req.guard::<State<Config>>()?;
+        let conn = req.guard::<DbConn>()?;
+        let logger = req.guard::<SyncLogger>()?;
+
+        if let Some(user) = User::find_by_voucher::<AuthorizationClaims>(
+            &voucher,
+            &config.authorization_voucher_issuer,
+            &config.authorization_voucher_secret,
+            &conn,
+            &logger,
+        ) {
+            return request::Outcome::Success(user);
+        }
+        request::Outcome::Forward(())
+    }
+}
+
+/// UserSignUp
 #[derive(Clone, Deserialize)]
-pub struct User {
+pub struct UserSignUp {
     pub name: Option<String>,
     pub username: Option<String>,
     pub email: String,
     pub password: String,
 }
 
-impl Default for User {
+impl Default for UserSignUp {
     fn default() -> Self {
         Self {
             name: None,
@@ -25,22 +57,22 @@ impl Default for User {
     }
 }
 
-/// UserLogin
-pub enum UserLoginError {
+/// UserSignIn
+pub enum UserSignInError {
     Io(io::Error),
     Empty,
 }
 
-const USER_LOGIN_LENGTH_LIMIT: u64 = 256;
+const USER_SIGN_IN_LENGTH_LIMIT: u64 = 256;
 
 #[derive(Clone, Debug, Deserialize)]
-pub struct UserLogin {
+pub struct UserSignIn {
     pub username: String,
     pub password: String,
 }
 
-impl<'v> FromData<'v> for UserLogin {
-    type Error = UserLoginError;
+impl<'v> FromData<'v> for UserSignIn {
+    type Error = UserSignInError;
     type Owned = String;
     type Borrowed = str;
 
@@ -49,13 +81,13 @@ impl<'v> FromData<'v> for UserLogin {
         data: Data,
     ) -> Transform<data::Outcome<Self::Owned, Self::Error>>
     {
-        let mut stream = data.open().take(USER_LOGIN_LENGTH_LIMIT);
+        let mut stream = data.open().take(USER_SIGN_IN_LENGTH_LIMIT);
         let mut string =
-            String::with_capacity((USER_LOGIN_LENGTH_LIMIT / 2) as usize);
+            String::with_capacity((USER_SIGN_IN_LENGTH_LIMIT / 2) as usize);
         let outcome = match stream.read_to_string(&mut string) {
             Ok(_) => Success(string),
             Err(e) => {
-                Failure((Status::InternalServerError, UserLoginError::Io(e)))
+                Failure((Status::InternalServerError, UserSignInError::Io(e)))
             },
         };
 
@@ -68,12 +100,12 @@ impl<'v> FromData<'v> for UserLogin {
     ) -> data::Outcome<Self, Self::Error>
     {
         let input = outcome.borrowed()?;
-        let user_login: UserLogin = match serde_json::from_str(input) {
+        let user_login: UserSignIn = match serde_json::from_str(input) {
             Ok(v) => v,
             Err(_) => {
                 return Failure((
                     Status::UnprocessableEntity,
-                    UserLoginError::Empty,
+                    UserSignInError::Empty,
                 ));
             },
         };
@@ -81,10 +113,10 @@ impl<'v> FromData<'v> for UserLogin {
         if user_login.username == "" || user_login.password == "" {
             return Failure((
                 Status::UnprocessableEntity,
-                UserLoginError::Empty,
+                UserSignInError::Empty,
             ));
         }
-        Success(UserLogin {
+        Success(UserSignIn {
             username: user_login.username,
             password: user_login.password,
         })
