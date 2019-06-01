@@ -6,7 +6,9 @@ use jsonwebtoken::{Algorithm, Header, Validation, decode, decode_header, encode}
 
 pub struct VoucherData {
     pub value: String,
+    // timestamp values
     pub expires_at: i64,
+    pub granted_at: i64,
 }
 
 impl fmt::Display for VoucherData {
@@ -42,8 +44,10 @@ where Self: std::marker::Sized
 #[derive(Debug, Deserialize, Serialize)]
 pub struct ActivationClaims {
     pub sub: String,
+    pub iat: usize,
     pub iss: String,
     pub exp: usize,
+    pub nbf: usize,
 }
 
 impl Claims for ActivationClaims {
@@ -64,16 +68,17 @@ impl Claims for ActivationClaims {
             ));
         }
 
+        // validate aud
         let v = Validation {
             algorithms: vec![Self::ALGORITHM],
             iss: Some(issuer.to_string()),
             leeway: Self::LEEWAY,
             validate_exp: true,
+            validate_nbf: true,
 
             ..Validation::default()
         };
-        // TODO
-        // validate subject
+
         match decode::<Self>(&value, secret.as_ref(), &v) {
             Ok(v) => Ok(v.claims),
             Err(e) => Err(e),
@@ -87,14 +92,17 @@ impl Claims for ActivationClaims {
         secret: &str,
     ) -> VoucherData
     {
-        // TODO
-        // iat (issue_at) and nbf (not before)
-        let expires_at = (Utc::now() + Duration::hours(24)).timestamp();
+        let now = Utc::now();
+        let granted_at = now.timestamp();
+        let expires_at = (now + Duration::hours(24)).timestamp();
 
+        // TODO: aud
         let c = Self {
             sub: value,
+            iat: granted_at as usize,
             iss: issuer.to_string(),
             exp: expires_at as usize,
+            nbf: granted_at as usize,
         };
 
         let mut h = Header::default();
@@ -104,6 +112,7 @@ impl Claims for ActivationClaims {
         VoucherData {
             value: encode(&h, &c, secret.as_ref()).unwrap(),
             expires_at,
+            granted_at,
         }
     }
 
@@ -116,8 +125,10 @@ impl Claims for ActivationClaims {
 #[derive(Debug, Deserialize, Serialize)]
 pub struct AuthorizationClaims {
     pub sub: String,
+    pub iat: usize,
     pub iss: String,
     pub exp: usize,
+    pub nbf: usize,
 }
 
 impl Claims for AuthorizationClaims {
@@ -138,17 +149,17 @@ impl Claims for AuthorizationClaims {
             ));
         }
 
+        // validate aud
         let v = Validation {
             algorithms: vec![Self::ALGORITHM],
             iss: Some(issuer.to_string()),
             leeway: Self::LEEWAY,
             validate_exp: false,
+            validate_nbf: true,
 
             ..Validation::default()
         };
 
-        // TODO
-        // validate subject
         match decode::<Self>(&value, secret.as_ref(), &v) {
             Ok(v) => Ok(v.claims),
             Err(e) => Err(e),
@@ -162,14 +173,17 @@ impl Claims for AuthorizationClaims {
         secret: &str,
     ) -> VoucherData
     {
-        // TODO
-        // iat (issue_at), (not before) and aud too
-        let expires_at = (Utc::now() + Duration::hours(24)).timestamp();
+        let now = Utc::now();
+        let granted_at = now.timestamp();
+        let expires_at = (now + Duration::weeks(2)).timestamp();
 
+        // TODO: aud
         let c = Self {
             sub: value,
+            iat: granted_at as usize,
             iss: issuer.to_string(),
-            exp: (Utc::now() + Duration::weeks(2)).timestamp() as usize,
+            exp: expires_at as usize,
+            nbf: granted_at as usize,
         };
 
         let mut h = Header::default();
@@ -179,6 +193,7 @@ impl Claims for AuthorizationClaims {
         VoucherData {
             value: encode(&h, &c, secret.as_ref()).unwrap(),
             expires_at,
+            granted_at,
         }
     }
 
