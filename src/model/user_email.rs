@@ -108,7 +108,7 @@ impl UserEmail {
         }
     }
 
-    fn generate_activation_voucher(
+    pub fn generate_activation_voucher(
         &self,
         value: String,
         issuer: &str,
@@ -141,12 +141,14 @@ impl UserEmail {
             &secret,
         );
 
-        // FIXME: save activation_token_xxxx fields
         let q = diesel::update(self).set((
+            user_emails::activation_state.eq(UserEmailActivationState::Pending),
             user_emails::activation_token.eq(activation_token),
             // from VoucherData
             user_emails::activation_token_expires_at
                 .eq(Utc.timestamp(voucher_data.expires_at, 0).naive_utc()),
+            user_emails::activation_token_granted_at
+                .eq(Utc.timestamp(voucher_data.granted_at, 0).naive_utc()),
         ));
 
         info!(logger, "{}", debug_query::<Pg, _>(&q).to_string());
