@@ -1,16 +1,15 @@
 use std::ops::Deref;
 
-use rocket::{Request, State};
-use rocket::request;
+use rocket::{Request, State, request};
 use rocket::http::Status;
 use rocket::request::FromRequest;
 
 use config::Config;
-use model::token::{AuthorizationClaims, Claims};
+use model::voucher::{AuthorizationClaims, Claims};
 
-pub struct AuthorizationToken(pub String);
+pub struct AuthorizationVoucher(pub String);
 
-impl Deref for AuthorizationToken {
+impl Deref for AuthorizationVoucher {
     type Target = str;
 
     fn deref(&self) -> &str {
@@ -18,32 +17,33 @@ impl Deref for AuthorizationToken {
     }
 }
 
-fn decode_authorization_token(
+fn verify_authorization_voucher(
     value: &str,
     config: &Config,
 ) -> Result<String, String>
 {
-    // with validation
+    // as validations
     let _ = AuthorizationClaims::decode(
         &value,
-        &config.authorization_token_issuer,
-        &config.authorization_token_secret,
+        &config.authorization_voucher_issuer,
+        &config.authorization_voucher_secret,
     )
-    .expect("Invalid token");
+    .expect("Invalid value");
     Ok(value.to_string())
 }
 
 #[derive(Debug)]
-pub enum AuthorizationTokenError {
+pub enum AuthorizationVoucherError {
     BadCount,
     Invalid,
     Missing,
 }
 
-pub const AUTHORIZATION_HEADER_KEY: &str = "X-Eloquentlog-Authorization-Token";
+pub const AUTHORIZATION_HEADER_KEY: &str =
+    "X-Eloquentlog-Authorization-Voucher";
 
-impl<'a, 'r> FromRequest<'a, 'r> for AuthorizationToken {
-    type Error = AuthorizationTokenError;
+impl<'a, 'r> FromRequest<'a, 'r> for AuthorizationVoucher {
+    type Error = AuthorizationVoucherError;
 
     fn from_request(
         req: &'a Request<'r>,
@@ -54,7 +54,7 @@ impl<'a, 'r> FromRequest<'a, 'r> for AuthorizationToken {
             0 => {
                 request::Outcome::Failure((
                     Status::BadRequest,
-                    AuthorizationTokenError::Missing,
+                    AuthorizationVoucherError::Missing,
                 ))
             },
             1 => {
@@ -62,17 +62,17 @@ impl<'a, 'r> FromRequest<'a, 'r> for AuthorizationToken {
                 if !value.contains('.') {
                     return request::Outcome::Failure((
                         Status::BadRequest,
-                        AuthorizationTokenError::Invalid,
+                        AuthorizationVoucherError::Invalid,
                     ));
                 }
 
                 let config = req.guard::<State<Config>>().unwrap();
-                match decode_authorization_token(value, &config) {
-                    Ok(v) => request::Outcome::Success(AuthorizationToken(v)),
+                match verify_authorization_voucher(value, &config) {
+                    Ok(v) => request::Outcome::Success(AuthorizationVoucher(v)),
                     _ => {
                         request::Outcome::Failure((
                             Status::BadRequest,
-                            AuthorizationTokenError::Invalid,
+                            AuthorizationVoucherError::Invalid,
                         ))
                     },
                 }
@@ -80,7 +80,7 @@ impl<'a, 'r> FromRequest<'a, 'r> for AuthorizationToken {
             _ => {
                 request::Outcome::Failure((
                     Status::BadRequest,
-                    AuthorizationTokenError::BadCount,
+                    AuthorizationVoucherError::BadCount,
                 ))
             },
         }

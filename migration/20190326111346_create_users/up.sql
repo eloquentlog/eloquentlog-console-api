@@ -30,11 +30,11 @@ CREATE TABLE users (
   password BYTEA NOT NULL,
   state e_user_state NOT NULL DEFAULT 'pending',
   access_token CHARACTER VARYING(256) NULL,
-  access_token_issued_at TIMESTAMP WITHOUT TIME ZONE NULL,
+  access_token_granted_at TIMESTAMP WITHOUT TIME ZONE NULL,
   reset_password_state e_user_reset_password_state NOT NULL DEFAULT 'never-yet',
   reset_password_token CHARACTER VARYING(256) NULL,
   reset_password_token_expires_at TIMESTAMP WITHOUT TIME ZONE NULL,
-  reset_password_token_sent_at TIMESTAMP WITHOUT TIME ZONE NULL,
+  reset_password_token_granted_at TIMESTAMP WITHOUT TIME ZONE NULL,
   created_at TIMESTAMP WITHOUT TIME ZONE NOT NULL
     DEFAULT (now() AT TIME ZONE 'utc'),
   updated_at TIMESTAMP WITHOUT TIME ZONE NOT NULL

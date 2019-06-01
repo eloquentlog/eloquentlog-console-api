@@ -9,8 +9,13 @@ pub use model::user_email_role::*;
 pub use schema::user_emails;
 
 use logger::Logger;
-use model::token::{ActivationClaims, Claims, Token};
+use model::voucher::{ActivationClaims, Claims, VoucherData};
 use model::user::User;
+use util::generate_random_hash;
+
+const ACTIVATION_HASH_LENGTH: i32 = 128;
+const ACTIVATION_HASH_SOURCE: &[u8] =
+    b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz01234567890";
 
 /// NewUserEmail
 #[derive(Debug)]
@@ -57,7 +62,7 @@ pub struct UserEmail {
     pub activation_state: UserEmailActivationState,
     pub activation_token: Option<String>,
     pub activation_token_expires_at: Option<NaiveDateTime>,
-    pub activation_token_sent_at: Option<NaiveDateTime>,
+    pub activation_token_granted_at: Option<NaiveDateTime>,
     pub created_at: NaiveDateTime,
     pub updated_at: NaiveDateTime,
 }
@@ -69,18 +74,16 @@ impl fmt::Display for UserEmail {
 }
 
 impl UserEmail {
-    pub fn generate_activation_token(
-        &self,
-        issuer: &str,
-        key_id: &str,
-        secret: &str,
-    ) -> Token
-    {
-        let subject = self.email.clone().unwrap();
-        ActivationClaims::encode(subject, issuer, key_id, secret)
-    }
-
     /// Save a new user_email into user_emails.
+    ///
+    /// # Note
+    ///
+    /// `activation_state` is assigned always as pending. And following
+    /// columns keep still remaining as NULL until granting voucher later.
+    ///
+    /// * activation_token
+    /// * activation_token_expires_at
+    /// * activation_token_granted_at
     pub fn insert(
         user_email: &NewUserEmail,
         conn: &PgConnection,
@@ -92,16 +95,6 @@ impl UserEmail {
             Some(user_emails::email.eq(&user_email.email)),
             user_emails::role.eq(UserEmailRole::Primary),
             user_emails::activation_state.eq(UserEmailActivationState::Pending),
-            // FIXME: set values
-            Some(user_emails::activation_token.eq("")),
-            Some(
-                user_emails::activation_token_expires_at
-                    .eq(Utc::now().naive_utc()),
-            ),
-            Some(
-                user_emails::activation_token_sent_at
-                    .eq(Utc::now().naive_utc()),
-            ),
         ));
 
         info!(logger, "{}", debug_query::<Pg, _>(&q).to_string());
@@ -115,22 +108,45 @@ impl UserEmail {
         }
     }
 
-    pub fn grant_activation_token(
+    fn generate_activation_voucher(
+        &self,
+        value: String,
+        issuer: &str,
+        key_id: &str,
+        secret: &str,
+    ) -> VoucherData
+    {
+        ActivationClaims::encode(value, issuer, key_id, secret)
+    }
+
+    pub fn grant_activation_voucher(
         &self,
         issuer: &str,
         key_id: &str,
         secret: &str,
         conn: &PgConnection,
         logger: &Logger,
-    ) -> Option<Self>
+    ) -> Option<VoucherData>
     {
-        let token = self.generate_activation_token(&issuer, &key_id, &secret);
+        // TODO: check duplication
+        let activation_token = generate_random_hash(
+            ACTIVATION_HASH_SOURCE,
+            ACTIVATION_HASH_LENGTH,
+        );
+
+        let voucher_data = self.generate_activation_voucher(
+            activation_token.to_owned(),
+            &issuer,
+            &key_id,
+            &secret,
+        );
 
         // FIXME: save activation_token_xxxx fields
         let q = diesel::update(self).set((
-            user_emails::activation_token.eq(token.value.to_string()),
+            user_emails::activation_token.eq(activation_token),
+            // from VoucherData
             user_emails::activation_token_expires_at
-                .eq(Utc.timestamp(token.expires_at, 0).naive_utc()),
+                .eq(Utc.timestamp(voucher_data.expires_at, 0).naive_utc()),
         ));
 
         info!(logger, "{}", debug_query::<Pg, _>(&q).to_string());
@@ -140,7 +156,7 @@ impl UserEmail {
                 error!(logger, "err: {}", e);
                 None
             },
-            Ok(u) => Some(u),
+            Ok(_) => Some(voucher_data),
         }
     }
 }

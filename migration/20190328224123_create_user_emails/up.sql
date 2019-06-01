@@ -18,7 +18,7 @@ CREATE TABLE user_emails (
   activation_state e_user_email_activation_state NOT NULL DEFAULT 'pending',
   activation_token CHARACTER VARYING(256) NULL,
   activation_token_expires_at TIMESTAMP WITHOUT TIME ZONE NULL,
-  activation_token_sent_at TIMESTAMP WITHOUT TIME ZONE NULL,
+  activation_token_granted_at TIMESTAMP WITHOUT TIME ZONE NULL,
   created_at TIMESTAMP WITHOUT TIME ZONE NOT NULL
     DEFAULT (now() AT TIME ZONE 'utc'),
   updated_at TIMESTAMP WITHOUT TIME ZONE NOT NULL

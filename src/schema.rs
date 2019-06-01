@@ -29,11 +29,11 @@ table! {
         password -> Bytea,
         state -> EUserState,
         access_token -> Nullable<Varchar>,
-        access_token_issued_at -> Nullable<Timestamp>,
+        access_token_granted_at -> Nullable<Timestamp>,
         reset_password_state -> EUserResetPasswordState,
         reset_password_token -> Nullable<Varchar>,
         reset_password_token_expires_at -> Nullable<Timestamp>,
-        reset_password_token_sent_at -> Nullable<Timestamp>,
+        reset_password_token_granted_at -> Nullable<Timestamp>,
         created_at -> Timestamp,
         updated_at -> Timestamp,
     }
@@ -51,7 +51,7 @@ table! {
         activation_state -> EUserEmailActivationState,
         activation_token -> Nullable<Varchar>,
         activation_token_expires_at -> Nullable<Timestamp>,
-        activation_token_sent_at -> Nullable<Timestamp>,
+        activation_token_granted_at -> Nullable<Timestamp>,
         created_at -> Timestamp,
         updated_at -> Timestamp,
     }

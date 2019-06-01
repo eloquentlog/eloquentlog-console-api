@@ -1,39 +1,22 @@
-use rocket::State;
 use rocket::http::Status;
 use rocket_contrib::json::Json;
 use rocket_slog::SyncLogger;
 
-use config::Config;
 use db::DbConn;
 use model::message::{LogFormat, LogLevel, Message, NewMessage};
-use model::token::AuthorizationClaims;
 use model::user::User;
 use response::Response;
-use request::auth::AuthorizationToken;
 use request::message::Message as RequestData;
 use validation::message::Validator;
 
 const MESSAGES_PER_REQUEST: i64 = 100;
 
 #[get("/messages")]
-pub fn get(
-    token: AuthorizationToken,
-    conn: DbConn,
-    logger: SyncLogger,
-    config: State<Config>,
-) -> Response
-{
+pub fn get(user: User, conn: DbConn, logger: SyncLogger) -> Response {
     let res: Response = Default::default();
 
     // TODO: fetch messages for the user
-    let _ = User::find_by_token::<AuthorizationClaims>(
-        &token,
-        &config.authorization_token_issuer,
-        &config.authorization_token_secret,
-        &conn,
-        &logger,
-    )
-    .unwrap();
+    info!(logger, "user: {}", user.uuid);
 
     let messages = Message::recent(MESSAGES_PER_REQUEST, &conn, &logger);
     res.format(json!({ "messages": messages }))
@@ -51,24 +34,16 @@ pub fn get(
 // ```
 #[post("/messages", format = "json", data = "<data>")]
 pub fn post(
-    token: AuthorizationToken,
+    user: User,
     data: Json<RequestData>,
     conn: DbConn,
     logger: SyncLogger,
-    config: State<Config>,
 ) -> Response
 {
     let res: Response = Default::default();
 
     // TODO: save messages for the user
-    let _ = User::find_by_token::<AuthorizationClaims>(
-        &token,
-        &config.authorization_token_issuer,
-        &config.authorization_token_secret,
-        &conn,
-        &logger,
-    )
-    .unwrap();
+    info!(logger, "user: {}", user.uuid);
 
     let v = Validator::new(&data, &logger);
     match v.validate() {
@@ -91,25 +66,17 @@ pub fn post(
 
 #[put("/messages/<id>", format = "json", data = "<data>")]
 pub fn put(
-    token: AuthorizationToken,
+    user: User,
     id: usize,
     data: Json<RequestData>,
     conn: DbConn,
     logger: SyncLogger,
-    config: State<Config>,
 ) -> Response
 {
     let res: Response = Default::default();
 
     // TODO: update messages for the user
-    let _ = User::find_by_token::<AuthorizationClaims>(
-        &token,
-        &config.authorization_token_issuer,
-        &config.authorization_token_secret,
-        &conn,
-        &logger,
-    )
-    .unwrap();
+    info!(logger, "user: {}", user.uuid);
 
     let message_id = data.0.id.unwrap_or_default();
     if message_id == 0 || id != message_id {

@@ -12,8 +12,8 @@ pub use model::user_reset_password_state::*;
 pub use schema::users;
 
 use logger::Logger;
-use model::token::{AuthorizationClaims, Claims, Token};
-use request::user::User as RequestData;
+use model::voucher::{AuthorizationClaims, Claims, VoucherData};
+use request::user::UserSignUp as RequestData;
 
 const BCRYPT_COST: u32 = 12;
 
@@ -96,11 +96,11 @@ pub struct User {
     pub password: Vec<u8>,
     pub state: UserState,
     pub access_token: Option<String>,
-    pub access_token_issued_at: Option<NaiveDateTime>,
+    pub access_token_granted_at: Option<NaiveDateTime>,
     pub reset_password_state: UserResetPasswordState,
     pub reset_password_token: Option<String>,
     pub reset_password_token_expires_at: Option<NaiveDateTime>,
-    pub reset_password_token_sent_at: Option<NaiveDateTime>,
+    pub reset_password_token_granted_at: Option<NaiveDateTime>,
     pub created_at: NaiveDateTime,
     pub updated_at: NaiveDateTime,
 }
@@ -208,16 +208,16 @@ impl User {
         }
     }
 
-    pub fn find_by_token<T: Claims>(
-        token: &str,
+    pub fn find_by_voucher<T: Claims>(
+        value: &str,
         issuer: &str,
         secret: &str,
         conn: &PgConnection,
         logger: &Logger,
     ) -> Option<Self>
     {
-        let c = T::decode(token, issuer, secret).expect("Invalid token");
-        Self::find_by_email_or_uuid(c.get_subject().as_ref(), conn, logger)
+        let c = T::decode(value, issuer, secret).expect("Invalid value");
+        Self::find_by_uuid(c.get_subject().as_ref(), conn, logger)
     }
 
     /// Save a new user into users.
@@ -248,12 +248,12 @@ impl User {
         }
     }
 
-    pub fn generate_authorization_token(
+    pub fn generate_authorization_voucher(
         &self,
         issuer: &str,
         key_id: &str,
         secret: &str,
-    ) -> Token
+    ) -> VoucherData
     {
         let subject = self.uuid.to_urn().to_string();
         AuthorizationClaims::encode(subject, issuer, key_id, secret)

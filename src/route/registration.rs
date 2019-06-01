@@ -5,12 +5,10 @@ use rocket_slog::SyncLogger;
 
 use config::Config;
 use db::DbConn;
-use model::token::AuthorizationClaims;
 use model::user::{NewUser, User};
 use model::user_email::{NewUserEmail, UserEmail};
 use response::Response;
-use request::auth::AuthorizationToken;
-use request::user::User as RequestData;
+use request::user::UserSignUp as RequestData;
 use validation::user::Validator;
 
 #[post("/register", format = "json", data = "<data>")]
@@ -31,29 +29,28 @@ pub fn register(
             }))
         },
         Ok(_) => {
-            // TODO: run within a transaction
+            // TODO:
+            // * run within a transaction
+            // * run it in worker
             let mut u = NewUser::from(data.0.clone());
             u.set_password(&data.password);
             if let Some(user) = User::insert(&u, &conn, &logger) {
-                // TODO: run it in worker
                 let e = NewUserEmail::from(user);
-                // FIXME: reduce queries
-                if let Some(e) = UserEmail::insert(&e, &conn, &logger) {
-                    if let Some(user_email) = e.grant_activation_token(
-                        &config.authorization_token_issuer,
-                        &config.authorization_token_key_id,
-                        &config.authorization_token_secret,
-                        &conn,
-                        &logger,
-                    ) {
-                        // TODO: send email
-                        info!(
-                            logger,
-                            "activation_token: {}",
-                            user_email.activation_token.unwrap(),
-                        );
-                        return res;
-                    }
+                if let Some(email) = UserEmail::insert(&e, &conn, &logger) {
+                    // This updates created user_email
+                    let voucher = email
+                        .grant_activation_voucher(
+                            &config.activation_voucher_issuer,
+                            &config.activation_voucher_key_id,
+                            &config.activation_voucher_secret,
+                            &conn,
+                            &logger,
+                        )
+                        .unwrap();
+
+                    // TODO: send email
+                    info!(logger, "activation_voucher: {}", voucher);
+                    return res;
                 }
             }
             res.status(Status::InternalServerError)
@@ -61,41 +58,22 @@ pub fn register(
     }
 }
 
-#[get("/activate/<activation_token>", format = "json")]
-pub fn activate(
-    activation_token: String,
-    _conn: DbConn,
-    logger: SyncLogger,
-    _config: State<Config>,
-) -> Response
-{
+#[get("/activate/<voucher>", format = "json")]
+pub fn activate(voucher: String, logger: SyncLogger) -> Response {
     let res: Response = Default::default();
 
-    info!(logger, "activation_token: {}", activation_token);
+    // TODO
+    info!(logger, "voucher: {}", voucher);
+
     res.status(Status::Ok)
 }
 
 #[post("/deregister", format = "json")]
-pub fn deregister(
-    token: AuthorizationToken,
-    conn: DbConn,
-    logger: SyncLogger,
-    config: State<Config>,
-) -> Response
-{
+pub fn deregister(user: User, logger: SyncLogger) -> Response {
     let res: Response = Default::default();
 
-    let user = User::find_by_token::<AuthorizationClaims>(
-        &token,
-        &config.authorization_token_issuer,
-        &config.authorization_token_secret,
-        &conn,
-        &logger,
-    )
-    .unwrap();
-
     // TODO
-    info!(logger, "deregister: {}", user.id);
+    info!(logger, "user: {}", user.uuid);
 
     res.status(Status::UnprocessableEntity)
 }
