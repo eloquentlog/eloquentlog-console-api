@@ -43,7 +43,7 @@ impl Default for NewUser {
             password: vec![],      // validation error
 
             state: UserState::Pending,
-            reset_password_state: UserResetPasswordState::NeverYet,
+            reset_password_state: UserResetPasswordState::Never,
         }
     }
 }
@@ -234,7 +234,7 @@ impl User {
             users::password.eq(&user.password),
             // default
             users::state.eq(UserState::Pending),
-            users::reset_password_state.eq(UserResetPasswordState::NeverYet),
+            users::reset_password_state.eq(UserResetPasswordState::Never),
         ));
 
         info!(logger, "{}", debug_query::<Pg, _>(&q).to_string());

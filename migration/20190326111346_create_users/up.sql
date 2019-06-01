@@ -6,7 +6,7 @@ CREATE TYPE e_user_state AS ENUM (
   'active'
 );
 CREATE TYPE e_user_reset_password_state AS ENUM (
-  'never-yet',
+  'never',
   'pending',
   'in-progress',
   'done'
@@ -31,7 +31,7 @@ CREATE TABLE users (
   state e_user_state NOT NULL DEFAULT 'pending',
   access_token CHARACTER VARYING(256) NULL,
   access_token_granted_at TIMESTAMP WITHOUT TIME ZONE NULL,
-  reset_password_state e_user_reset_password_state NOT NULL DEFAULT 'never-yet',
+  reset_password_state e_user_reset_password_state NOT NULL DEFAULT 'never',
   reset_password_token CHARACTER VARYING(256) NULL,
   reset_password_token_expires_at TIMESTAMP WITHOUT TIME ZONE NULL,
   reset_password_token_granted_at TIMESTAMP WITHOUT TIME ZONE NULL,
