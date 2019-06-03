@@ -81,6 +81,7 @@ pub fn server(c: &config::Config) -> rocket::Rocket {
         .mount(
             "/_api",
             routes![
+                route::options_login,
                 route::authentication::login,
                 route::authentication::logout,
                 route::registration::activate,

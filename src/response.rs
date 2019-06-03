@@ -6,6 +6,8 @@ use rocket::request::Request;
 use rocket::response::Responder;
 use rocket::response::Response as OriginalResponse;
 
+use route::{ORIGIN, VARY};
+
 #[derive(Debug)]
 pub struct Response {
     pub status: Status,
@@ -46,6 +48,8 @@ impl<'r> Responder<'r> for Response {
             .status(self.status)
             .sized_body(Cursor::new(body.to_string()))
             .header(ContentType::JSON)
+            .raw_header("Access-Control-Allow-Origin", ORIGIN)
+            .raw_header("Vary", VARY)
             .ok()
     }
 }
