@@ -71,19 +71,12 @@ pub mod logger;
 pub mod model;
 pub mod request;
 
-use rocket::config::{Config as RocketConfig, Environment, LoggingLevel};
 use rocket_slog::SlogFairing;
 
 pub fn server(c: &config::Config) -> rocket::Rocket {
     let logger = logger::get_logger(c);
 
-    // disable default logger
-    let rocket_config = RocketConfig::build(Environment::Development)
-        .log_level(LoggingLevel::Off)
-        .finalize()
-        .unwrap();
-
-    rocket::custom(rocket_config)
+    rocket::ignite()
         .mount("/", routes![route::top::index])
         .mount(
             "/_api",
