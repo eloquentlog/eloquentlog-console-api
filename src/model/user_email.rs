@@ -38,11 +38,11 @@ impl Default for NewUserEmail {
     }
 }
 
-impl From<User> for NewUserEmail {
-    fn from(user: User) -> Self {
+impl<'a> From<&'a User> for NewUserEmail {
+    fn from(user: &'a User) -> Self {
         Self {
             user_id: user.id,
-            email: user.email,
+            email: user.email.to_owned(),
             role: UserEmailRole::Primary,
 
             ..Default::default()
@@ -160,5 +160,97 @@ impl UserEmail {
             },
             Ok(_) => Some(voucher_data),
         }
+    }
+}
+
+#[cfg(test)]
+mod user_email_test {
+    use super::*;
+
+    use model::user::NewUser;
+    use model::test::run;
+
+    #[test]
+    fn test_new_user_emails_default() {
+        let e = NewUserEmail {
+            ..Default::default()
+        };
+
+        assert_eq!(e.user_id, -1);
+        assert_eq!(e.email, "".to_string());
+        assert_eq!(e.role, UserEmailRole::General);
+        assert_eq!(e.activation_state, UserEmailActivationState::Pending);
+    }
+
+    #[test]
+    fn test_new_user_email_from_user() {
+        run(|conn, logger| {
+            let email = "foo@example.org";
+            let mut u = NewUser {
+                name: None,
+                username: None,
+                email: email.to_string(),
+
+                ..Default::default()
+            };
+            u.set_password("password");
+            let user = User::insert(&u, conn, logger).unwrap();
+
+            let e = NewUserEmail::from(&user);
+
+            assert_eq!(e.user_id, user.id);
+            assert_eq!(e.email, email);
+            assert_eq!(e.role, UserEmailRole::Primary);
+            assert_eq!(e.activation_state, UserEmailActivationState::Pending);
+        });
+    }
+
+    #[test]
+    fn test_user_email_format() {
+        let now = Utc::now().naive_utc();
+
+        let e = UserEmail {
+            id: 1,
+            user_id: 1,
+            email: Some("foo@example.org".to_string()),
+            role: UserEmailRole::General,
+            activation_state: UserEmailActivationState::Pending,
+            activation_token: None,
+            activation_token_expires_at: None,
+            activation_token_granted_at: None,
+            created_at: now,
+            updated_at: now,
+        };
+
+        assert_eq!(format!("{}", e), "<UserEmail general>");
+    }
+
+    #[test]
+    fn test_insert() {
+        run(|conn, logger| {
+            let mut u = NewUser {
+                name: Some("Hennry the Penguin".to_string()),
+                username: Some("henry".to_string()),
+                email: "hennry@example.org".to_string(),
+
+                ..Default::default()
+            };
+            u.set_password("password");
+            let user = User::insert(&u, conn, logger).unwrap();
+
+            let e = NewUserEmail::from(&user);
+            let result = UserEmail::insert(&e, conn, logger);
+            assert!(result.is_some());
+
+            let user_email = result.unwrap();
+            assert!(user_email.id > 0);
+            assert_eq!(user_email.email.unwrap(), e.email);
+
+            let rows_count: i64 = user_emails::table
+                .count()
+                .first(conn)
+                .expect("Failed to count rows");
+            assert_eq!(1, rows_count);
+        })
     }
 }
