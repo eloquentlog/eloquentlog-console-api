@@ -266,8 +266,9 @@ impl User {
 
 #[cfg(test)]
 mod user_test {
-    use model::test::run;
     use super::*;
+
+    use model::test::run;
 
     #[test]
     fn test_insert() {

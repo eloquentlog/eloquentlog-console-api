@@ -35,7 +35,7 @@ pub fn register(
             let mut u = NewUser::from(data.0.clone());
             u.set_password(&data.password);
             if let Some(user) = User::insert(&u, &conn, &logger) {
-                let e = NewUserEmail::from(user);
+                let e = NewUserEmail::from(&user);
                 if let Some(email) = UserEmail::insert(&e, &conn, &logger) {
                     // This updates created user_email
                     let voucher = email
