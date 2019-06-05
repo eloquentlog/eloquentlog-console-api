@@ -226,6 +226,31 @@ mod user_email_test {
     }
 
     #[test]
+    #[should_panic]
+    fn test_insert_should_panic_on_failure() {
+        run(|conn, logger| {
+            let mut u = NewUser {
+                name: Some("Hennry the Penguin".to_string()),
+                username: Some("henry".to_string()),
+                email: "hennry@example.org".to_string(),
+
+                ..Default::default()
+            };
+            u.set_password("password");
+            let user = User::insert(&u, conn, logger).unwrap();
+
+            let e = NewUserEmail::from(&user);
+            let result = UserEmail::insert(&e, conn, logger);
+            assert!(result.is_some());
+
+            // abort: duplicate key value violates unique constraint
+            let e = NewUserEmail::from(&user);
+            let result = UserEmail::insert(&e, conn, logger);
+            assert!(result.is_none());
+        })
+    }
+
+    #[test]
     fn test_insert() {
         run(|conn, logger| {
             let mut u = NewUser {
