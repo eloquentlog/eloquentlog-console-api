@@ -13,8 +13,8 @@ pub fn get_logger(config: &Config) -> Logger {
 
     let level = match config.env_name {
         "development" => Severity::Debug,
-        "testing" => Severity::Error,
-        _ => Severity::Critical,
+        "testing" => Severity::Critical,
+        _ => Severity::Error,
     };
 
     builder.level(level);
