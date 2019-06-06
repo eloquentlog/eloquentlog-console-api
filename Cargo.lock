@@ -397,6 +397,7 @@ name = "eloquentlog-backend-api"
 version = "0.0.1"
 dependencies = [
  "accord 0.2.2 (git+https://github.com/ChrisBuchholz/accord.git?rev=e56cecc)",
+ "base64 0.10.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "bcrypt 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "cargo-husky 1.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "chrono 0.4.6 (registry+https://github.com/rust-lang/crates.io-index)",

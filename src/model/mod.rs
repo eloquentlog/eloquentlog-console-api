@@ -31,7 +31,8 @@ pub mod test {
 
     /// A test runner
     pub fn run<T>(test: T)
-    where T: FnOnce(&PgConnection, &Logger) -> () + panic::UnwindSafe {
+    where T: FnOnce(&PgConnection, &Config, &Logger) -> () + panic::UnwindSafe
+    {
         // TODO: remove dotenv from here
         dotenv().ok();
         let config = Config::from("testing").unwrap();
@@ -43,7 +44,7 @@ pub mod test {
                 setup(&conn);
 
                 let result = panic::catch_unwind(AssertUnwindSafe(|| {
-                    test(&conn, &logger)
+                    test(&conn, &config, &logger)
                 }));
 
                 teardown(&conn);
