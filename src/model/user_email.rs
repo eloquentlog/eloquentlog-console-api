@@ -167,6 +167,9 @@ impl UserEmail {
 mod user_email_test {
     use super::*;
 
+    extern crate base64;
+    use self::base64::decode;
+
     use model::user::NewUser;
     use model::test::run;
 
@@ -184,7 +187,7 @@ mod user_email_test {
 
     #[test]
     fn test_new_user_email_from_user() {
-        run(|conn, logger| {
+        run(|conn, _, logger| {
             let email = "foo@example.org";
             let mut u = NewUser {
                 name: None,
@@ -228,7 +231,7 @@ mod user_email_test {
     #[test]
     #[should_panic]
     fn test_insert_should_panic_on_failure() {
-        run(|conn, logger| {
+        run(|conn, _, logger| {
             let mut u = NewUser {
                 name: Some("Hennry the Penguin".to_string()),
                 username: Some("henry".to_string()),
@@ -252,7 +255,7 @@ mod user_email_test {
 
     #[test]
     fn test_insert() {
-        run(|conn, logger| {
+        run(|conn, _, logger| {
             let mut u = NewUser {
                 name: Some("Hennry the Penguin".to_string()),
                 username: Some("henry".to_string()),
@@ -277,5 +280,97 @@ mod user_email_test {
                 .expect("Failed to count rows");
             assert_eq!(1, rows_count);
         })
+    }
+
+    #[test]
+    fn test_generation_activation_voucher() {
+        let activation_token = generate_random_hash(
+            ACTIVATION_HASH_SOURCE,
+            ACTIVATION_HASH_LENGTH,
+        );
+
+        let now = Utc::now().naive_utc();
+        let e = UserEmail {
+            id: 1,
+            user_id: 1,
+            email: Some("foo@example.org".to_string()),
+            role: UserEmailRole::General,
+            activation_state: UserEmailActivationState::Pending,
+            activation_token: None,
+            activation_token_expires_at: None,
+            activation_token_granted_at: None,
+            created_at: now,
+            updated_at: now,
+        };
+
+        let voucher_data = e.generate_activation_voucher(
+            activation_token.to_string(),
+            "test",
+            "key_id",
+            "secret",
+        );
+        let s: Vec<&str> = voucher_data.value.split('.').collect();
+        assert_eq!(s.len(), 3);
+
+        let token_body = &decode(s[1]).unwrap()[..];
+        assert!(String::from_utf8_lossy(token_body)
+            .contains(activation_token.as_str()));
+    }
+
+    #[test]
+    fn test_grant_activation_voucher() {
+        run(|conn, config, logger| {
+            let mut u = NewUser {
+                name: Some("Hennry the Penguin".to_string()),
+                username: Some("henry".to_string()),
+                email: "hennry@example.org".to_string(),
+
+                ..Default::default()
+            };
+            u.set_password("password");
+            let user = User::insert(&u, conn, logger).unwrap();
+
+            let e = NewUserEmail::from(&user);
+            let result = UserEmail::insert(&e, conn, logger);
+            assert!(result.is_some());
+
+            let user_email = result.unwrap();
+
+            let rows_count: i64 = user_emails::table
+                .count()
+                .first(conn)
+                .expect("Failed to count rows");
+            assert_eq!(1, rows_count);
+
+            let voucher = user_email
+                .grant_activation_voucher(
+                    &config.activation_voucher_issuer,
+                    &config.activation_voucher_key_id,
+                    &config.activation_voucher_secret,
+                    conn,
+                    logger,
+                )
+                .expect("Failed to grant activation voucher");
+
+            let rows_count: i64 = user_emails::table
+                .count()
+                .first(conn)
+                .expect("Failed to count rows");
+            assert_eq!(1, rows_count);
+
+            let s: Vec<&str> = voucher.value.split('.').collect();
+            assert_eq!(s.len(), 3);
+
+            let token_body = &decode(s[1]).unwrap()[..];
+
+            let user_email = user_emails::table
+                .filter(user_emails::user_id.eq(user.id))
+                .limit(1)
+                .first::<UserEmail>(conn)
+                .unwrap();
+
+            assert!(String::from_utf8_lossy(token_body)
+                .contains(user_email.activation_token.unwrap().as_str()));
+        });
     }
 }

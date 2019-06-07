@@ -190,7 +190,7 @@ mod message_test {
 
     #[test]
     fn test_insert() {
-        run(|conn, logger| {
+        run(|conn, _, logger| {
             let m = NewMessage {
                 code: None,
                 lang: "en".to_string(),
@@ -212,7 +212,7 @@ mod message_test {
 
     #[test]
     fn test_update() {
-        run(|conn, logger| {
+        run(|conn, _, logger| {
             let m = NewMessage {
                 code: Some("200".to_string()),
                 lang: "en".to_string(),

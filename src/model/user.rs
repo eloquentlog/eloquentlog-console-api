@@ -272,7 +272,7 @@ mod user_test {
 
     #[test]
     fn test_insert() {
-        run(|conn, logger| {
+        run(|conn, _, logger| {
             let mut u = NewUser {
                 name: None,
                 username: None,
