@@ -30,7 +30,7 @@ pub struct NewUser {
 
 impl fmt::Display for NewUser {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "<NewUser {email}>", email = &self.email)
+        write!(f, "<NewUser {state}>", state = &self.state)
     }
 }
 
@@ -48,8 +48,9 @@ impl Default for NewUser {
     }
 }
 
-impl From<RequestData> for NewUser {
-    fn from(data: RequestData) -> Self {
+impl<'a> From<&'a RequestData> for NewUser {
+    fn from(data: &'a RequestData) -> Self {
+        let data = data.clone();
         Self {
             name: data.name,
             username: data.username,
@@ -107,7 +108,7 @@ pub struct User {
 
 impl fmt::Display for User {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "<User {id}>", id = &self.id)
+        write!(f, "<User {uuid}>", uuid = &self.uuid.to_string())
     }
 }
 
@@ -268,7 +269,184 @@ impl User {
 mod user_test {
     use super::*;
 
+    use chrono::Utc;
+    use uuid::Uuid;
+
     use model::test::run;
+
+    #[test]
+    fn test_new_user_format() {
+        let u = NewUser {
+            name: Some("Hennry the Penguin".to_string()),
+            username: Some("hennry".to_string()),
+            email: "hennry@example.org".to_string(),
+            password: "password".to_string().as_bytes().to_vec(),
+            state: UserState::Pending,
+            reset_password_state: UserResetPasswordState::Never,
+        };
+
+        assert_eq!(format!("{}", u), "<NewUser pending>");
+    }
+
+    #[test]
+    fn test_new_user_default() {
+        let u = NewUser {
+            ..Default::default()
+        };
+
+        assert_eq!(u.name, None);
+        assert_eq!(u.username, None);
+        assert_eq!(u.email, "".to_string());
+        assert_eq!(u.password, Vec::new() as Vec<u8>);
+        assert_eq!(u.state, UserState::Pending);
+        assert_eq!(u.reset_password_state, UserResetPasswordState::Never);
+    }
+
+    #[test]
+    fn test_new_user_from() {
+        let data = RequestData {
+            name: Some("Hennry the Penguin".to_string()),
+            username: Some("hennry".to_string()),
+            email: "hennry@example.org".to_string(),
+            password: "password".to_string(),
+        };
+
+        let u = NewUser::from(&data);
+        assert_eq!(u.name, data.name);
+        assert_eq!(u.username, data.username);
+        assert_eq!(u.email, data.email);
+        assert_eq!(u.password, "".to_string().as_bytes().to_vec());
+        assert_eq!(u.state, UserState::Pending);
+        assert_eq!(u.reset_password_state, UserResetPasswordState::Never);
+    }
+
+    #[test]
+    fn test_user_format() {
+        let now = Utc::now().naive_utc();
+
+        let u = User {
+            id: 1,
+            uuid: Uuid::nil(),
+            name: Some("Hennry the Penguin".to_string()),
+            username: Some("hennry".to_string()),
+            email: "hennry@example.org".to_string(),
+            password: Vec::new() as Vec<u8>,
+            state: UserState::Pending,
+            access_token: None,
+            access_token_granted_at: None,
+            reset_password_state: UserResetPasswordState::Never,
+            reset_password_token: None,
+            reset_password_token_expires_at: None,
+            reset_password_token_granted_at: None,
+            created_at: now,
+            updated_at: now,
+        };
+
+        assert_eq!(
+            format!("{}", u),
+            "<User 00000000-0000-0000-0000-000000000000>",
+        );
+    }
+
+    #[test]
+    fn test_check_email_uniqueness() {
+        run(|conn, _, logger| {
+            let mut u = NewUser {
+                name: None,
+                username: None,
+                email: "hennry@example.org".to_string(),
+
+                ..Default::default()
+            };
+            u.set_password("password");
+            let result = User::insert(&u, conn, logger);
+            assert!(result.is_some());
+
+            assert!(!User::check_email_uniqueness(&u.email, conn, logger));
+            assert!(User::check_email_uniqueness(
+                "unknown@example.org",
+                conn,
+                logger,
+            ));
+        });
+    }
+
+    #[test]
+    fn test_check_username_uniqueness() {
+        run(|conn, _, logger| {
+            let mut u = NewUser {
+                name: None,
+                username: Some("hennry".to_string()),
+                email: "hennry@example.org".to_string(),
+
+                ..Default::default()
+            };
+            u.set_password("password");
+            let result = User::insert(&u, conn, logger);
+            assert!(result.is_some());
+
+            assert!(!User::check_username_uniqueness(
+                &u.username.unwrap(),
+                conn,
+                logger,
+            ));
+            assert!(User::check_username_uniqueness("unknown", conn, logger));
+        });
+    }
+
+    #[test]
+    fn test_find_by_email() {
+        run(|conn, _, logger| {
+            let mut u = NewUser {
+                name: Some("Hennry the Penguin".to_string()),
+                username: Some("hennry".to_string()),
+                email: "hennry@example.org".to_string(),
+
+                ..Default::default()
+            };
+            u.set_password("password");
+            let result = User::insert(&u, conn, logger);
+            assert!(result.is_some());
+
+            let result = User::find_by_email(&u.email, conn, logger);
+            assert!(result.is_some());
+
+            let user = result.unwrap();
+            assert_eq!(user.email, u.email);
+
+            let result =
+                User::find_by_email("unknown@example.org", conn, logger);
+            assert!(result.is_none());
+        });
+    }
+
+    #[test]
+    fn test_find_by_uuid() {
+        run(|conn, _, logger| {
+            let mut u = NewUser {
+                name: Some("Hennry the Penguin".to_string()),
+                username: Some("hennry".to_string()),
+                email: "hennry@example.org".to_string(),
+
+                ..Default::default()
+            };
+            u.set_password("password");
+            let result = User::insert(&u, conn, logger);
+            assert!(result.is_some());
+
+            let uuid = result.unwrap().uuid;
+
+            let result = User::find_by_uuid(&uuid.to_string(), conn, logger);
+            assert!(result.is_some());
+
+            let user = result.unwrap();
+            assert_eq!(user.uuid, uuid);
+
+            let result =
+                User::find_by_uuid(&Uuid::nil().to_string(), conn, logger);
+            assert!(result.is_none());
+        });
+    }
 
     #[test]
     fn test_insert() {
