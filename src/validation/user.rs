@@ -65,7 +65,7 @@ impl<'a> Validator<'a> {
 
     #[allow(clippy::redundant_closure)]
     pub fn validate(&self) -> Result<(), Vec<ValidationError>> {
-        let u = NewUser::from(self.data.0.clone());
+        let u = NewUser::from(&self.data.0);
         // TODO:
         // * check email format
         // * check whether username is reserved or not
@@ -777,7 +777,7 @@ mod test {
                 ..Default::default()
             });
 
-            let mut u = NewUser::from(data.0.clone());
+            let mut u = NewUser::from(&data.0);
             u.set_password(&data.password);
 
             let _id = User::insert(&u, conn, logger)
@@ -816,7 +816,7 @@ mod test {
                 ..Default::default()
             });
 
-            let mut u = NewUser::from(data.0.clone());
+            let mut u = NewUser::from(&data.0);
             u.set_password(&data.password);
 
             let _id = User::insert(&u, conn, logger)

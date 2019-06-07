@@ -32,7 +32,7 @@ pub fn register(
             // TODO:
             // * run within a transaction
             // * run it in worker
-            let mut u = NewUser::from(data.0.clone());
+            let mut u = NewUser::from(&data.0);
             u.set_password(&data.password);
             if let Some(user) = User::insert(&u, &conn, &logger) {
                 let e = NewUserEmail::from(&user);
