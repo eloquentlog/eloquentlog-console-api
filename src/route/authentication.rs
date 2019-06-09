@@ -1,12 +1,18 @@
 use rocket::State;
 use rocket::http::Status;
+use rocket::response::Response as RawResponse;
 use rocket_slog::SyncLogger;
 
 use config::Config;
 use db::DbConn;
 use model::user::User;
 use request::user::UserSignIn as RequestData;
-use response::Response;
+use response::{Response, no_content};
+
+#[options("/login")]
+pub fn login_options<'a>() -> RawResponse<'a> {
+    no_content()
+}
 
 #[post("/login", data = "<data>", format = "json")]
 pub fn login(

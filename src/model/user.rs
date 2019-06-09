@@ -260,6 +260,8 @@ impl User {
         AuthorizationClaims::encode(subject, issuer, key_id, secret)
     }
 
+    /// Checks whether the password given as an argument is valid or not.
+    /// This takes a bit long til returning the result.
     pub fn verify_password(&self, password: &str) -> bool {
         verify(password, &str::from_utf8(&self.password).unwrap()).unwrap()
     }

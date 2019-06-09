@@ -60,7 +60,6 @@ extern crate uuid;
 
 mod response;
 mod validation;
-mod route;
 mod schema;
 mod util;
 
@@ -70,6 +69,7 @@ pub mod job;
 pub mod logger;
 pub mod model;
 pub mod request;
+pub mod route;
 
 use rocket_slog::SlogFairing;
 
@@ -81,11 +81,12 @@ pub fn server(c: &config::Config) -> rocket::Rocket {
         .mount(
             "/_api",
             routes![
-                route::options_login,
                 route::authentication::login,
+                route::authentication::login_options,
                 route::authentication::logout,
                 route::registration::activate,
                 route::registration::register,
+                route::registration::register_options,
                 route::registration::deregister,
                 route::message::get,
                 route::message::post,
