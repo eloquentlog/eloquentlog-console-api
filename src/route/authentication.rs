@@ -32,7 +32,7 @@ pub fn login(
             warn!(logger, "login failed: username {}", data.username);
 
             res.status(Status::Unauthorized).format(json!({
-                "message": "The credentials you've entered is incorrect"
+                "message": "The credentials you've entered are incorrect"
             }))
         },
     }
