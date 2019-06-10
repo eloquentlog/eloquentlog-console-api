@@ -5,7 +5,7 @@ use rocket::http::{ContentType, Header, Status};
 
 use eloquentlog_backend_api::config;
 use eloquentlog_backend_api::model::{message, user};
-use eloquentlog_backend_api::request::voucher::AUTHORIZATION_HEADER_KEY;
+use eloquentlog_backend_api::route::AUTHORIZATION_HEADER_KEY;
 use eloquentlog_backend_api::logger::Logger;
 
 use {minify, run_test};

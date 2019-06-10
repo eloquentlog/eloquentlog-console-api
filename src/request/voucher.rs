@@ -6,6 +6,7 @@ use rocket::request::FromRequest;
 
 use config::Config;
 use model::voucher::{AuthorizationClaims, Claims};
+use route::AUTHORIZATION_HEADER_KEY;
 
 pub struct AuthorizationVoucher(pub String);
 
@@ -38,9 +39,6 @@ pub enum AuthorizationVoucherError {
     Invalid,
     Missing,
 }
-
-pub const AUTHORIZATION_HEADER_KEY: &str =
-    "X-Eloquentlog-Authorization-Voucher";
 
 impl<'a, 'r> FromRequest<'a, 'r> for AuthorizationVoucher {
     type Error = AuthorizationVoucherError;
