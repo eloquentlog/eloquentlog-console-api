@@ -8,13 +8,13 @@ use config::Config;
 use db::DbConn;
 use model::user::{NewUser, User};
 use model::user_email::{NewUserEmail, UserEmail};
-use response::{Response, no_content};
+use response::{Response, no_content_for};
 use request::user::UserSignUp as RequestData;
 use validation::user::Validator;
 
 #[options("/register")]
 pub fn register_options<'a>() -> RawResponse<'a> {
-    no_content()
+    no_content_for("POST")
 }
 
 #[post("/register", format = "json", data = "<data>")]

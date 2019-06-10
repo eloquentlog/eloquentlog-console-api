@@ -7,11 +7,11 @@ use config::Config;
 use db::DbConn;
 use model::user::User;
 use request::user::UserSignIn as RequestData;
-use response::{Response, no_content};
+use response::{Response, no_content_for};
 
 #[options("/login")]
 pub fn login_options<'a>() -> RawResponse<'a> {
-    no_content()
+    no_content_for("POST")
 }
 
 #[post("/login", data = "<data>", format = "json")]
