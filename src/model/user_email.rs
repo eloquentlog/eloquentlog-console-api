@@ -1,6 +1,6 @@
 use std::fmt;
 
-use chrono::{NaiveDateTime, Utc, TimeZone};
+use chrono::{NaiveDateTime, TimeZone, Utc};
 use diesel::{Associations, Identifiable, Queryable, debug_query, prelude::*};
 use diesel::pg::{Pg, PgConnection};
 
@@ -116,7 +116,7 @@ impl UserEmail {
         secret: &str,
     ) -> VoucherData
     {
-        ActivationClaims::encode(value, issuer, key_id, secret)
+        ActivationClaims::encode(value, issuer, key_id, secret, Utc::now())
     }
 
     pub fn grant_activation_voucher(
