@@ -278,7 +278,7 @@ mod voucher_test {
 
     #[test]
     fn test_activation_claims_decode() {
-        let now = Utc.ymd(2019, 6, 11).and_hms(23, 19, 32);
+        let now = Utc::now();
         let value = "dummy".to_string();
         let voucher = ActivationClaims::encode(
             value.clone(),
@@ -293,10 +293,12 @@ mod voucher_test {
         let claims = ActivationClaims::decode(&token, "issuer", "secret")
             .ok()
             .unwrap();
+
+        let t = now.timestamp();
         assert_eq!(claims.sub, value);
         assert_eq!(claims.iss, "issuer");
-        assert_eq!(claims.iat, 1_560_295_172);
+        assert_eq!(claims.iat, t as usize);
         assert_eq!(claims.exp, claims.iat + 60 * 60 * 24); // +86400 (1560381572)
-        assert_eq!(claims.nbf, 1_560_295_172);
+        assert_eq!(claims.nbf, t as usize);
     }
 }
