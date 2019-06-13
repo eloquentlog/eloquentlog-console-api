@@ -2,7 +2,7 @@ use std::fmt;
 use std::str;
 
 use bcrypt::{hash, verify};
-use chrono::NaiveDateTime;
+use chrono::{NaiveDateTime, Utc};
 use diesel::{Identifiable, Queryable, debug_query, prelude::*};
 use diesel::pg::{Pg, PgConnection};
 use uuid::Uuid;
@@ -257,7 +257,7 @@ impl User {
     ) -> VoucherData
     {
         let subject = self.uuid.to_urn().to_string();
-        AuthorizationClaims::encode(subject, issuer, key_id, secret)
+        AuthorizationClaims::encode(subject, issuer, key_id, secret, Utc::now())
     }
 
     /// Checks whether the password given as an argument is valid or not.
