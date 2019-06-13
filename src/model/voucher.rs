@@ -220,6 +220,8 @@ mod voucher_test {
     extern crate base64;
     use self::base64::decode;
 
+    use model::test::run;
+
     #[test]
     fn test_voucher_data_format() {
         let now = Utc::now();
@@ -274,6 +276,55 @@ mod voucher_test {
         assert_eq!(claims.iat, 1_560_295_172);
         assert_eq!(claims.exp, claims.iat + 60 * 60 * 24); // +86400 (1560381572)
         assert_eq!(claims.nbf, 1_560_295_172);
+    }
+
+    #[test]
+    fn test_activation_claims_decode_failure() {
+        run(|_, config, _| {
+            let tests: [(String, &str, &str, DateTime<Utc>); 4] = [
+                (
+                    // expires
+                    "dummy".to_string(),
+                    &config.activation_voucher_issuer,
+                    &config.activation_voucher_secret,
+                    Utc.ymd(2001, 1, 1).and_hms(10, 0, 0),
+                ),
+                (
+                    // not before
+                    "dummy".to_string(),
+                    &config.activation_voucher_issuer,
+                    &config.activation_voucher_secret,
+                    Utc::now() + Duration::hours(3),
+                ),
+                (
+                    // wrong issuer
+                    "dummy".to_string(),
+                    "unknown",
+                    &config.activation_voucher_secret,
+                    Utc::now(),
+                ),
+                (
+                    // invalid secret
+                    "dummy".to_string(),
+                    &config.activation_voucher_issuer,
+                    "invalid",
+                    Utc::now(),
+                ),
+            ];
+            for (_, (value, issuer, secret, now)) in tests.iter().enumerate() {
+                let voucher = ActivationClaims::encode(
+                    value.clone(),
+                    &config.activation_voucher_issuer,
+                    &config.activation_voucher_key_id,
+                    &config.activation_voucher_secret,
+                    *now,
+                );
+                let token = voucher.value;
+                assert!(
+                    ActivationClaims::decode(&token, issuer, secret).is_err()
+                );
+            }
+        });
     }
 
     #[test]
