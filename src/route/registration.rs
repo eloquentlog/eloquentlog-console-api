@@ -64,16 +64,6 @@ pub fn register(
     }
 }
 
-#[get("/activate/<voucher>", format = "json")]
-pub fn activate(voucher: String, logger: SyncLogger) -> Response {
-    let res: Response = Default::default();
-
-    // TODO
-    info!(logger, "voucher: {}", voucher);
-
-    res.status(Status::Ok)
-}
-
 #[post("/deregister", format = "json")]
 pub fn deregister(user: User, logger: SyncLogger) -> Response {
     let res: Response = Default::default();
