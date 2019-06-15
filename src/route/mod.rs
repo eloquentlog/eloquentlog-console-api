@@ -1,7 +1,9 @@
 pub mod authentication;
 pub mod error;
 pub mod message;
+pub mod password_reset;
 pub mod registration;
+pub mod user;
 pub mod top;
 
 // TODO
