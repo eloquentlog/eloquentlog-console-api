@@ -111,19 +111,22 @@ impl<'a> Validator<'a> {
                     })
                     .collect();
         }
+
+        if errors.iter().find(|&e| "email" == e.field).is_none() {
+            if let Err(e) = self.validate_email_uniqueness() {
+                errors.push(e);
+            }
+        }
+
+        if errors.iter().find(|&e| "username" == e.field).is_none() {
+            if let Err(e) = self.validate_username_uniqueness() {
+                errors.push(e);
+            }
+        }
+
         if !errors.is_empty() {
             return Err(errors);
         }
-
-        if let Err(e) = self.validate_email_uniqueness() {
-            errors.push(e);
-            return Err(errors);
-        }
-        if let Err(e) = self.validate_username_uniqueness() {
-            errors.push(e);
-            return Err(errors);
-        }
-
         Ok(())
     }
 }
