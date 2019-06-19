@@ -33,8 +33,9 @@ mod test {
 
     #[test]
     fn test_get_logger_development() {
-        run(|_, _, _| {
-            let c = Config::from("development").unwrap();
+        run(|_, config, _| {
+            let mut c = config.clone();
+            c.env_name = "development";
             let logger = get_logger(&c);
 
             assert!(logger.is_critical_enabled());
@@ -48,8 +49,9 @@ mod test {
 
     #[test]
     fn test_get_logger_production() {
-        run(|_, _, _| {
-            let c = Config::from("production").unwrap();
+        run(|_, config, _| {
+            let mut c = config.clone();
+            c.env_name = "production";
             let logger = get_logger(&c);
 
             assert!(logger.is_critical_enabled());
@@ -62,10 +64,9 @@ mod test {
     }
 
     #[test]
-    fn test_get_logger_test() {
-        run(|_, _, _| {
-            let c = Config::from("testing").unwrap();
-            let logger = get_logger(&c);
+    fn test_get_logger_testing() {
+        run(|_, config, _| {
+            let logger = get_logger(config);
 
             assert!(logger.is_critical_enabled());
             assert!(logger.is_error_enabled());
