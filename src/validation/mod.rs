@@ -4,7 +4,7 @@ pub mod user;
 use accord::{Invalid, ValidatorResult};
 use accord::validators::{alphanumeric, max as original_max};
 
-type SV = Box<Fn(&String) -> ValidatorResult>;
+type SV = Box<dyn Fn(&String) -> ValidatorResult>;
 
 const CHARS_LOWER: &[char] = &[
     'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o',
@@ -17,7 +17,7 @@ const CHARS_UPPER: &[char] = &[
 const DIGITS: &[char] = &['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'];
 
 fn alphanumeric_underscore_if_present(
-) -> Box<Fn(&Option<String>) -> ValidatorResult> {
+) -> Box<dyn Fn(&Option<String>) -> ValidatorResult> {
     Box::new(move |s: &Option<String>| {
         match &s {
             Some(v) => alphanumeric()(&v.replace("_", "")),
@@ -42,7 +42,7 @@ fn contain_any(accepted: &'static [char], text: &'static str) -> SV {
 }
 
 fn not_contain_only_digits_or_underscore_if_present(
-) -> Box<Fn(&Option<String>) -> ValidatorResult> {
+) -> Box<dyn Fn(&Option<String>) -> ValidatorResult> {
     Box::new(move |s: &Option<String>| {
         match &s {
             Some(v) => {
@@ -82,7 +82,7 @@ fn not_contain_if_given(needle: Option<String>) -> SV {
     })
 }
 
-fn not_overlap_with(field: &'static str) -> Box<Fn(Option<String>) -> SV> {
+fn not_overlap_with(field: &'static str) -> Box<dyn Fn(Option<String>) -> SV> {
     Box::new(move |needle: Option<String>| {
         let f = field.to_string();
         Box::new(move |s: &String| {
@@ -101,7 +101,7 @@ fn not_overlap_with(field: &'static str) -> Box<Fn(Option<String>) -> SV> {
 
 fn not_start_with_if_present(
     needle: &'static str,
-) -> Box<Fn(&Option<String>) -> ValidatorResult> {
+) -> Box<dyn Fn(&Option<String>) -> ValidatorResult> {
     Box::new(move |s: &Option<String>| {
         match &s {
             Some(v) if !v.is_empty() && v.replacen(needle, "", 1) == v[1..] => {
@@ -117,7 +117,7 @@ fn not_start_with_if_present(
 }
 
 fn not_start_with_digits_if_present(
-) -> Box<Fn(&Option<String>) -> ValidatorResult> {
+) -> Box<dyn Fn(&Option<String>) -> ValidatorResult> {
     Box::new(move |s: &Option<String>| {
         match &s {
             Some(v) if !v.is_empty() => {
@@ -135,7 +135,7 @@ fn not_start_with_digits_if_present(
     })
 }
 
-fn required() -> Box<Fn(&Option<String>) -> ValidatorResult> {
+fn required() -> Box<dyn Fn(&Option<String>) -> ValidatorResult> {
     Box::new(move |s: &Option<String>| {
         if s.is_some() {
             return Ok(());
@@ -148,7 +148,9 @@ fn required() -> Box<Fn(&Option<String>) -> ValidatorResult> {
     })
 }
 
-fn max_if_present(max: usize) -> Box<Fn(&Option<String>) -> ValidatorResult> {
+fn max_if_present(
+    max: usize,
+) -> Box<dyn Fn(&Option<String>) -> ValidatorResult> {
     Box::new(move |s: &Option<String>| {
         match &s {
             Some(v) => original_max(max)(&v),
