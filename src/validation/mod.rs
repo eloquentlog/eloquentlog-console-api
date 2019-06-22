@@ -4,7 +4,7 @@ pub mod user;
 use accord::{Invalid, ValidatorResult};
 use accord::validators::{alphanumeric, max as original_max};
 
-type SV = Box<Fn(&String) -> ValidatorResult>;
+type SV = Box<dyn Fn(&String) -> ValidatorResult>;
 
 const CHARS_LOWER: &[char] = &[
     'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o',
