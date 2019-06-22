@@ -19,13 +19,14 @@ pub fn options<'a>(
 }
 
 #[post("/password/reset", format = "json")]
-pub fn request() -> Response {
+pub fn request(logger: SyncLogger) -> Response {
     let res: Response = Default::default();
 
     // TODO
-    res.status(Status::UnprocessableEntity).format(json!({
-        "errors": []
-    }))
+    let token = "token";
+    info!(logger, "token: {}", token);
+
+    res.format(json!({ "activation_token": token }))
 }
 
 #[get("/password/reset?<token>", format = "json")]
