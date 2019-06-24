@@ -10,7 +10,7 @@ use eloquentlog_backend_api::logger::Logger;
 
 use {minify, run_test};
 
-fn build_test_user(conn: &PgConnection, logger: &Logger) -> user::User {
+fn build_test_user(db_conn: &PgConnection, logger: &Logger) -> user::User {
     let password = "pa$$w0rD";
     let mut u = user::NewUser {
         name: None,
@@ -21,7 +21,7 @@ fn build_test_user(conn: &PgConnection, logger: &Logger) -> user::User {
     };
     u.set_password(&password);
 
-    user::User::insert(&u, &conn, &logger)
+    user::User::insert(&u, &db_conn, &logger)
         .unwrap_or_else(|| panic!("Error inserting: {}", u))
 }
 
@@ -43,8 +43,8 @@ fn build_authorization_header<'a>(
 
 #[test]
 fn test_get_no_message() {
-    run_test(|client, conn, config, logger| {
-        let user = build_test_user(&conn, &logger);
+    run_test(|client, db_conn, _, config, logger| {
+        let user = build_test_user(&db_conn, &logger);
         let auth = build_authorization_header(&user, &config);
 
         let mut res = client.get("/_api/messages").header(auth).dispatch();
@@ -56,8 +56,8 @@ fn test_get_no_message() {
 
 #[test]
 fn test_get_recent_messages() {
-    run_test(|client, conn, config, logger| {
-        let user = build_test_user(&conn, &logger);
+    run_test(|client, db_conn, _, config, logger| {
+        let user = build_test_user(&db_conn, &logger);
         let auth = build_authorization_header(&user, &config);
 
         let dt = Utc.ymd(2019, 8, 7).and_hms_milli(6, 5, 4, 333); // 2019-08-07T06:05:04.333
@@ -76,7 +76,7 @@ fn test_get_recent_messages() {
         let id = diesel::insert_into(message::messages::table)
             .values(&m)
             .returning(message::messages::id)
-            .get_result::<i64>(conn)
+            .get_result::<i64>(db_conn)
             .unwrap_or_else(|_| panic!("Error inserting: {}", m));
 
         let mut res = client.get("/_api/messages").header(auth).dispatch();
@@ -107,8 +107,8 @@ fn test_get_recent_messages() {
 
 #[test]
 fn test_post_with_validation_errors() {
-    run_test(|client, conn, config, logger| {
-        let user = build_test_user(&conn, &logger);
+    run_test(|client, db_conn, _, config, logger| {
+        let user = build_test_user(&db_conn, &logger);
         let auth = build_authorization_header(&user, &config);
 
         let mut res = client
@@ -131,8 +131,8 @@ fn test_post_with_validation_errors() {
 
 #[test]
 fn test_post() {
-    run_test(|client, conn, config, logger| {
-        let user = build_test_user(&conn, &logger);
+    run_test(|client, db_conn, _, config, logger| {
+        let user = build_test_user(&db_conn, &logger);
         let auth = build_authorization_header(&user, &config);
 
         let mut res = client
@@ -156,8 +156,8 @@ fn test_post() {
 
 #[test]
 fn test_put() {
-    run_test(|client, conn, config, logger| {
-        let user = build_test_user(&conn, &logger);
+    run_test(|client, db_conn, _, config, logger| {
+        let user = build_test_user(&db_conn, &logger);
         let auth = build_authorization_header(&user, &config);
 
         let m = message::NewMessage {
@@ -172,7 +172,7 @@ fn test_put() {
         let id = diesel::insert_into(message::messages::table)
             .values(&m)
             .returning(message::messages::id)
-            .get_result::<i64>(conn)
+            .get_result::<i64>(db_conn)
             .unwrap_or_else(|_| panic!("Error inserting: {}", m));
 
         let mut res = client
@@ -191,7 +191,7 @@ fn test_put() {
 
         let result = message::messages::table
             .find(id)
-            .first::<message::Message>(conn)
+            .first::<message::Message>(db_conn)
             .unwrap();
         assert_eq!("Updated message", result.title);
         assert_eq!("Hello, world!", result.content.unwrap());

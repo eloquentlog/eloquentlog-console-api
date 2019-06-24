@@ -6,7 +6,7 @@ use run_test;
 
 #[test]
 fn test_login() {
-    run_test(|client, conn, _, logger| {
+    run_test(|client, db_conn, _, _, logger| {
         let password = "pa$$w0rD";
         let mut u = user::NewUser {
             name: None,
@@ -17,7 +17,7 @@ fn test_login() {
         };
         u.set_password(&password);
 
-        user::User::insert(&u, &conn, &logger)
+        user::User::insert(&u, &db_conn, &logger)
             .unwrap_or_else(|| panic!("Error inserting: {}", u));
 
         let req =

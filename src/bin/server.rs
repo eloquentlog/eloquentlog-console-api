@@ -8,7 +8,8 @@ use std::env;
 use dotenv::dotenv;
 
 use eloquentlog_backend_api::server;
-use eloquentlog_backend_api::db::init_pool;
+use eloquentlog_backend_api::db::init_pool as init_db_pool;
+use eloquentlog_backend_api::mq::init_pool as init_mq_pool;
 use eloquentlog_backend_api::config::Config;
 
 fn get_env() -> String {
@@ -25,8 +26,9 @@ fn main() {
     dotenv().ok();
     let config = Config::from(name.as_str()).expect("Failed to get config");
 
-    // database
-    let connection_pool = init_pool(&config.database_url);
+    // connection pools
+    let db_pool = init_db_pool(&config.database_url);
+    let mq_pool = init_mq_pool(&config.queue_url);
 
-    server(&config).manage(connection_pool).launch();
+    server(&config).manage(db_pool).manage(mq_pool).launch();
 }

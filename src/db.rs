@@ -1,4 +1,4 @@
-//!
+//! The database connection and its manager.
 use std::ops::Deref;
 
 use rocket::http::Status;
