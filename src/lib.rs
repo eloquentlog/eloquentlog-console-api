@@ -19,17 +19,18 @@ extern crate dotenv;
 #[macro_use]
 extern crate diesel;
 
+extern crate fourche;
+
 extern crate jsonwebtoken;
 
 #[cfg(test)]
 #[macro_use]
 extern crate lazy_static;
 
-extern crate oppgave;
-
 #[cfg(test)]
 extern crate parking_lot;
 
+extern crate r2d2_redis;
 extern crate rand;
 extern crate redis;
 extern crate regex;
@@ -63,8 +64,10 @@ mod validation;
 mod schema;
 mod util;
 
-pub mod config;
 pub mod db;
+pub mod mq;
+
+pub mod config;
 pub mod job;
 pub mod logger;
 pub mod model;

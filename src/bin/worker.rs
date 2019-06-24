@@ -1,17 +1,21 @@
 extern crate dotenv;
-extern crate oppgave;
+extern crate fourche;
 extern crate redis;
+
+#[macro_use(error, info)]
+extern crate slog;
 
 extern crate eloquentlog_backend_api;
 
 use std::env;
 
 use dotenv::dotenv;
-use oppgave::Queue;
+use fourche::queue::Queue;
 use redis::Client;
 
-use eloquentlog_backend_api::job;
 use eloquentlog_backend_api::config::Config;
+use eloquentlog_backend_api::logger;
+use eloquentlog_backend_api::job;
 
 fn get_env() -> String {
     match env::var("ENV") {
@@ -31,14 +35,17 @@ fn main() {
     let client = Client::open(config.queue_url.as_str()).unwrap();
     let conn = client.get_connection().unwrap();
 
-    let worker = Queue::new("default".into(), conn);
+    let logger = logger::get_logger(&config);
+    let queue = Queue::new("default", &conn);
 
-    while let Some(job) = worker.next::<job::Job>() {
-        if job.is_err() {
-            continue;
+    loop {
+        // TODO: Result
+        match queue.dequeue::<job::Job>() {
+            Ok(job) => info!(logger, "job: {}", job.id),
+            _ => {
+                error!(logger, "err");
+                break;
+            },
         }
-        let actual_job = job.unwrap();
-
-        println!("job: {}", actual_job.id);
     }
 }

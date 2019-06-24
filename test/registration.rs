@@ -6,7 +6,7 @@ use run_test;
 
 #[test]
 fn test_register_with_validation_error() {
-    run_test(|client, conn, _, logger| {
+    run_test(|client, db_conn, _, _, logger| {
         let email = "postmaster@example.org";
         let res = client
             .post("/_api/register")
@@ -23,13 +23,13 @@ fn test_register_with_validation_error() {
         assert_eq!(res.status(), Status::UnprocessableEntity);
 
         // TODO
-        assert!(user::User::find_by_email(&email, &conn, &logger).is_none());
+        assert!(user::User::find_by_email(&email, &db_conn, &logger).is_none());
     });
 }
 
 #[test]
 fn test_register() {
-    run_test(|client, conn, _, logger| {
+    run_test(|client, db_conn, _, _, logger| {
         let email = "postmaster@example.org";
         let res = client
             .post("/_api/register")
@@ -46,7 +46,7 @@ fn test_register() {
         assert_eq!(res.status(), Status::Ok);
 
         // TODO
-        let u = user::User::find_by_email(&email, &conn, &logger).unwrap();
+        let u = user::User::find_by_email(&email, &db_conn, &logger).unwrap();
         assert_eq!(u.state, user::UserState::Pending);
         assert_eq!(u.email, email);
     });
