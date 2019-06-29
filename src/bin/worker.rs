@@ -14,8 +14,9 @@ use fourche::queue::Queue;
 use redis::Client;
 
 use eloquentlog_backend_api::config::Config;
+use eloquentlog_backend_api::job::Job;
+use eloquentlog_backend_api::model::establish_connection;
 use eloquentlog_backend_api::logger;
-use eloquentlog_backend_api::job;
 
 fn get_env() -> String {
     match env::var("ENV") {
@@ -29,21 +30,31 @@ fn main() {
     let name = get_env();
 
     dotenv().ok();
-    let config = Config::from(name.as_str()).expect("Failed to get config");
+    let config = Config::from(name.as_str()).expect("failed to get config");
 
     // redis
     let client = Client::open(config.queue_url.as_str()).unwrap();
-    let conn = client.get_connection().unwrap();
+    let mq_conn = client.get_connection().unwrap();
+
+    // postgresql
+    let db_conn = establish_connection(&config);
 
     let logger = logger::get_logger(&config);
-    let queue = Queue::new("default", &conn);
+    let queue = Queue::new("default", &mq_conn);
 
     loop {
-        // TODO: Result
-        match queue.dequeue::<job::Job>() {
-            Ok(job) => info!(logger, "job: {}", job.id),
-            _ => {
-                error!(logger, "err");
+        match queue.dequeue::<Job<i64>>() {
+            Ok(job) => {
+                info!(
+                    logger,
+                    "kind: {}, args: {:?}",
+                    job.kind,
+                    job.args.as_slice()
+                );
+                job.invoke(&db_conn, &logger, &config);
+            },
+            Err(e) => {
+                error!(logger, "err: {}", e);
                 break;
             },
         }

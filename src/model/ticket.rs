@@ -1,20 +1,21 @@
-//! Claims and VoucherData
+//! Ticket handles encoding/decoding using Claims and Token.
 use std::fmt;
 
-use chrono::{Utc, DateTime, Duration};
 use jsonwebtoken::{
     Algorithm, Header, Validation, decode as decode_token, decode_header,
     encode as encode_token,
 };
 
-pub struct VoucherData {
-    pub value: String,
+#[derive(Clone)]
+pub struct Token {
+    pub value: String, // subject
+
     // timestamp values
-    pub expires_at: i64,
     pub granted_at: i64,
+    pub expires_at: i64,
 }
 
-impl fmt::Display for VoucherData {
+impl fmt::Display for Token {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
         fmt.write_str(&self.value)?;
         Ok(())
@@ -28,18 +29,17 @@ where Self: std::marker::Sized
     const LEEWAY: i64;
 
     fn decode(
-        value: &str, // VoucherData's value
+        ticket: &str, // encoded string
         issuer: &str,
         secret: &str,
     ) -> Result<Self, jsonwebtoken::errors::Error>;
 
     fn encode(
-        value: String, // subject
+        token: Token, // contains subject
         issuer: &str,
         kei_id: &str,
         secret: &str,
-        now: DateTime<Utc>,
-    ) -> VoucherData;
+    ) -> String;
 
     fn get_subject(&self) -> String;
 }
@@ -59,20 +59,20 @@ impl Claims for ActivationClaims {
     const LEEWAY: i64 = 36; // seconds
 
     fn decode(
-        value: &str,
+        ticket: &str,
         issuer: &str,
         secret: &str,
     ) -> Result<Self, jsonwebtoken::errors::Error>
     {
         // self check
-        let header = decode_header(&value).expect("Invalid token");
+        let header = decode_header(&ticket).expect("Invalid token");
         if header.alg != Self::ALGORITHM {
             return Err(jsonwebtoken::errors::Error::from(
                 jsonwebtoken::errors::ErrorKind::InvalidToken,
             ));
         }
 
-        // validate aud
+        // TODO: validate aud
         let v = Validation {
             algorithms: vec![Self::ALGORITHM],
             iss: Some(issuer.to_string()),
@@ -83,41 +83,33 @@ impl Claims for ActivationClaims {
             ..Validation::default()
         };
 
-        match decode_token::<Self>(&value, secret.as_ref(), &v) {
+        match decode_token::<Self>(&ticket, secret.as_ref(), &v) {
             Ok(v) => Ok(v.claims),
             Err(e) => Err(e),
         }
     }
 
     fn encode(
-        value: String,
+        token: Token,
         issuer: &str,
         key_id: &str,
         secret: &str,
-        now: DateTime<Utc>,
-    ) -> VoucherData
+    ) -> String
     {
-        let granted_at = now.timestamp();
-        let expires_at = (now + Duration::hours(24)).timestamp();
-
         // TODO: aud
         let c = Self {
-            sub: value,
-            iat: granted_at as usize,
+            sub: token.value,
+            iat: token.granted_at as usize,
             iss: issuer.to_string(),
-            exp: expires_at as usize,
-            nbf: granted_at as usize,
+            exp: token.expires_at as usize,
+            nbf: token.granted_at as usize,
         };
 
         let mut h = Header::default();
         h.alg = Self::ALGORITHM;
         h.kid = Some(key_id.to_string());
 
-        VoucherData {
-            value: encode_token(&h, &c, secret.as_ref()).unwrap(),
-            expires_at,
-            granted_at,
-        }
+        encode_token(&h, &c, secret.as_ref()).unwrap()
     }
 
     fn get_subject(&self) -> String {
@@ -140,20 +132,20 @@ impl Claims for AuthorizationClaims {
     const LEEWAY: i64 = 36; // seconds
 
     fn decode(
-        value: &str,
+        ticket: &str,
         issuer: &str,
         secret: &str,
     ) -> Result<Self, jsonwebtoken::errors::Error>
     {
         // self check
-        let header = decode_header(&value).expect("Invalid token");
+        let header = decode_header(&ticket).expect("Invalid token");
         if header.alg != Self::ALGORITHM {
             return Err(jsonwebtoken::errors::Error::from(
                 jsonwebtoken::errors::ErrorKind::InvalidToken,
             ));
         }
 
-        // validate aud
+        // TODO: validate aud
         let v = Validation {
             algorithms: vec![Self::ALGORITHM],
             iss: Some(issuer.to_string()),
@@ -164,45 +156,33 @@ impl Claims for AuthorizationClaims {
             ..Validation::default()
         };
 
-        match decode_token::<Self>(&value, secret.as_ref(), &v) {
+        match decode_token::<Self>(&ticket, secret.as_ref(), &v) {
             Ok(v) => Ok(v.claims),
             Err(e) => Err(e),
         }
     }
 
     fn encode(
-        value: String,
+        token: Token,
         issuer: &str,
         key_id: &str,
         secret: &str,
-        now: DateTime<Utc>,
-    ) -> VoucherData
+    ) -> String
     {
-        let granted_at = now.timestamp();
-        // TODO
-        // set valid expires_at and impl review mechanism (check also
-        // `validate_exp` for Validation struct)
-        // let expires_at = (now + Duration::weeks(2)).timestamp();
-        let expires_at = 0;
-
         // TODO: aud
         let c = Self {
-            sub: value,
-            iat: granted_at as usize,
+            sub: token.value,
+            iat: token.granted_at as usize,
             iss: issuer.to_string(),
-            exp: expires_at as usize,
-            nbf: granted_at as usize,
+            exp: token.expires_at as usize,
+            nbf: token.granted_at as usize,
         };
 
         let mut h = Header::default();
         h.alg = Self::ALGORITHM;
         h.kid = Some(key_id.to_string());
 
-        VoucherData {
-            value: encode_token(&h, &c, secret.as_ref()).unwrap(),
-            expires_at,
-            granted_at,
-        }
+        encode_token(&h, &c, secret.as_ref()).unwrap()
     }
 
     fn get_subject(&self) -> String {
@@ -211,47 +191,48 @@ impl Claims for AuthorizationClaims {
 }
 
 #[cfg(test)]
-mod voucher_test {
+mod ticket_test {
     use super::*;
-
-    use chrono::TimeZone;
-    use serde_json;
 
     extern crate base64;
     use self::base64::decode;
+    use chrono::{DateTime, Duration, TimeZone, Utc};
+    use serde_json;
 
     use model::test::run;
 
     #[test]
-    fn test_voucher_data_format() {
+    fn test_token_format() {
         let now = Utc::now();
         let ts = now.timestamp();
 
-        let u = VoucherData {
+        let t = Token {
             value: "dummy".to_string(),
-            expires_at: ts,
             granted_at: ts,
+            expires_at: ts,
         };
 
-        assert_eq!(format!("{}", u), "dummy");
+        assert_eq!(format!("{}", t), "dummy");
     }
 
     #[test]
     fn test_activation_claims_encode() {
         let now = Utc.ymd(2019, 6, 11).and_hms(23, 19, 32);
-        let value = "dummy".to_string();
+        let token = Token {
+            value: "dummy".to_string(),
+            granted_at: now.timestamp(),
+            expires_at: (now + Duration::hours(24)).timestamp(),
+        };
 
-        let voucher = ActivationClaims::encode(
-            value.clone(),
+        let ticket = ActivationClaims::encode(
+            token.clone(),
             "issuer",
             "key_id",
             "secret",
-            now,
         );
 
-        let token = voucher.value;
         assert_eq!(
-            token,
+            ticket,
             [
                 "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiIsImtpZCI6ImtleV9pZCJ9",
                 concat!(
@@ -265,13 +246,13 @@ mod voucher_test {
             ].join(".")
         );
 
-        let s: Vec<&str> = token.split('.').collect();
-        let token_body = &decode(s[1]).unwrap()[..]; // base64
-        let json = String::from_utf8_lossy(token_body).to_string();
+        let s: Vec<&str> = ticket.split('.').collect();
+        let body = &decode(s[1]).unwrap()[..]; // base64
+        let json = String::from_utf8_lossy(body).to_string();
 
         let claims: ActivationClaims =
             serde_json::from_str(&json).ok().unwrap();
-        assert_eq!(claims.sub, value);
+        assert_eq!(claims.sub, token.value);
         assert_eq!(claims.iss, "issuer");
         assert_eq!(claims.iat, 1_560_295_172);
         assert_eq!(claims.exp, claims.iat + 60 * 60 * 24); // +86400 (1560381572)
@@ -281,47 +262,52 @@ mod voucher_test {
     #[test]
     fn test_activation_claims_decode_failure() {
         run(|_, config, _| {
-            let tests: [(String, &str, &str, DateTime<Utc>); 4] = [
+            let tests: [(&str, &str, &str, DateTime<Utc>); 4] = [
                 (
                     // expires
-                    "dummy".to_string(),
-                    &config.activation_voucher_issuer,
-                    &config.activation_voucher_secret,
+                    "dummy",
+                    &config.activation_ticket_issuer,
+                    &config.activation_ticket_secret,
                     Utc.ymd(2001, 1, 1).and_hms(10, 0, 0),
                 ),
                 (
                     // not before
-                    "dummy".to_string(),
-                    &config.activation_voucher_issuer,
-                    &config.activation_voucher_secret,
+                    "dummy",
+                    &config.activation_ticket_issuer,
+                    &config.activation_ticket_secret,
                     Utc::now() + Duration::hours(3),
                 ),
                 (
                     // wrong issuer
-                    "dummy".to_string(),
+                    "dummy",
                     "unknown",
-                    &config.activation_voucher_secret,
+                    &config.activation_ticket_secret,
                     Utc::now(),
                 ),
                 (
                     // invalid secret
-                    "dummy".to_string(),
-                    &config.activation_voucher_issuer,
+                    "dummy",
+                    &config.activation_ticket_issuer,
                     "invalid",
                     Utc::now(),
                 ),
             ];
-            for (_, (value, issuer, secret, now)) in tests.iter().enumerate() {
-                let voucher = ActivationClaims::encode(
-                    value.clone(),
-                    &config.activation_voucher_issuer,
-                    &config.activation_voucher_key_id,
-                    &config.activation_voucher_secret,
-                    *now,
+            for (_, (value, issuer, secret, granted_at)) in
+                tests.iter().enumerate()
+            {
+                let token = Token {
+                    value: value.to_string(),
+                    granted_at: granted_at.timestamp(),
+                    expires_at: (*granted_at + Duration::hours(24)).timestamp(),
+                };
+                let ticket = ActivationClaims::encode(
+                    token,
+                    &config.activation_ticket_issuer,
+                    &config.activation_ticket_key_id,
+                    &config.activation_ticket_secret,
                 );
-                let token = voucher.value;
                 assert!(
-                    ActivationClaims::decode(&token, issuer, secret).is_err()
+                    ActivationClaims::decode(&ticket, issuer, secret).is_err()
                 );
             }
         });
@@ -329,27 +315,28 @@ mod voucher_test {
 
     #[test]
     fn test_activation_claims_decode() {
-        let now = Utc::now();
-        let value = "dummy".to_string();
-        let voucher = ActivationClaims::encode(
-            value.clone(),
+        let granted_at = Utc::now();
+        let token = Token {
+            value: "dummy".to_string(),
+            granted_at: granted_at.timestamp(),
+            expires_at: (granted_at + Duration::hours(24)).timestamp(),
+        };
+
+        let ticket = ActivationClaims::encode(
+            token.clone(),
             "issuer",
             "key_id",
             "secret",
-            now,
         );
 
-        let token = voucher.value;
-
-        let claims = ActivationClaims::decode(&token, "issuer", "secret")
+        let claims = ActivationClaims::decode(&ticket, "issuer", "secret")
             .ok()
             .unwrap();
 
-        let t = now.timestamp();
-        assert_eq!(claims.sub, value);
+        assert_eq!(claims.sub, token.value);
         assert_eq!(claims.iss, "issuer");
-        assert_eq!(claims.iat, t as usize);
+        assert_eq!(claims.iat, token.granted_at as usize);
         assert_eq!(claims.exp, claims.iat + 60 * 60 * 24); // +86400 (1560381572)
-        assert_eq!(claims.nbf, t as usize);
+        assert_eq!(claims.nbf, token.granted_at as usize);
     }
 }

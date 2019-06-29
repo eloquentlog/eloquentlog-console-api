@@ -10,23 +10,33 @@ mod user_email_role;
 mod user_state;
 mod user_reset_password_state;
 
-// entities
-pub mod voucher;
+// non-persistent (deciduous) entities
+pub mod ticket;
 
 // models
 pub mod message;
 pub mod user;
 pub mod user_email;
 
+use diesel::prelude::*;
+use diesel::PgConnection;
+
+use config::Config;
+
+pub fn establish_connection(config: &Config) -> PgConnection {
+    PgConnection::establish(&config.database_url).unwrap_or_else(|_| {
+        panic!("Error connecting to : {}", &config.database_url)
+    })
+}
+
 #[cfg(test)]
 pub mod test {
+    use super::*;
+
     use std::panic::{self, AssertUnwindSafe};
 
     use dotenv::dotenv;
-    use diesel::{self, prelude::*};
-    use diesel::PgConnection;
 
-    use config::Config;
     use logger::{Logger, get_logger};
 
     /// A test runner
@@ -76,11 +86,5 @@ pub mod test {
             .execute(conn)
             .expect("Failed to reset sequence");
         }
-    }
-
-    pub fn establish_connection(config: &Config) -> PgConnection {
-        PgConnection::establish(&config.database_url).unwrap_or_else(|_| {
-            panic!("Error connecting to : {}", &config.database_url)
-        })
     }
 }

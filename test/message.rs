@@ -4,7 +4,7 @@ use diesel::pg::PgConnection;
 use rocket::http::{ContentType, Header, Status};
 
 use eloquentlog_backend_api::config;
-use eloquentlog_backend_api::model::{message, user};
+use eloquentlog_backend_api::model::{message, user, ticket, ticket::Claims};
 use eloquentlog_backend_api::route::AUTHORIZATION_HEADER_KEY;
 use eloquentlog_backend_api::logger::Logger;
 
@@ -30,12 +30,19 @@ fn build_authorization_header<'a>(
     config: &config::Config,
 ) -> Header<'a>
 {
+    // TODO: into
+    let token = ticket::Token {
+        value: user.uuid.to_urn().to_string(),
+        granted_at: Utc::now().timestamp(),
+        expires_at: 0,
+    };
     Header::new(
         AUTHORIZATION_HEADER_KEY,
-        user.generate_authorization_voucher(
-            &config.authorization_voucher_issuer,
-            &config.authorization_voucher_key_id,
-            &config.authorization_voucher_secret,
+        ticket::AuthorizationClaims::encode(
+            token,
+            &config.authorization_ticket_issuer,
+            &config.authorization_ticket_key_id,
+            &config.authorization_ticket_secret,
         )
         .to_string(),
     )

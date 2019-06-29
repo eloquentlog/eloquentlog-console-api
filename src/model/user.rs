@@ -2,17 +2,17 @@ use std::fmt;
 use std::str;
 
 use bcrypt::{hash, verify};
-use chrono::{NaiveDateTime, Utc};
+use chrono::NaiveDateTime;
 use diesel::{Identifiable, Queryable, debug_query, prelude::*};
 use diesel::pg::{Pg, PgConnection};
 use uuid::Uuid;
 
 pub use model::user_state::*;
 pub use model::user_reset_password_state::*;
+pub use model::ticket::Claims;
 pub use schema::users;
 
 use logger::Logger;
-use model::voucher::{AuthorizationClaims, Claims, VoucherData};
 use request::user::UserSignUp as RequestData;
 
 const BCRYPT_COST: u32 = 12;
@@ -209,15 +209,16 @@ impl User {
         }
     }
 
-    pub fn find_by_voucher<T: Claims>(
-        value: &str,
+    pub fn find_by_ticket<T: Claims>(
+        ticket: &str,
         issuer: &str,
         secret: &str,
         conn: &PgConnection,
         logger: &Logger,
     ) -> Option<Self>
     {
-        let c = T::decode(value, issuer, secret).expect("Invalid value");
+        // TODO: support user activation ticket
+        let c = T::decode(ticket, issuer, secret).expect("Invalid value");
         Self::find_by_uuid(c.get_subject().as_ref(), conn, logger)
     }
 
@@ -247,17 +248,6 @@ impl User {
             },
             Ok(u) => Some(u),
         }
-    }
-
-    pub fn generate_authorization_voucher(
-        &self,
-        issuer: &str,
-        key_id: &str,
-        secret: &str,
-    ) -> VoucherData
-    {
-        let subject = self.uuid.to_urn().to_string();
-        AuthorizationClaims::encode(subject, issuer, key_id, secret, Utc::now())
     }
 
     /// Checks whether the password given as an argument is valid or not.

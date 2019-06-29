@@ -9,25 +9,25 @@ use serde_json;
 
 use config::Config;
 use db::DbConn;
-use model::voucher::AuthorizationClaims;
+use model::ticket::AuthorizationClaims;
 use model::user::User;
-use request::voucher::AuthorizationVoucher;
+use request::ticket::AuthorizationTicket;
 
 /// User
 impl<'a, 'r> FromRequest<'a, 'r> for User {
     type Error = ();
 
     fn from_request(req: &'a Request<'r>) -> request::Outcome<User, ()> {
-        let voucher = req.guard::<AuthorizationVoucher>().unwrap();
+        let ticket = req.guard::<AuthorizationTicket>().unwrap();
 
         let config = req.guard::<State<Config>>()?;
         let conn = req.guard::<DbConn>()?;
         let logger = req.guard::<SyncLogger>()?;
 
-        if let Some(user) = User::find_by_voucher::<AuthorizationClaims>(
-            &voucher,
-            &config.authorization_voucher_issuer,
-            &config.authorization_voucher_secret,
+        if let Some(user) = User::find_by_ticket::<AuthorizationClaims>(
+            &ticket,
+            &config.authorization_ticket_issuer,
+            &config.authorization_ticket_secret,
             &conn,
             &logger,
         ) {
