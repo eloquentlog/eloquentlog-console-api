@@ -1,3 +1,4 @@
+use chrono::Utc;
 use rocket::State;
 use rocket::http::Status;
 use rocket::response::Response as RawResponse;
@@ -6,6 +7,7 @@ use rocket_slog::SyncLogger;
 use config::Config;
 use db::DbConn;
 use model::user::User;
+use model::ticket::{AuthorizationClaims, Claims, Token};
 use request::user::UserSignIn as RequestData;
 use response::{Response, no_content_for};
 
@@ -27,12 +29,21 @@ pub fn login(
     match User::find_by_email_or_uuid(&data.username, &conn, &logger) {
         Some(ref user) if user.verify_password(&data.password) => {
             // TODO
-            let voucher = user.generate_authorization_voucher(
-                &config.authorization_voucher_key_id,
-                &config.authorization_voucher_issuer,
-                &config.authorization_voucher_secret,
+            // set valid expires_at and impl review mechanism (check also
+            // `validate_exp` for Validation struct for JWT)
+            // e.g. let expires_at = (now + Duration::weeks(2)).timestamp();
+            let token = Token {
+                value: user.uuid.to_urn().to_string(),
+                granted_at: Utc::now().timestamp(),
+                expires_at: 0,
+            };
+            let ticket = AuthorizationClaims::encode(
+                token,
+                &config.authorization_ticket_issuer,
+                &config.authorization_ticket_key_id,
+                &config.authorization_ticket_secret,
             );
-            res.format(json!({"voucher": voucher.to_string()}))
+            res.format(json!({"ticket": ticket.to_string()}))
         },
         _ => {
             warn!(logger, "login failed: username {}", data.username);

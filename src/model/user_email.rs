@@ -1,6 +1,6 @@
 use std::fmt;
 
-use chrono::{NaiveDateTime, TimeZone, Utc};
+use chrono::{Duration, NaiveDateTime, Utc};
 use diesel::{Associations, Identifiable, Queryable, debug_query, prelude::*};
 use diesel::pg::{Pg, PgConnection};
 
@@ -9,7 +9,6 @@ pub use model::user_email_role::*;
 pub use schema::user_emails;
 
 use logger::Logger;
-use model::voucher::{ActivationClaims, Claims, VoucherData};
 use model::user::User;
 use util::generate_random_hash;
 
@@ -74,12 +73,32 @@ impl fmt::Display for UserEmail {
 }
 
 impl UserEmail {
+    pub fn find_by_id(
+        id: i64,
+        conn: &PgConnection,
+        logger: &Logger,
+    ) -> Option<Self>
+    {
+        if id < 1 {
+            return None;
+        }
+
+        let q = user_emails::table.filter(user_emails::id.eq(id)).limit(1);
+
+        info!(logger, "{}", debug_query::<Pg, _>(&q).to_string());
+
+        match q.first::<UserEmail>(conn) {
+            Ok(v) => Some(v),
+            _ => None,
+        }
+    }
+
     /// Save a new user_email into user_emails.
     ///
     /// # Note
     ///
     /// `activation_state` is assigned always as pending. And following
-    /// columns keep still remaining as NULL until granting voucher later.
+    /// columns keep still remaining as NULL until granting token later.
     ///
     /// * activation_token
     /// * activation_token_expires_at
@@ -108,25 +127,11 @@ impl UserEmail {
         }
     }
 
-    pub fn generate_activation_voucher(
+    pub fn grant_activation_token(
         &self,
-        value: String,
-        issuer: &str,
-        key_id: &str,
-        secret: &str,
-    ) -> VoucherData
-    {
-        ActivationClaims::encode(value, issuer, key_id, secret, Utc::now())
-    }
-
-    pub fn grant_activation_voucher(
-        &self,
-        issuer: &str,
-        key_id: &str,
-        secret: &str,
         conn: &PgConnection,
         logger: &Logger,
-    ) -> Option<VoucherData>
+    ) -> Result<String, &'static str>
     {
         // TODO: check duplication
         let activation_token = generate_random_hash(
@@ -134,21 +139,14 @@ impl UserEmail {
             ACTIVATION_HASH_LENGTH,
         );
 
-        let voucher_data = self.generate_activation_voucher(
-            activation_token.to_owned(),
-            &issuer,
-            &key_id,
-            &secret,
-        );
+        let granted_at = Utc::now();
+        let expires_at = granted_at + Duration::hours(24);
 
         let q = diesel::update(self).set((
             user_emails::activation_state.eq(UserEmailActivationState::Pending),
-            user_emails::activation_token.eq(activation_token),
-            // from VoucherData
-            user_emails::activation_token_expires_at
-                .eq(Utc.timestamp(voucher_data.expires_at, 0).naive_utc()),
-            user_emails::activation_token_granted_at
-                .eq(Utc.timestamp(voucher_data.granted_at, 0).naive_utc()),
+            user_emails::activation_token.eq(activation_token.clone()),
+            user_emails::activation_token_expires_at.eq(expires_at.naive_utc()),
+            user_emails::activation_token_granted_at.eq(granted_at.naive_utc()),
         ));
 
         info!(logger, "{}", debug_query::<Pg, _>(&q).to_string());
@@ -156,9 +154,9 @@ impl UserEmail {
         match q.get_result::<Self>(conn) {
             Err(e) => {
                 error!(logger, "err: {}", e);
-                None
+                Err("failed to grant token")
             },
-            Ok(_) => Some(voucher_data),
+            Ok(_) => Ok(activation_token),
         }
     }
 }
@@ -166,9 +164,6 @@ impl UserEmail {
 #[cfg(test)]
 mod user_email_test {
     use super::*;
-
-    extern crate base64;
-    use self::base64::decode;
 
     use model::user::NewUser;
     use model::test::run;
@@ -277,49 +272,14 @@ mod user_email_test {
             let rows_count: i64 = user_emails::table
                 .count()
                 .first(conn)
-                .expect("Failed to count rows");
+                .expect("failed to count rows");
             assert_eq!(1, rows_count);
         })
     }
 
     #[test]
-    fn test_generation_activation_voucher() {
-        let activation_token = generate_random_hash(
-            ACTIVATION_HASH_SOURCE,
-            ACTIVATION_HASH_LENGTH,
-        );
-
-        let now = Utc::now().naive_utc();
-        let e = UserEmail {
-            id: 1,
-            user_id: 1,
-            email: Some("foo@example.org".to_string()),
-            role: UserEmailRole::General,
-            activation_state: UserEmailActivationState::Pending,
-            activation_token: None,
-            activation_token_expires_at: None,
-            activation_token_granted_at: None,
-            created_at: now,
-            updated_at: now,
-        };
-
-        let voucher_data = e.generate_activation_voucher(
-            activation_token.to_string(),
-            "test",
-            "key_id",
-            "secret",
-        );
-        let s: Vec<&str> = voucher_data.value.split('.').collect();
-        assert_eq!(s.len(), 3);
-
-        let token_body = &decode(s[1]).unwrap()[..];
-        assert!(String::from_utf8_lossy(token_body)
-            .contains(activation_token.as_str()));
-    }
-
-    #[test]
-    fn test_grant_activation_voucher() {
-        run(|conn, config, logger| {
+    fn test_grant_activation_token() {
+        run(|conn, _, logger| {
             let mut u = NewUser {
                 name: Some("Hennry the Penguin".to_string()),
                 username: Some("henry".to_string()),
@@ -339,29 +299,18 @@ mod user_email_test {
             let rows_count: i64 = user_emails::table
                 .count()
                 .first(conn)
-                .expect("Failed to count rows");
+                .expect("failed to count rows");
             assert_eq!(1, rows_count);
 
-            let voucher = user_email
-                .grant_activation_voucher(
-                    &config.activation_voucher_issuer,
-                    &config.activation_voucher_key_id,
-                    &config.activation_voucher_secret,
-                    conn,
-                    logger,
-                )
-                .expect("Failed to grant activation voucher");
+            let token = user_email
+                .grant_activation_token(conn, logger)
+                .expect("failed to grant activation token");
 
             let rows_count: i64 = user_emails::table
                 .count()
                 .first(conn)
-                .expect("Failed to count rows");
+                .expect("failed to count rows");
             assert_eq!(1, rows_count);
-
-            let s: Vec<&str> = voucher.value.split('.').collect();
-            assert_eq!(s.len(), 3);
-
-            let token_body = &decode(s[1]).unwrap()[..];
 
             let user_email = user_emails::table
                 .filter(user_emails::user_id.eq(user.id))
@@ -369,8 +318,7 @@ mod user_email_test {
                 .first::<UserEmail>(conn)
                 .unwrap();
 
-            assert!(String::from_utf8_lossy(token_body)
-                .contains(user_email.activation_token.unwrap().as_str()));
+            assert_eq!(token, user_email.activation_token.unwrap());
         });
     }
 }

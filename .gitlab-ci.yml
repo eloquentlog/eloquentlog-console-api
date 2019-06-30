@@ -118,12 +118,12 @@ test:
     POSTGRES_DB: eloquentlog_test
     POSTGRES_USER: eloquentlog
     POSTGRES_PASSWORD: eloquentlog
-    TEST_ACTIVATION_VOUCHER_ISSUER: "test-activation-issuer"
-    TEST_ACTIVATION_VOUCHER_KEY_ID: "test-activation-key_id"
-    TEST_ACTIVATION_VOUCHER_SECRET: "test-activation-secret"
-    TEST_AUTHORIZATION_VOUCHER_ISSUER: "test-authorization-issuer"
-    TEST_AUTHORIZATION_VOUCHER_KEY_ID: "test-authorization-key_id"
-    TEST_AUTHORIZATION_VOUCHER_SECRET: "test-authorization-secret"
+    TEST_ACTIVATION_TICKET_ISSUER: "test-activation-ticket-issuer"
+    TEST_ACTIVATION_TICKET_KEY_ID: "test-activation-ticket-key_id"
+    TEST_ACTIVATION_TICKET_SECRET: "test-activation-ticket-secret"
+    TEST_AUTHORIZATION_TICKET_ISSUER: "test-authorization-ticket-issuer"
+    TEST_AUTHORIZATION_TICKET_KEY_ID: "test-authorization-ticket-key_id"
+    TEST_AUTHORIZATION_TICKET_SECRET: "test-authorization-ticket-secret"
     TEST_DATABASE_URL: "postgresql://eloquentlog:eloquentlog@postgres:5432/eloquentlog_test"
     TEST_QUEUE_URL: "redis://redis:6379/0"
   before_script:

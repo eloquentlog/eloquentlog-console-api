@@ -6,6 +6,7 @@ extern crate lazy_static;
 extern crate chrono;
 extern crate diesel;
 extern crate dotenv;
+extern crate fourche;
 extern crate parking_lot;
 extern crate redis;
 extern crate rocket;

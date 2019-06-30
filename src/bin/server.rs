@@ -24,7 +24,7 @@ fn main() {
     let name = get_env();
 
     dotenv().ok();
-    let config = Config::from(name.as_str()).expect("Failed to get config");
+    let config = Config::from(name.as_str()).expect("failed to get config");
 
     // connection pools
     let db_pool = init_db_pool(&config.database_url);

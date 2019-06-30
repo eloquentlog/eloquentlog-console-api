@@ -5,12 +5,12 @@ use rocket::http::Status;
 use rocket::request::FromRequest;
 
 use config::Config;
-use model::voucher::{AuthorizationClaims, Claims};
+use model::ticket::{AuthorizationClaims, Claims};
 use route::AUTHORIZATION_HEADER_KEY;
 
-pub struct AuthorizationVoucher(pub String);
+pub struct AuthorizationTicket(pub String);
 
-impl Deref for AuthorizationVoucher {
+impl Deref for AuthorizationTicket {
     type Target = str;
 
     fn deref(&self) -> &str {
@@ -18,7 +18,7 @@ impl Deref for AuthorizationVoucher {
     }
 }
 
-fn verify_authorization_voucher(
+fn verify_authorization_ticket(
     value: &str,
     config: &Config,
 ) -> Result<String, String>
@@ -26,22 +26,22 @@ fn verify_authorization_voucher(
     // as validations
     let _ = AuthorizationClaims::decode(
         &value,
-        &config.authorization_voucher_issuer,
-        &config.authorization_voucher_secret,
+        &config.authorization_ticket_issuer,
+        &config.authorization_ticket_secret,
     )
     .expect("Invalid value");
     Ok(value.to_string())
 }
 
 #[derive(Debug)]
-pub enum AuthorizationVoucherError {
+pub enum AuthorizationTicketError {
     BadCount,
     Invalid,
     Missing,
 }
 
-impl<'a, 'r> FromRequest<'a, 'r> for AuthorizationVoucher {
-    type Error = AuthorizationVoucherError;
+impl<'a, 'r> FromRequest<'a, 'r> for AuthorizationTicket {
+    type Error = AuthorizationTicketError;
 
     fn from_request(
         req: &'a Request<'r>,
@@ -52,7 +52,7 @@ impl<'a, 'r> FromRequest<'a, 'r> for AuthorizationVoucher {
             0 => {
                 request::Outcome::Failure((
                     Status::BadRequest,
-                    AuthorizationVoucherError::Missing,
+                    AuthorizationTicketError::Missing,
                 ))
             },
             1 => {
@@ -60,17 +60,17 @@ impl<'a, 'r> FromRequest<'a, 'r> for AuthorizationVoucher {
                 if !value.contains('.') {
                     return request::Outcome::Failure((
                         Status::BadRequest,
-                        AuthorizationVoucherError::Invalid,
+                        AuthorizationTicketError::Invalid,
                     ));
                 }
 
                 let config = req.guard::<State<Config>>().unwrap();
-                match verify_authorization_voucher(value, &config) {
-                    Ok(v) => request::Outcome::Success(AuthorizationVoucher(v)),
+                match verify_authorization_ticket(value, &config) {
+                    Ok(v) => request::Outcome::Success(AuthorizationTicket(v)),
                     _ => {
                         request::Outcome::Failure((
                             Status::BadRequest,
-                            AuthorizationVoucherError::Invalid,
+                            AuthorizationTicketError::Invalid,
                         ))
                     },
                 }
@@ -78,7 +78,7 @@ impl<'a, 'r> FromRequest<'a, 'r> for AuthorizationVoucher {
             _ => {
                 request::Outcome::Failure((
                     Status::BadRequest,
-                    AuthorizationVoucherError::BadCount,
+                    AuthorizationTicketError::BadCount,
                 ))
             },
         }
