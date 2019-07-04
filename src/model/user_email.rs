@@ -50,7 +50,7 @@ impl<'a> From<&'a User> for NewUserEmail {
 }
 
 /// UserEmail
-#[derive(Associations, Debug, Identifiable, Queryable)]
+#[derive(Associations, Debug, Identifiable, Insertable, Queryable)]
 #[belongs_to(User)]
 #[table_name = "user_emails"]
 pub struct UserEmail {
@@ -162,11 +162,13 @@ impl UserEmail {
 }
 
 #[cfg(test)]
-mod user_email_test {
+mod test {
     use super::*;
 
-    use model::user::NewUser;
+    use model::user::{self, NewUser};
+
     use model::test::run;
+    use model::user::data::USERS;
 
     #[test]
     fn test_new_user_emails_default() {
@@ -221,6 +223,44 @@ mod user_email_test {
         };
 
         assert_eq!(format!("{}", e), "<UserEmail general>");
+    }
+
+    #[test]
+    fn test_find_by_id() {
+        run(|conn, _, logger| {
+            let now = Utc::now().naive_utc();
+
+            let u = USERS.get("hennry").unwrap();
+
+            let user_id = diesel::insert_into(user::users::table)
+                .values(u)
+                .returning(user::users::id)
+                .get_result::<i64>(conn)
+                .unwrap_or_else(|e| panic!("Error inserting: {}", e));
+
+            let ue = UserEmail {
+                id: 1,
+                user_id,
+                email: Some("foo@example.org".to_string()),
+                role: UserEmailRole::General,
+                activation_state: UserEmailActivationState::Pending,
+                activation_token: None,
+                activation_token_expires_at: None,
+                activation_token_granted_at: None,
+                created_at: now,
+                updated_at: now,
+            };
+
+            let id = diesel::insert_into(user_emails::table)
+                .values(&ue)
+                .returning(user_emails::id)
+                .get_result::<i64>(conn)
+                .unwrap_or_else(|e| panic!("Error inserting: {}", e));
+
+            let result = UserEmail::find_by_id(id, conn, logger);
+            let user_email = result.unwrap();
+            assert_eq!(user_email.id, id);
+        })
     }
 
     #[test]
