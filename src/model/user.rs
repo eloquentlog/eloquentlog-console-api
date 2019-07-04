@@ -87,7 +87,7 @@ impl NewUser {
 }
 
 /// User
-#[derive(Debug, Identifiable, Queryable)]
+#[derive(Debug, Identifiable, Insertable, Queryable)]
 pub struct User {
     pub id: i64,
     pub uuid: Uuid,
@@ -258,13 +258,56 @@ impl User {
 }
 
 #[cfg(test)]
-mod user_test {
+pub mod data {
     use super::*;
+
+    use std::collections::HashMap;
 
     use chrono::Utc;
     use uuid::Uuid;
 
+    macro_rules! map(
+        { $($key:expr => $value:expr),+ } => {
+            {
+                let mut m = ::std::collections::HashMap::new();
+                $(
+                    m.insert($key, $value);
+                )+
+                m
+            }
+        };
+    );
+
+    lazy_static! {
+        pub static ref USERS: HashMap<&'static str, User> = map! {
+            "hennry" => User {
+                id: 1,
+                uuid: Uuid::nil(),
+                name: Some("Hennry the Penguin".to_string()),
+                username: Some("hennry".to_string()),
+                email: "hennry@example.org".to_string(),
+                password: Vec::new() as Vec<u8>,
+                state: UserState::Pending,
+                access_token: None,
+                access_token_granted_at: None,
+                reset_password_state: UserResetPasswordState::Never,
+                reset_password_token: None,
+                reset_password_token_expires_at: None,
+                reset_password_token_granted_at: None,
+                // TODO
+                created_at: Utc::now().naive_utc(),
+                updated_at: Utc::now().naive_utc(),
+            }
+        };
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
     use model::test::run;
+    use model::user::data::USERS;
 
     #[test]
     fn test_new_user_format() {
@@ -314,28 +357,9 @@ mod user_test {
 
     #[test]
     fn test_user_format() {
-        let now = Utc::now().naive_utc();
-
-        let u = User {
-            id: 1,
-            uuid: Uuid::nil(),
-            name: Some("Hennry the Penguin".to_string()),
-            username: Some("hennry".to_string()),
-            email: "hennry@example.org".to_string(),
-            password: Vec::new() as Vec<u8>,
-            state: UserState::Pending,
-            access_token: None,
-            access_token_granted_at: None,
-            reset_password_state: UserResetPasswordState::Never,
-            reset_password_token: None,
-            reset_password_token_expires_at: None,
-            reset_password_token_granted_at: None,
-            created_at: now,
-            updated_at: now,
-        };
-
+        let user = USERS.get("hennry").unwrap();
         assert_eq!(
-            format!("{}", u),
+            format!("{}", user),
             "<User 00000000-0000-0000-0000-000000000000>",
         );
     }
