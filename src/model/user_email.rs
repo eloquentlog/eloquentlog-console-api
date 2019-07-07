@@ -72,6 +72,20 @@ impl fmt::Display for UserEmail {
     }
 }
 
+impl Clone for UserEmail {
+    fn clone(&self) -> Self {
+        let role = format!("{}", self.role);
+        UserEmail {
+            role: UserEmailRole::from(role),
+            email: self.email.clone(),
+            activation_state: self.activation_state.clone(),
+            activation_token: self.activation_token.clone(),
+
+            ..*self
+        }
+    }
+}
+
 impl UserEmail {
     pub fn find_by_id(
         id: i64,
@@ -162,94 +176,120 @@ impl UserEmail {
 }
 
 #[cfg(test)]
+mod data {
+    use super::*;
+
+    use std::collections::HashMap;
+
+    use chrono::Utc;
+
+    use hashmap;
+
+    lazy_static! {
+        pub static ref USER_EMAILS: HashMap<&'static str, UserEmail> = hashmap! {
+            "oswald's primary address" => UserEmail {
+                id: 1,
+                user_id: 1,
+                email: Some("oswald@example.org".to_string()),
+                role: UserEmailRole::Primary,
+                activation_state: UserEmailActivationState::Done,
+                activation_token: None,
+                activation_token_expires_at: None,
+                activation_token_granted_at: None,
+                created_at: Utc::now().naive_utc(),
+                updated_at: Utc::now().naive_utc(),
+            },
+            "weenie's primary address" => UserEmail {
+                id: 2,
+                user_id: 2,
+                email: Some("weenie@example.org".to_string()),
+                role: UserEmailRole::Primary,
+                activation_state: UserEmailActivationState::Done,
+                activation_token: None,
+                activation_token_expires_at: None,
+                activation_token_granted_at: None,
+                created_at: Utc::now().naive_utc(),
+                updated_at: Utc::now().naive_utc(),
+            },
+            "hennry's primary address" => UserEmail {
+                id: 3,
+                user_id: 3,
+                email: Some("hennry@example.org".to_string()),
+                role: UserEmailRole::Primary,
+                activation_state: UserEmailActivationState::Done,
+                activation_token: None,
+                activation_token_expires_at: None,
+                activation_token_granted_at: None,
+                created_at: Utc::now().naive_utc(),
+                updated_at: Utc::now().naive_utc(),
+            }
+        };
+    }
+}
+
+#[cfg(test)]
 mod test {
     use super::*;
 
-    use model::user::{self, NewUser};
+    use model::user;
 
     use model::test::run;
     use model::user::data::USERS;
+    use model::user_email::data::USER_EMAILS;
 
     #[test]
     fn test_new_user_emails_default() {
-        let e = NewUserEmail {
+        let ue = NewUserEmail {
             ..Default::default()
         };
 
-        assert_eq!(e.user_id, -1);
-        assert_eq!(e.email, "".to_string());
-        assert_eq!(e.role, UserEmailRole::General);
-        assert_eq!(e.activation_state, UserEmailActivationState::Pending);
+        assert_eq!(ue.user_id, -1);
+        assert_eq!(ue.email, "".to_string());
+        assert_eq!(ue.role, UserEmailRole::General);
+        assert_eq!(ue.activation_state, UserEmailActivationState::Pending);
     }
 
     #[test]
     fn test_new_user_email_from_user() {
-        run(|conn, _, logger| {
-            let email = "foo@example.org";
-            let mut u = NewUser {
-                name: None,
-                username: None,
-                email: email.to_string(),
+        run(|conn, _, _| {
+            let u = USERS.get("weenie").unwrap();
+            let user = diesel::insert_into(user::users::table)
+                .values(u)
+                .get_result::<User>(conn)
+                .unwrap_or_else(|e| panic!("Error at inserting: {}", e));
 
-                ..Default::default()
-            };
-            u.set_password("password");
-            let user = User::insert(&u, conn, logger).unwrap();
+            let ue = NewUserEmail::from(&user);
 
-            let e = NewUserEmail::from(&user);
-
-            assert_eq!(e.user_id, user.id);
-            assert_eq!(e.email, email);
-            assert_eq!(e.role, UserEmailRole::Primary);
-            assert_eq!(e.activation_state, UserEmailActivationState::Pending);
+            assert_eq!(ue.user_id, user.id);
+            assert_eq!(ue.email, user.email);
+            assert_eq!(ue.role, UserEmailRole::Primary);
+            assert_eq!(ue.activation_state, UserEmailActivationState::Pending);
         });
     }
 
     #[test]
     fn test_user_email_format() {
-        let now = Utc::now().naive_utc();
+        let ue = USER_EMAILS.get("hennry's primary address").unwrap();
+        assert_eq!(format!("{}", ue), "<UserEmail primary>");
 
-        let e = UserEmail {
-            id: 1,
-            user_id: 1,
-            email: Some("foo@example.org".to_string()),
-            role: UserEmailRole::General,
-            activation_state: UserEmailActivationState::Pending,
-            activation_token: None,
-            activation_token_expires_at: None,
-            activation_token_granted_at: None,
-            created_at: now,
-            updated_at: now,
-        };
-
-        assert_eq!(format!("{}", e), "<UserEmail general>");
+        let mut ue = ue.clone();
+        ue.role = UserEmailRole::General;
+        assert_eq!(format!("{}", ue), "<UserEmail general>");
     }
 
     #[test]
     fn test_find_by_id() {
         run(|conn, _, logger| {
-            let now = Utc::now().naive_utc();
-
             let u = USERS.get("hennry").unwrap();
-
             let user_id = diesel::insert_into(user::users::table)
                 .values(u)
                 .returning(user::users::id)
                 .get_result::<i64>(conn)
                 .unwrap_or_else(|e| panic!("Error inserting: {}", e));
 
-            let ue = UserEmail {
-                id: 1,
-                user_id,
-                email: Some("foo@example.org".to_string()),
-                role: UserEmailRole::General,
-                activation_state: UserEmailActivationState::Pending,
-                activation_token: None,
-                activation_token_expires_at: None,
-                activation_token_granted_at: None,
-                created_at: now,
-                updated_at: now,
-            };
+            let mut ue =
+                USER_EMAILS.get("hennry's primary address").unwrap().clone();
+            ue.user_id = user_id;
 
             let id = diesel::insert_into(user_emails::table)
                 .values(&ue)
@@ -267,23 +307,19 @@ mod test {
     #[should_panic]
     fn test_insert_should_panic_on_failure() {
         run(|conn, _, logger| {
-            let mut u = NewUser {
-                name: Some("Hennry the Penguin".to_string()),
-                username: Some("henry".to_string()),
-                email: "hennry@example.org".to_string(),
+            let u = USERS.get("oswald").unwrap();
+            let user = diesel::insert_into(user::users::table)
+                .values(u)
+                .get_result::<User>(conn)
+                .unwrap_or_else(|e| panic!("Error at inserting: {}", e));
 
-                ..Default::default()
-            };
-            u.set_password("password");
-            let user = User::insert(&u, conn, logger).unwrap();
-
-            let e = NewUserEmail::from(&user);
-            let result = UserEmail::insert(&e, conn, logger);
+            let ue = NewUserEmail::from(&user);
+            let result = UserEmail::insert(&ue, conn, logger);
             assert!(result.is_some());
 
             // abort: duplicate key value violates unique constraint
-            let e = NewUserEmail::from(&user);
-            let result = UserEmail::insert(&e, conn, logger);
+            let ue = NewUserEmail::from(&user);
+            let result = UserEmail::insert(&ue, conn, logger);
             assert!(result.is_none());
         })
     }
@@ -291,23 +327,19 @@ mod test {
     #[test]
     fn test_insert() {
         run(|conn, _, logger| {
-            let mut u = NewUser {
-                name: Some("Hennry the Penguin".to_string()),
-                username: Some("henry".to_string()),
-                email: "hennry@example.org".to_string(),
+            let u = USERS.get("hennry").unwrap();
+            let user = diesel::insert_into(user::users::table)
+                .values(u)
+                .get_result::<User>(conn)
+                .unwrap_or_else(|e| panic!("Error at inserting: {}", e));
 
-                ..Default::default()
-            };
-            u.set_password("password");
-            let user = User::insert(&u, conn, logger).unwrap();
-
-            let e = NewUserEmail::from(&user);
-            let result = UserEmail::insert(&e, conn, logger);
+            let ue = NewUserEmail::from(&user);
+            let result = UserEmail::insert(&ue, conn, logger);
             assert!(result.is_some());
 
             let user_email = result.unwrap();
             assert!(user_email.id > 0);
-            assert_eq!(user_email.email.unwrap(), e.email);
+            assert_eq!(user_email.email.unwrap(), ue.email);
 
             let rows_count: i64 = user_emails::table
                 .count()
@@ -320,18 +352,14 @@ mod test {
     #[test]
     fn test_grant_activation_token() {
         run(|conn, _, logger| {
-            let mut u = NewUser {
-                name: Some("Hennry the Penguin".to_string()),
-                username: Some("henry".to_string()),
-                email: "hennry@example.org".to_string(),
+            let u = USERS.get("hennry").unwrap();
+            let user = diesel::insert_into(user::users::table)
+                .values(u)
+                .get_result::<User>(conn)
+                .unwrap_or_else(|e| panic!("Error at inserting: {}", e));
 
-                ..Default::default()
-            };
-            u.set_password("password");
-            let user = User::insert(&u, conn, logger).unwrap();
-
-            let e = NewUserEmail::from(&user);
-            let result = UserEmail::insert(&e, conn, logger);
+            let ue = NewUserEmail::from(&user);
+            let result = UserEmail::insert(&ue, conn, logger);
             assert!(result.is_some());
 
             let user_email = result.unwrap();

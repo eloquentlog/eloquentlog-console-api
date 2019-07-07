@@ -100,7 +100,7 @@ impl Config {
 }
 
 #[cfg(test)]
-mod config_test {
+mod test {
     use super::*;
 
     use std::collections::HashMap;
@@ -108,24 +108,14 @@ mod config_test {
 
     use parking_lot::Mutex;
 
-    macro_rules! map(
-        { $($key:expr => $value:expr),+ } => {
-            {
-                let mut m = ::std::collections::HashMap::new();
-                $(
-                    m.insert($key, $value);
-                )+
-                m
-            }
-        };
-    );
+    use hashmap;
 
     // TODO: set HashMap as an arg
     fn with<T>(keys: &'static str, test: T)
     where T: FnOnce() -> () + panic::UnwindSafe {
         lazy_static! {
             static ref ENV_LOCK: Mutex<()> = Mutex::new(());
-            static ref TESTS: HashMap<&'static str, &'static str> = map! {
+            static ref TESTS: HashMap<&'static str, &'static str> = hashmap! {
                 "ACTIVATION_TICKET_ISSUER" => "com.eloquentlog",
                 "ACTIVATION_TICKET_KEY_ID" => "key_id-activation",
                 "ACTIVATION_TICKET_SECRET" => "secret-activation",

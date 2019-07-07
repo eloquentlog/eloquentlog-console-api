@@ -184,7 +184,7 @@ impl Message {
 }
 
 #[cfg(test)]
-mod message_test {
+mod test {
     use model::test::run;
     use super::*;
 
@@ -222,40 +222,28 @@ mod message_test {
                 content: None,
             };
 
-            let inserted_id = diesel::insert_into(messages::table)
+            let message = diesel::insert_into(messages::table)
                 .values(&m)
-                .returning(messages::id)
-                .get_result::<i64>(conn)
+                .get_result::<Message>(conn)
                 .unwrap_or_else(|_| panic!("Error inserting: {}", m));
-            assert_eq!(1, inserted_id);
 
-            let current_title = messages::table
-                .filter(messages::id.eq(inserted_id))
-                .select(messages::title)
-                .first::<String>(conn)
-                .expect("Failed to select a row");
-            assert_eq!("title", current_title);
+            assert_eq!(message.title, "title");
 
             let mut m = Message {
-                id: inserted_id,
-                code: Some("200".to_string()),
-                lang: "en".to_string(),
-                level: LogLevel::Information,
-                format: LogFormat::TOML,
                 title: "updated".to_string(),
                 content: Some("content".to_string()),
-                created_at: Utc::now().naive_utc(),
-                updated_at: Utc::now().naive_utc(),
+
+                ..message
             };
             let result = Message::update(&mut m, conn, logger);
             assert!(result.is_some());
 
-            let value = messages::table
+            let title = messages::table
                 .select(messages::title)
                 .filter(messages::id.eq(m.id))
                 .get_result::<String>(conn)
                 .expect("Failed to load");
-            assert_eq!("updated", &value);
+            assert_eq!(title, "updated");
         })
     }
 }
