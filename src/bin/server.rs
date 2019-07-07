@@ -27,8 +27,9 @@ fn main() {
     let config = Config::from(name.as_str()).expect("failed to get config");
 
     // connection pools
-    let db_pool = init_db_pool(&config.database_url);
-    let mq_pool = init_mq_pool(&config.queue_url);
+    let db_pool =
+        init_db_pool(&config.database_url, config.database_max_pool_size);
+    let mq_pool = init_mq_pool(&config.queue_url, config.queue_max_pool_size);
 
     server(&config).manage(db_pool).manage(mq_pool).launch();
 }

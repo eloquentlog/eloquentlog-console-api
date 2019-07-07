@@ -9,8 +9,10 @@ pub struct Config {
     pub authorization_ticket_key_id: String,
     pub authorization_ticket_secret: String,
     pub database_url: String,
+    pub database_max_pool_size: u32,
     pub env_name: &'static str,
     pub queue_url: String,
+    pub queue_max_pool_size: u32,
 }
 
 impl Default for Config {
@@ -36,9 +38,11 @@ impl Default for Config {
             )
             .expect("AUTHORIZATION_TICKET_SECRET is not set"),
 
+            database_max_pool_size: 0,
             database_url: env::var("DATABASE_URL")
                 .expect("DATABASE_URL is not set"),
             env_name: &"undefined",
+            queue_max_pool_size: 0,
             queue_url: env::var("QUEUE_URL").expect("QUEUE_URL is not set"),
         }
     }
@@ -55,13 +59,43 @@ impl Config {
     }
 
     fn production_config() -> Config {
+        let database_max_pool_size: u32 =
+            match env::var("DATABASE_MAX_POOL_SIZE") {
+                Ok(v) => v.parse::<u32>().unwrap(),
+                Err(_) => 12,
+            };
+
+        let queue_max_pool_size: u32 = match env::var("QUEUE_MAX_POOL_SIZE") {
+            Ok(v) => v.parse::<u32>().unwrap(),
+            Err(_) => 8,
+        };
+
         Config {
             env_name: &"production",
+            database_max_pool_size,
+            queue_max_pool_size,
+
             ..Default::default()
         }
     }
 
+    // NOTE:
+    // xxx_max_pool_size both must be >= 2 for integration tests.
+    // Because the pool will be shared between the server and a client for the
+    // instance.
     fn testing_config() -> Config {
+        let database_max_pool_size: u32 =
+            match env::var("TEST_DATABASE_MAX_POOL_SIZE") {
+                Ok(v) => v.parse::<u32>().unwrap(),
+                Err(_) => 2,
+            };
+
+        let queue_max_pool_size: u32 =
+            match env::var("TEST_QUEUE_MAX_POOL_SIZE") {
+                Ok(v) => v.parse::<u32>().unwrap(),
+                Err(_) => 2,
+            };
+
         Config {
             activation_ticket_issuer: env::var("TEST_ACTIVATION_TICKET_ISSUER")
                 .expect("TEST_ACTIVATION_TICKET_ISSUER is not set"),
@@ -83,17 +117,34 @@ impl Config {
             )
             .expect("TEST_AUTHORIZATION_TICKET_SECRET is not set"),
 
+            database_max_pool_size,
             database_url: env::var("TEST_DATABASE_URL")
                 .expect("TEST_DATABASE_URL is not set"),
             env_name: &"testing",
+            queue_max_pool_size,
             queue_url: env::var("TEST_QUEUE_URL")
                 .expect("TEST_QUEUE_URL is not set"),
         }
     }
 
     fn development_config() -> Config {
+        let database_max_pool_size: u32 =
+            match env::var("TEST_DATABASE_MAX_POOL_SIZE") {
+                Ok(v) => v.parse::<u32>().unwrap(),
+                Err(_) => 4,
+            };
+
+        let queue_max_pool_size: u32 =
+            match env::var("TEST_DATABASE_MAX_POOL_SIZE") {
+                Ok(v) => v.parse::<u32>().unwrap(),
+                Err(_) => 4,
+            };
+
         Config {
             env_name: &"development",
+            database_max_pool_size,
+            queue_max_pool_size,
+
             ..Default::default()
         }
     }
@@ -252,8 +303,10 @@ AUTHORIZATION_TICKET_SECRET
 DATABASE_URL
 QUEUE_URL
 "#, || {
-                let c = Config::from("production");
-                assert_eq!(c.unwrap().env_name, "production");
+                let c = Config::from("production").unwrap();
+                assert_eq!(c.env_name, "production");
+                assert_eq!(c.database_max_pool_size, 12);
+                assert_eq!(c.queue_max_pool_size, 8);
             });
         }
     }
@@ -271,8 +324,10 @@ TEST_AUTHORIZATION_TICKET_SECRET
 TEST_DATABASE_URL
 TEST_QUEUE_URL
 "#, || {
-                let c = Config::from("testing");
-                assert_eq!(c.unwrap().env_name, "testing");
+                let c = Config::from("testing").unwrap();
+                assert_eq!(c.env_name, "testing");
+                assert_eq!(c.database_max_pool_size, 2);
+                assert_eq!(c.queue_max_pool_size, 2);
             });
         }
     }
@@ -290,8 +345,10 @@ AUTHORIZATION_TICKET_SECRET
 DATABASE_URL
 QUEUE_URL
 "#, || {
-                let c = Config::from("development");
-                assert_eq!(c.unwrap().env_name, "development");
+                let c = Config::from("development").unwrap();
+                assert_eq!(c.env_name, "development");
+                assert_eq!(c.database_max_pool_size, 4);
+                assert_eq!(c.queue_max_pool_size, 4);
             });
         }
     }
