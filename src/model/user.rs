@@ -263,30 +263,54 @@ pub mod data {
 
     use std::collections::HashMap;
 
-    use chrono::Utc;
+    use chrono::{Utc, TimeZone};
     use uuid::Uuid;
 
-    macro_rules! map(
-        { $($key:expr => $value:expr),+ } => {
-            {
-                let mut m = ::std::collections::HashMap::new();
-                $(
-                    m.insert($key, $value);
-                )+
-                m
-            }
-        };
-    );
+    use hashmap;
 
     lazy_static! {
-        pub static ref USERS: HashMap<&'static str, User> = map! {
-            "hennry" => User {
+        pub static ref USERS: HashMap<&'static str, User> = hashmap! {
+            "oswald" => User {
                 id: 1,
-                uuid: Uuid::nil(),
+                uuid: Uuid::new_v4(),
+                name: Some("Oswald".to_string()),
+                username: Some("oswald".to_string()),
+                email: "oswald@example.org".to_string(),
+                password: b"Pa$$w0rd".to_vec(),
+                state: UserState::Active,
+                access_token: None,
+                access_token_granted_at: None,
+                reset_password_state: UserResetPasswordState::Never,
+                reset_password_token: None,
+                reset_password_token_expires_at: None,
+                reset_password_token_granted_at: None,
+                created_at: Utc.ymd(2019, 7, 7).and_hms(7, 20, 15).naive_utc(),
+                updated_at: Utc.ymd(2019, 7, 7).and_hms(7, 20, 15).naive_utc(),
+            },
+            "weenie" => User {
+                id: 2,
+                uuid: Uuid::new_v4(),
+                name: Some("Weenie".to_string()),
+                username: Some("weenie".to_string()),
+                email: "weenie@example.org".to_string(),
+                password: b"Pa$$w0rd".to_vec(),
+                state: UserState::Active,
+                access_token: None,
+                access_token_granted_at: None,
+                reset_password_state: UserResetPasswordState::Never,
+                reset_password_token: None,
+                reset_password_token_expires_at: None,
+                reset_password_token_granted_at: None,
+                created_at: Utc.ymd(2019, 7, 7).and_hms(7, 20, 15).naive_utc(),
+                updated_at: Utc.ymd(2019, 7, 7).and_hms(7, 20, 15).naive_utc(),
+            },
+            "hennry" => User {
+                id: 3,
+                uuid: Uuid::new_v4(),
                 name: Some("Hennry the Penguin".to_string()),
                 username: Some("hennry".to_string()),
                 email: "hennry@example.org".to_string(),
-                password: Vec::new() as Vec<u8>,
+                password: b"Pa$$w0rd".to_vec(),
                 state: UserState::Pending,
                 access_token: None,
                 access_token_granted_at: None,
@@ -294,9 +318,8 @@ pub mod data {
                 reset_password_token: None,
                 reset_password_token_expires_at: None,
                 reset_password_token_granted_at: None,
-                // TODO
-                created_at: Utc::now().naive_utc(),
-                updated_at: Utc::now().naive_utc(),
+                created_at: Utc.ymd(2019, 7, 8).and_hms(10, 3, 9).naive_utc(),
+                updated_at: Utc.ymd(2019, 7, 8).and_hms(10, 3, 9).naive_utc(),
             }
         };
     }
@@ -315,7 +338,7 @@ mod test {
             name: Some("Hennry the Penguin".to_string()),
             username: Some("hennry".to_string()),
             email: "hennry@example.org".to_string(),
-            password: "password".to_string().as_bytes().to_vec(),
+            password: b"password".to_vec(),
             state: UserState::Pending,
             reset_password_state: UserResetPasswordState::Never,
         };
@@ -358,29 +381,22 @@ mod test {
     #[test]
     fn test_user_format() {
         let user = USERS.get("hennry").unwrap();
-        assert_eq!(
-            format!("{}", user),
-            "<User 00000000-0000-0000-0000-000000000000>",
-        );
+        assert_eq!(format!("{}", user), format!("<User {}>", user.uuid));
     }
 
     #[test]
     fn test_check_email_uniqueness() {
         run(|conn, _, logger| {
-            let mut u = NewUser {
-                name: None,
-                username: None,
-                email: "hennry@example.org".to_string(),
+            let u = USERS.get("oswald").unwrap();
+            let email = diesel::insert_into(users::table)
+                .values(u)
+                .returning(users::email)
+                .get_result::<String>(conn)
+                .unwrap_or_else(|e| panic!("Error at inserting: {}", e));
 
-                ..Default::default()
-            };
-            u.set_password("password");
-            let result = User::insert(&u, conn, logger);
-            assert!(result.is_some());
-
-            assert!(!User::check_email_uniqueness(&u.email, conn, logger));
+            assert!(!User::check_email_uniqueness(&email, conn, logger));
             assert!(User::check_email_uniqueness(
-                "unknown@example.org",
+                "oswald.new@example.org",
                 conn,
                 logger,
             ));
@@ -390,45 +406,37 @@ mod test {
     #[test]
     fn test_check_username_uniqueness() {
         run(|conn, _, logger| {
-            let mut u = NewUser {
-                name: None,
-                username: Some("hennry".to_string()),
-                email: "hennry@example.org".to_string(),
-
-                ..Default::default()
-            };
-            u.set_password("password");
-            let result = User::insert(&u, conn, logger);
-            assert!(result.is_some());
+            let u = USERS.get("hennry").unwrap();
+            let username = diesel::insert_into(users::table)
+                .values(u)
+                .returning(users::username)
+                .get_result::<Option<String>>(conn)
+                .unwrap_or_else(|e| panic!("Error at inserting: {}", e));
 
             assert!(!User::check_username_uniqueness(
-                &u.username.unwrap(),
+                &username.unwrap(),
                 conn,
                 logger,
             ));
-            assert!(User::check_username_uniqueness("unknown", conn, logger));
+            assert!(User::check_username_uniqueness("another", conn, logger));
         });
     }
 
     #[test]
     fn test_find_by_email() {
         run(|conn, _, logger| {
-            let mut u = NewUser {
-                name: Some("Hennry the Penguin".to_string()),
-                username: Some("hennry".to_string()),
-                email: "hennry@example.org".to_string(),
-
-                ..Default::default()
-            };
-            u.set_password("password");
-            let result = User::insert(&u, conn, logger);
-            assert!(result.is_some());
+            let u = USERS.get("oswald").unwrap();
+            let email = diesel::insert_into(users::table)
+                .values(u)
+                .returning(users::email)
+                .get_result::<String>(conn)
+                .unwrap_or_else(|e| panic!("Error at inserting: {}", e));
 
             let result = User::find_by_email(&u.email, conn, logger);
             assert!(result.is_some());
 
             let user = result.unwrap();
-            assert_eq!(user.email, u.email);
+            assert_eq!(user.email, email);
 
             let result =
                 User::find_by_email("unknown@example.org", conn, logger);
@@ -439,18 +447,12 @@ mod test {
     #[test]
     fn test_find_by_uuid() {
         run(|conn, _, logger| {
-            let mut u = NewUser {
-                name: Some("Hennry the Penguin".to_string()),
-                username: Some("hennry".to_string()),
-                email: "hennry@example.org".to_string(),
-
-                ..Default::default()
-            };
-            u.set_password("password");
-            let result = User::insert(&u, conn, logger);
-            assert!(result.is_some());
-
-            let uuid = result.unwrap().uuid;
+            let u = USERS.get("weenie").unwrap();
+            let uuid = diesel::insert_into(users::table)
+                .values(u)
+                .returning(users::uuid)
+                .get_result::<Uuid>(conn)
+                .unwrap_or_else(|e| panic!("Error at inserting: {}", e));
 
             let result = User::find_by_uuid(&uuid.to_string(), conn, logger);
             assert!(result.is_some());
@@ -468,9 +470,9 @@ mod test {
     fn test_insert() {
         run(|conn, _, logger| {
             let mut u = NewUser {
-                name: None,
-                username: None,
-                email: "foo@example.org".to_string(),
+                name: Some("Johnny Snowman".to_string()),
+                username: Some("johnny".to_string()),
+                email: "johnny@example.org".to_string(),
 
                 ..Default::default()
             };

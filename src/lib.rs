@@ -109,3 +109,17 @@ pub fn server(c: &config::Config) -> rocket::Rocket {
             route::error::unprocessable_entity,
         ])
 }
+
+#[cfg(test)]
+mod test {
+    #[macro_export]
+    macro_rules! hashmap(
+        { $($key:expr => $value:expr),+ } => {
+            {
+                let mut m = ::std::collections::HashMap::new();
+                $(m.insert($key, $value);)+
+                m
+            }
+        };
+    );
+}

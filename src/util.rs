@@ -18,7 +18,7 @@ pub fn generate_random_hash(source: &[u8], length: i32) -> String {
 }
 
 #[cfg(test)]
-mod util_test {
+mod test {
     use super::*;
 
     #[test]
