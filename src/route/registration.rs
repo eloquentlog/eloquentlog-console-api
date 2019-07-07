@@ -1,3 +1,4 @@
+use diesel::result::Error;
 use fourche::queue::Queue;
 use rocket::http::Status;
 use rocket::response::Response as RawResponse;
@@ -36,29 +37,42 @@ pub fn register(
             }))
         },
         Ok(_) => {
-            // TODO: run within a transaction (rollback)
-            let mut u = NewUser::from(&data.0);
-            u.set_password(&data.password);
-            if let Some(user) = User::insert(&u, &db_conn, &logger) {
-                let e = NewUserEmail::from(&user);
-                if let Some(email) = UserEmail::insert(&e, &db_conn, &logger) {
-                    if email.grant_activation_token(&db_conn, &logger).is_ok() {
-                        // send email
-                        let job = Job::<i64> {
-                            kind: JobKind::SendUserActivationEmail,
-                            args: vec![email.id],
-                        };
-                        let queue = Queue::new("default", &mq_conn);
-                        if let Err(err) = queue.enqueue::<Job<i64>>(job) {
-                            error!(logger, "err: {}", err);
-                            return res.status(Status::InternalServerError);
-                        }
+            let result: Result<(), Error> = db_conn
+                .build_transaction()
+                .serializable()
+                .deferrable()
+                .read_write()
+                .run(|| {
+                    let mut u = NewUser::from(&data.0);
+                    u.set_password(&data.password);
+                    let user = User::insert(&u, &db_conn, &logger).unwrap();
+                    let ue = NewUserEmail::from(&user);
+                    let user_email =
+                        UserEmail::insert(&ue, &db_conn, &logger).unwrap();
+                    if let Err(e) =
+                        user_email.grant_activation_token(&db_conn, &logger)
+                    {
+                        error!(logger, "error: {}", e);
+                        return Err(Error::RollbackTransaction);
                     }
-                    return res;
-                }
-            }
+                    // send email
+                    let job = Job::<i64> {
+                        kind: JobKind::SendUserActivationEmail,
+                        args: vec![user_email.id],
+                    };
+                    let queue = Queue::new("default", &mq_conn);
+                    if let Err(err) = queue.enqueue::<Job<i64>>(job) {
+                        error!(logger, "error: {}", err);
+                        return Err(Error::RollbackTransaction);
+                    }
+                    Ok(())
+                });
+
             // unexpected
-            res.status(Status::InternalServerError)
+            if result.is_err() {
+                return res.status(Status::InternalServerError);
+            }
+            res
         },
     }
 }
