@@ -14,8 +14,8 @@ use fourche::queue::Queue;
 use redis::Client;
 
 use eloquentlog_backend_api::config::Config;
+use eloquentlog_backend_api::db::establish_connection;
 use eloquentlog_backend_api::job::Job;
-use eloquentlog_backend_api::model::establish_connection;
 use eloquentlog_backend_api::logger;
 
 fn get_env() -> String {

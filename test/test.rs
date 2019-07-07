@@ -29,20 +29,34 @@ use parking_lot::Mutex;
 use rocket::local::Client;
 
 use eloquentlog_backend_api::server;
-use eloquentlog_backend_api::db::{
-    DbConn, Pool as DbPool, init_pool as init_db_pool,
-};
-use eloquentlog_backend_api::mq::{
-    MqConn, Pool as MqPool, init_pool as init_mq_pool,
-};
+use eloquentlog_backend_api::db::{DbConn, DbPool, init_pool as init_db_pool};
+use eloquentlog_backend_api::mq::{MqConn, MqPool, init_pool as init_mq_pool};
 use eloquentlog_backend_api::config::Config;
 use eloquentlog_backend_api::logger::{Logger, get_logger};
 
+// NOTE:
+// For now, run tests sequencially :'(
+// The usage of transactions for the same connection between tests and
+// client (server) might fix this issue, but we use connection pool.
+// Find another way.
+lazy_static! {
+    static ref DB_LOCK: Mutex<()> = Mutex::new(());
+}
+
+lazy_static! {
+    static ref RE: Regex = Regex::new(r"\n\s{2}|\n|(:)\s").unwrap();
+    static ref CONFIG: Config = {
+        dotenv().ok();
+        Config::from("testing").unwrap()
+    };
+    static ref DB_POOL: DbPool =
+        { init_db_pool(&CONFIG.database_url, CONFIG.database_max_pool_size) };
+    static ref MQ_POOL: MqPool =
+        { init_mq_pool(&CONFIG.queue_url, CONFIG.queue_max_pool_size) };
+}
+
 /// Formats JSON text as one line
 pub fn minify(s: String) -> String {
-    lazy_static! {
-        static ref RE: Regex = Regex::new(r"\n\s{2}|\n|(:)\s").unwrap();
-    }
     RE.replace_all(&s, "$1").to_string()
 }
 
@@ -56,34 +70,22 @@ where T: FnOnce(
             &Logger,
         ) -> ()
         + panic::UnwindSafe {
-    // NOTE:
-    // For now, run tests sequencially :'(
-    // The usage of transactions for the same connection between tests and
-    // client (server) might fix this issue, but we use connection pool.
-    // Find another way.
-    lazy_static! {
-        static ref DB_LOCK: Mutex<()> = Mutex::new(());
-    }
     let _lock = DB_LOCK.lock();
 
-    dotenv().ok();
-    let config = Config::from("testing").unwrap();
-
     // Use same connection pools between test and client
-    let db_pool = get_db_pool(&config);
-    let db_conn = get_db_conn(&db_pool);
+    let db_conn = get_db_conn(&DB_POOL);
+    let mq_conn = get_mq_conn(&MQ_POOL);
 
-    let mq_pool = get_mq_pool(&config);
-    let mq_conn = get_mq_conn(&mq_pool);
-
-    let logger = get_logger(&config);
+    let logger = get_logger(&CONFIG);
     setup(&db_conn, &mq_conn);
 
     let result = panic::catch_unwind(AssertUnwindSafe(|| {
-        let server = server(&config).manage(db_pool).manage(mq_pool);
+        let server = server(&CONFIG)
+            .manage(DB_POOL.clone())
+            .manage(MQ_POOL.clone());
         let client = Client::new(server).unwrap();
 
-        test(client, &db_conn, &mq_conn, &config, &logger)
+        test(client, &db_conn, &mq_conn, &CONFIG, &logger)
     }));
     assert!(result.is_ok());
 
@@ -120,14 +122,6 @@ fn clean(db_conn: &PgConnection, _: &redis::Connection) {
             }
             Ok(())
         });
-}
-
-pub fn get_db_pool(config: &Config) -> DbPool {
-    init_db_pool(&config.database_url)
-}
-
-pub fn get_mq_pool(config: &Config) -> MqPool {
-    init_mq_pool(&config.queue_url)
 }
 
 pub fn get_db_conn(connection_pool: &DbPool) -> DbConn {
