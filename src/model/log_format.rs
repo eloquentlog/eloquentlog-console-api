@@ -68,7 +68,7 @@ impl LogFormat {
 }
 
 #[cfg(test)]
-mod log_format_test {
+mod test {
     use super::*;
 
     #[test]

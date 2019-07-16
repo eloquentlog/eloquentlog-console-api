@@ -98,7 +98,7 @@ impl LogLevel {
 }
 
 #[cfg(test)]
-mod log_level_test {
+mod test {
     use super::*;
 
     #[allow(clippy::cognitive_complexity)]

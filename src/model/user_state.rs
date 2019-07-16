@@ -76,7 +76,7 @@ impl UserState {
 }
 
 #[cfg(test)]
-mod user_state_test {
+mod test {
     use super::*;
 
     #[allow(clippy::cognitive_complexity)]
