@@ -184,9 +184,38 @@ impl Message {
 }
 
 #[cfg(test)]
+mod data {
+    use super::*;
+
+    use std::collections::HashMap;
+
+    use chrono::{Utc, TimeZone};
+
+    use hashmap;
+
+    lazy_static! {
+        pub static ref MESSAGES: HashMap<&'static str, Message> = hashmap! {
+            "blank message" => Message {
+                id: 1,
+                code: None,
+                lang: "en".to_string(),
+                level: LogLevel::Information,
+                format: LogFormat::TOML,
+                title: "title".to_string(),
+                content: None,
+                created_at: Utc.ymd(2019, 7, 7).and_hms(7, 20, 15).naive_utc(),
+                updated_at: Utc.ymd(2019, 7, 7).and_hms(7, 20, 15).naive_utc(),
+            }
+        };
+    }
+}
+
+#[cfg(test)]
 mod test {
     use model::test::run;
     use super::*;
+
+    use model::message::data::MESSAGES;
 
     #[test]
     fn test_insert() {
@@ -213,19 +242,11 @@ mod test {
     #[test]
     fn test_update() {
         run(|conn, _, logger| {
-            let m = NewMessage {
-                code: Some("200".to_string()),
-                lang: "en".to_string(),
-                level: LogLevel::Information,
-                format: LogFormat::TOML,
-                title: Some("title".to_string()),
-                content: None,
-            };
-
+            let m = MESSAGES.get("blank message");
             let message = diesel::insert_into(messages::table)
-                .values(&m)
+                .values(m)
                 .get_result::<Message>(conn)
-                .unwrap_or_else(|_| panic!("Error inserting: {}", m));
+                .unwrap_or_else(|e| panic!("Error inserting: {}", e));
 
             assert_eq!(message.title, "title");
 
