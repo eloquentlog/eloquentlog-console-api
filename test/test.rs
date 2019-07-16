@@ -72,7 +72,7 @@ where T: FnOnce(
         + panic::UnwindSafe {
     let _lock = DB_LOCK.lock();
 
-    // Use same connection pools between test and client
+    // Use same connection pools across tests
     let db_conn = get_db_conn(&DB_POOL);
     let mq_conn = get_mq_conn(&MQ_POOL);
 
