@@ -91,7 +91,7 @@ impl UserResetPasswordState {
 }
 
 #[cfg(test)]
-mod user_reset_password_state_test {
+mod test {
     use super::*;
 
     #[allow(clippy::cognitive_complexity)]

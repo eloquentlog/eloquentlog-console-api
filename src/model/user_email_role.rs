@@ -77,7 +77,7 @@ impl UserEmailRole {
 }
 
 #[cfg(test)]
-mod user_email_role_test {
+mod test {
     use super::*;
 
     #[allow(clippy::cognitive_complexity)]

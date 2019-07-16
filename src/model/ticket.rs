@@ -191,7 +191,7 @@ impl Claims for AuthorizationClaims {
 }
 
 #[cfg(test)]
-mod ticket_test {
+mod test {
     use super::*;
 
     extern crate base64;
