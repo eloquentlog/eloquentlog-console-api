@@ -179,14 +179,15 @@ impl UserEmail {
 mod data {
     use super::*;
 
-    use std::collections::HashMap;
+    use chrono::{Utc, TimeZone};
+    use fnv::FnvHashMap;
 
-    use chrono::Utc;
+    use fnvhashmap;
 
-    use hashmap;
+    type UserEmailFixture = FnvHashMap<&'static str, UserEmail>;
 
     lazy_static! {
-        pub static ref USER_EMAILS: HashMap<&'static str, UserEmail> = hashmap! {
+        pub static ref USER_EMAILS: UserEmailFixture = fnvhashmap! {
             "oswald's primary address" => UserEmail {
                 id: 1,
                 user_id: 1,
@@ -196,8 +197,8 @@ mod data {
                 activation_token: None,
                 activation_token_expires_at: None,
                 activation_token_granted_at: None,
-                created_at: Utc::now().naive_utc(),
-                updated_at: Utc::now().naive_utc(),
+                created_at: Utc.ymd(2019, 7, 7).and_hms(7, 20, 15).naive_utc(),
+                updated_at: Utc.ymd(2019, 7, 7).and_hms(7, 20, 15).naive_utc(),
             },
             "weenie's primary address" => UserEmail {
                 id: 2,
@@ -208,8 +209,8 @@ mod data {
                 activation_token: None,
                 activation_token_expires_at: None,
                 activation_token_granted_at: None,
-                created_at: Utc::now().naive_utc(),
-                updated_at: Utc::now().naive_utc(),
+                created_at: Utc.ymd(2019, 7, 7).and_hms(7, 20, 15).naive_utc(),
+                updated_at: Utc.ymd(2019, 7, 7).and_hms(7, 20, 15).naive_utc(),
             },
             "hennry's primary address" => UserEmail {
                 id: 3,
@@ -220,8 +221,8 @@ mod data {
                 activation_token: None,
                 activation_token_expires_at: None,
                 activation_token_granted_at: None,
-                created_at: Utc::now().naive_utc(),
-                updated_at: Utc::now().naive_utc(),
+                created_at: Utc.ymd(2019, 7, 7).and_hms(7, 20, 15).naive_utc(),
+                updated_at: Utc.ymd(2019, 7, 7).and_hms(7, 20, 15).naive_utc(),
             }
         };
     }

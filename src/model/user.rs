@@ -261,15 +261,16 @@ impl User {
 pub mod data {
     use super::*;
 
-    use std::collections::HashMap;
-
     use chrono::{Utc, TimeZone};
+    use fnv::FnvHashMap;
     use uuid::Uuid;
 
-    use hashmap;
+    use fnvhashmap;
+
+    type UserFixture = FnvHashMap<&'static str, User>;
 
     lazy_static! {
-        pub static ref USERS: HashMap<&'static str, User> = hashmap! {
+        pub static ref USERS: UserFixture = fnvhashmap! {
             "oswald" => User {
                 id: 1,
                 uuid: Uuid::new_v4(),

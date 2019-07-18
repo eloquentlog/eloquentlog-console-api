@@ -20,6 +20,7 @@ extern crate dotenv;
 extern crate diesel;
 
 extern crate fourche;
+extern crate fnv;
 
 extern crate jsonwebtoken;
 
@@ -110,13 +111,24 @@ pub fn server(c: &config::Config) -> rocket::Rocket {
         ])
 }
 
+#[macro_export]
+macro_rules! hashmap(
+    { $($key:expr => $value:expr),+ } => {
+        {
+            let mut m = ::std::collections::HashMap::new();
+            $(m.insert($key, $value);)+
+            m
+        }
+    };
+);
+
 #[cfg(test)]
 mod test {
     #[macro_export]
-    macro_rules! hashmap(
+    macro_rules! fnvhashmap(
         { $($key:expr => $value:expr),+ } => {
             {
-                let mut m = ::std::collections::HashMap::new();
+                let mut m = ::fnv::FnvHashMap::default();
                 $(m.insert($key, $value);)+
                 m
             }

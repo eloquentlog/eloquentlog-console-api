@@ -187,14 +187,15 @@ impl Message {
 mod data {
     use super::*;
 
-    use std::collections::HashMap;
-
     use chrono::{Utc, TimeZone};
+    use fnv::FnvHashMap;
 
-    use hashmap;
+    use fnvhashmap;
+
+    type MessageFixture = FnvHashMap<&'static str, Message>;
 
     lazy_static! {
-        pub static ref MESSAGES: HashMap<&'static str, Message> = hashmap! {
+        pub static ref MESSAGES: MessageFixture = fnvhashmap! {
             "blank message" => Message {
                 id: 1,
                 code: None,
