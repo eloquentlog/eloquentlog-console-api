@@ -25,7 +25,7 @@ CREATE TABLE users (
   id BIGINT NOT NULL PRIMARY KEY DEFAULT nextval('users_id_seq'),
   uuid UUID NOT NULL DEFAULT uuid_generate_v4(),
   name CHARACTER VARYING(64) NULL,
-  username CHARACTER VARYING(32) NULL,
+  username CHARACTER VARYING(32) UNIQUE NOT NULL,
   email CHARACTER VARYING(128) UNIQUE NOT NULL,
   password BYTEA NOT NULL,
   state e_user_state NOT NULL DEFAULT 'pending',
@@ -47,8 +47,8 @@ CREATE UNIQUE INDEX users_access_token_idx ON users(access_token);
 CREATE UNIQUE INDEX users_email_idx ON users(email);
 CREATE UNIQUE INDEX users_reset_password_token_idx ON users(
   reset_password_token);
+CREATE UNIQUE INDEX users_username_idx ON users(username);
 CREATE UNIQUE INDEX users_uuid_idx ON users(uuid);
 
 CREATE INDEX users_state_idx ON users(state);
 CREATE INDEX users_reset_password_state_idx ON users(reset_password_state);
-CREATE INDEX users_username_idx ON users(username);

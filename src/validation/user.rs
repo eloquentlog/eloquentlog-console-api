@@ -1,6 +1,6 @@
 use std::result::Result;
 
-use accord::validators::{contains, length, length_if_present, max, min};
+use accord::validators::{contains, length};
 use diesel::PgConnection;
 use rocket_contrib::json::Json;
 
@@ -46,21 +46,17 @@ impl<'a> Validator<'a> {
     }
 
     fn validate_username_uniqueness(&self) -> Result<(), ValidationError> {
-        match self.data.0.username {
-            Some(ref username)
-                if !User::check_username_uniqueness(
-                    &username,
-                    self.conn,
-                    self.logger,
-                ) =>
-            {
-                Err(ValidationError {
-                    field: "username".to_string(),
-                    messages: vec!["That username is already taken".to_string()],
-                })
-            },
-            _ => Ok(()),
+        if !User::check_username_uniqueness(
+            &self.data.0.username,
+            self.conn,
+            self.logger,
+        ) {
+            return Err(ValidationError {
+                field: "username".to_string(),
+                messages: vec!["That username is already taken".to_string()],
+            });
         }
+        Ok(())
     }
 
     #[allow(clippy::redundant_closure)]
@@ -70,13 +66,15 @@ impl<'a> Validator<'a> {
         // * check email format
         // * check whether username is reserved or not
         let result = rules! {
-            "name" => u.name => [max_if_present(64)],
+            "name" => u.name => [
+                max_if_present(64)
+            ],
             "username" => u.username => [
-                alphanumeric_underscore_if_present(),
-                length_if_present(3, 32),
-                not_contain_only_digits_or_underscore_if_present(),
-                not_start_with_digits_if_present(),
-                not_start_with_if_present("_")
+                contain_only_alphanumeric_or_underscore(),
+                not_contain_only_digits_or_underscore(),
+                not_start_with_digits(),
+                not_start_with("_"),
+                length(3, 32)
             ],
             "email" => u.email => [
                 contains("@"),
@@ -84,12 +82,11 @@ impl<'a> Validator<'a> {
                 length(6, 128)
             ],
             "password" => self.data.0.password => [
-                min(8),
-                max(1024),
                 contain_any(CHARS_LOWER, "a-z"),
                 contain_any(CHARS_UPPER, "A-Z"),
                 contain_any(DIGITS, "0-9"),
-                not_overlap_with("username")(u.username)
+                not_overlap_with("username")(u.username),
+                length(8, 1024)
             ]
         };
 
@@ -144,6 +141,7 @@ mod test {
         run(|conn, _, logger| {
             let data = &Json(RequestData {
                 email: "".to_string(),
+                username: "username".to_string(),
                 password: "Passw0rd".to_string(),
 
                 ..Default::default()
@@ -175,6 +173,7 @@ mod test {
         run(|conn, _, logger| {
             let data = &Json(RequestData {
                 email: "this-is-not-email".to_string(),
+                username: "username".to_string(),
                 password: "Passw0rd".to_string(),
 
                 ..Default::default()
@@ -202,6 +201,7 @@ mod test {
         run(|conn, _, logger| {
             let data = &Json(RequestData {
                 email: "short".to_string(),
+                username: "username".to_string(),
                 password: "Passw0rd".to_string(),
 
                 ..Default::default()
@@ -233,6 +233,7 @@ mod test {
         run(|conn, _, logger| {
             let data = &Json(RequestData {
                 email: "long@example.org".repeat(9).to_string(),
+                username: "username".to_string(),
                 password: "Passw0rd".to_string(),
 
                 ..Default::default()
@@ -260,6 +261,7 @@ mod test {
         run(|conn, _, logger| {
             let data = &Json(RequestData {
                 email: "long".repeat(33).to_string(),
+                username: "username".to_string(),
                 password: "Passw0rd".to_string(),
 
                 ..Default::default()
@@ -291,6 +293,7 @@ mod test {
         run(|conn, _, logger| {
             let data = &Json(RequestData {
                 email: "postmaster@example.org".to_string(),
+                username: "username".to_string(),
                 password: "Passw0rd".to_string(),
 
                 ..Default::default()
@@ -306,11 +309,10 @@ mod test {
     fn test_validate_name_is_too_long() {
         run(|conn, _, logger| {
             let data = &Json(RequestData {
-                name: Some("long".repeat(26).to_string()),
                 email: "postmaster@example.org".to_string(),
+                name: Some("long".repeat(26).to_string()),
+                username: "username".to_string(),
                 password: "Passw0rd".to_string(),
-
-                ..Default::default()
             });
             let v = Validator { conn, data, logger };
 
@@ -334,11 +336,10 @@ mod test {
     fn test_validate_name_is_none() {
         run(|conn, _, logger| {
             let data = &Json(RequestData {
-                name: None,
                 email: "postmaster@example.org".to_string(),
+                name: None,
+                username: "username".to_string(),
                 password: "Passw0rd".to_string(),
-
-                ..Default::default()
             });
             let v = Validator { conn, data, logger };
 
@@ -351,11 +352,10 @@ mod test {
     fn test_validate_name() {
         run(|conn, _, logger| {
             let data = &Json(RequestData {
-                name: Some("Lorem ipsum".to_string()),
                 email: "postmaster@example.org".to_string(),
+                name: Some("Lorem ipsum".to_string()),
+                username: "username".to_string(),
                 password: "Passw0rd".to_string(),
-
-                ..Default::default()
             });
             let v = Validator { conn, data, logger };
 
@@ -368,8 +368,8 @@ mod test {
     fn test_validate_username_is_too_short() {
         run(|conn, _, logger| {
             let data = &Json(RequestData {
-                username: Some("hi".to_string()),
                 email: "postmaster@example.org".to_string(),
+                username: "hi".to_string(),
                 password: "Passw0rd".to_string(),
 
                 ..Default::default()
@@ -396,8 +396,8 @@ mod test {
     fn test_validate_username_is_too_long() {
         run(|conn, _, logger| {
             let data = &Json(RequestData {
-                username: Some("username".repeat(5).to_string()),
                 email: "postmaster@example.org".to_string(),
+                username: "username".repeat(5).to_string(),
                 password: "Passw0rd".to_string(),
 
                 ..Default::default()
@@ -431,8 +431,8 @@ mod test {
 
             for (i, (value, message)) in tests.iter().enumerate() {
                 let data = &Json(RequestData {
-                    username: Some(value.to_string()),
                     email: "postmaster@example.org".to_string(),
+                    username: value.to_string(),
                     password: "Passw0rd".to_string(),
 
                     ..Default::default()
@@ -491,8 +491,8 @@ mod test {
 
             for (i, (value, messages)) in tests.iter().enumerate() {
                 let data = &Json(RequestData {
-                    username: Some(value.to_string()),
                     email: "postmaster@example.org".to_string(),
+                    username: value.to_string(),
                     password: "Passw0rd".to_string(),
 
                     ..Default::default()
@@ -503,7 +503,6 @@ mod test {
                 assert!(result.is_err());
 
                 if let Err(errors) = &result {
-                    dbg!(errors);
                     assert_eq!(1, errors.len());
                     assert_eq!("username", errors[0].field);
                     assert_eq!(
@@ -519,11 +518,11 @@ mod test {
     }
 
     #[test]
-    fn test_validate_username_is_none() {
+    fn test_validate_username_is_empty() {
         run(|conn, _, logger| {
             let data = &Json(RequestData {
-                username: None,
                 email: "postmaster@example.org".to_string(),
+                username: "".to_string(),
                 password: "Passw0rd".to_string(),
 
                 ..Default::default()
@@ -531,7 +530,21 @@ mod test {
             let v = Validator { conn, data, logger };
 
             let result = v.validate();
-            assert!(result.is_ok());
+            assert!(result.is_err());
+
+            if let Err(errors) = &result {
+                assert_eq!(1, errors.len());
+                assert_eq!("username", errors[0].field);
+                assert_eq!(
+                    vec![
+                        "Must not contain only digits or underscore",
+                        "Must contain more than 3 characters",
+                    ],
+                    errors[0].messages
+                );
+            } else {
+                panic!("must fail");
+            }
         })
     }
 
@@ -543,8 +556,8 @@ mod test {
 
             for value in tests.iter() {
                 let data = &Json(RequestData {
-                    username: Some(value.to_string()),
                     email: "postmaster@example.org".to_string(),
+                    username: value.to_string(),
                     password: "Passw0rd".to_string(),
 
                     ..Default::default()
@@ -564,8 +577,8 @@ mod test {
 
             for (i, value) in tests.iter().enumerate() {
                 let data = &Json(RequestData {
-                    username: Some(value.to_string()),
                     email: "postmaster@example.org".to_string(),
+                    username: value.to_string(),
                     password: "Passw0rd".to_string(),
 
                     ..Default::default()
@@ -597,6 +610,7 @@ mod test {
         run(|conn, _, logger| {
             let data = &Json(RequestData {
                 email: "postmaster@example.org".to_string(),
+                username: "username".to_string(),
                 password: "Sh0rt".to_string(),
 
                 ..Default::default()
@@ -624,6 +638,7 @@ mod test {
         run(|conn, _, logger| {
             let data = &Json(RequestData {
                 email: "postmaster@example.org".to_string(),
+                username: "username".to_string(),
                 password: "L0ng".repeat(257).to_string(),
 
                 ..Default::default()
@@ -650,8 +665,8 @@ mod test {
     fn test_validate_password_equals_username() {
         run(|conn, _, logger| {
             let data = &Json(RequestData {
-                username: Some("Passw0rd".to_string()),
                 email: "postmaster@example.org".to_string(),
+                username: "Passw0rd".to_string(),
                 password: "Passw0rd".to_string(),
 
                 ..Default::default()
@@ -678,8 +693,8 @@ mod test {
     fn test_validate_password_contains_username() {
         run(|conn, _, logger| {
             let data = &Json(RequestData {
-                username: Some("username".to_string()),
                 email: "postmaster@example.org".to_string(),
+                username: "username".to_string(),
                 password: "Myusername1sAPartOfpassw0rd".to_string(),
 
                 ..Default::default()
@@ -706,8 +721,8 @@ mod test {
     fn test_validate_password_is_included_in_username() {
         run(|conn, _, logger| {
             let data = &Json(RequestData {
-                username: Some("myPassw0rd".to_string()),
                 email: "postmaster@example.org".to_string(),
+                username: "myPassw0rd".to_string(),
                 password: "Passw0rd".to_string(),
 
                 ..Default::default()
@@ -741,8 +756,8 @@ mod test {
 
             for (i, (value, message)) in tests.iter().enumerate() {
                 let data = &Json(RequestData {
-                    username: Some("username".to_string()),
                     email: "postmaster@example.org".to_string(),
+                    username: "username".to_string(),
                     password: value.to_string(),
 
                     ..Default::default()
@@ -773,8 +788,8 @@ mod test {
     fn test_validate_email_uniqueness() {
         run(|conn, _, logger| {
             let data = &Json(RequestData {
-                username: Some("username".to_string()),
                 email: "postmaster@example.org".to_string(),
+                username: "username".to_string(),
                 password: "Passw0rd".to_string(),
 
                 ..Default::default()
@@ -787,8 +802,8 @@ mod test {
                 .unwrap_or_else(|| panic!("Error inserting: {}", u));
 
             let data = &Json(RequestData {
-                username: Some("newusername".to_string()),
                 email: u.email.to_string(),
+                username: "newusername".to_string(),
                 password: "newPassw0rd".to_string(),
 
                 ..Default::default()
@@ -812,8 +827,8 @@ mod test {
     fn test_validate_username_uniqueness() {
         run(|conn, _, logger| {
             let data = &Json(RequestData {
-                username: Some("username".to_string()),
                 email: "postmaster@example.org".to_string(),
+                username: "username".to_string(),
                 password: "Passw0rd".to_string(),
 
                 ..Default::default()
@@ -826,8 +841,8 @@ mod test {
                 .unwrap_or_else(|| panic!("Error inserting: {}", u));
 
             let data = &Json(RequestData {
-                username: Some(u.username.unwrap()),
                 email: "newpostmaster@example.org".to_string(),
+                username: u.username,
                 password: "newPassw0rd".to_string(),
 
                 ..Default::default()

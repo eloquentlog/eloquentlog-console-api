@@ -16,6 +16,7 @@ fn test_register_with_validation_error() {
             .body(format!(
                 r#"{{
           "email": "{}",
+          "username": "hennry",
           "password": "password"
         }}"#,
                 &email,
@@ -37,6 +38,7 @@ fn test_register() {
             .body(format!(
                 r#"{{
           "email": "{}",
+          "username": "hennry",
           "password": "pa$$w0rD"
         }}"#,
                 &email,

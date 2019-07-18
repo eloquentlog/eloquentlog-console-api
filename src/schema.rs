@@ -24,7 +24,7 @@ table! {
         id -> Int8,
         uuid -> Uuid,
         name -> Nullable<Varchar>,
-        username -> Nullable<Varchar>,
+        username -> Varchar,
         email -> Varchar,
         password -> Bytea,
         state -> EUserState,
