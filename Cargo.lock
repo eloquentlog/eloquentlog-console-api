@@ -471,7 +471,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 [[package]]
 name = "fourche"
 version = "0.0.1"
-source = "git+https://gitlab.com/grauwoelfchen/fourche.git#dcaf5faec459d9e792dde711513e082ba870f7db"
+source = "git+https://gitlab.com/grauwoelfchen/fourche.git#12ed13f67aab71216b40cb470c17daa9e109ee9e"
 dependencies = [
  "redis 0.9.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde 1.0.89 (registry+https://github.com/rust-lang/crates.io-index)",
