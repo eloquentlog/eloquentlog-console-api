@@ -14,8 +14,8 @@ fn build_test_user(db_conn: &PgConnection, logger: &Logger) -> user::User {
     let password = "pa$$w0rD";
     let mut u = user::NewUser {
         name: None,
-        username: None,
-        email: "foo@example.org".to_string(),
+        username: "hennry".to_string(),
+        email: "hennry@example.org".to_string(),
 
         ..Default::default()
     };

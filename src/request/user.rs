@@ -40,18 +40,18 @@ impl<'a, 'r> FromRequest<'a, 'r> for User {
 /// UserSignUp
 #[derive(Clone, Deserialize)]
 pub struct UserSignUp {
-    pub name: Option<String>,
-    pub username: Option<String>,
     pub email: String,
+    pub name: Option<String>,
+    pub username: String,
     pub password: String,
 }
 
 impl Default for UserSignUp {
     fn default() -> Self {
         Self {
-            name: None,
-            username: None,
             email: "".to_string(),
+            name: None,
+            username: "".to_string(),
             password: "".to_string(),
         }
     }

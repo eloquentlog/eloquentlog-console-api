@@ -16,14 +16,9 @@ const CHARS_UPPER: &[char] = &[
 ];
 const DIGITS: &[char] = &['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'];
 
-fn alphanumeric_underscore_if_present(
-) -> Box<dyn Fn(&Option<String>) -> ValidatorResult> {
-    Box::new(move |s: &Option<String>| {
-        match &s {
-            Some(v) => alphanumeric()(&v.replace("_", "")),
-            None => Ok(()),
-        }
-    })
+fn contain_only_alphanumeric_or_underscore(
+) -> Box<dyn Fn(&String) -> ValidatorResult> {
+    Box::new(move |s: &String| alphanumeric()(&s.replace("_", "")))
 }
 
 fn contain_any(accepted: &'static [char], text: &'static str) -> SV {
@@ -41,30 +36,24 @@ fn contain_any(accepted: &'static [char], text: &'static str) -> SV {
     })
 }
 
-fn not_contain_only_digits_or_underscore_if_present(
-) -> Box<dyn Fn(&Option<String>) -> ValidatorResult> {
-    Box::new(move |s: &Option<String>| {
-        match &s {
-            Some(v) => {
-                for c in v.chars() {
-                    if !DIGITS.contains(&c) && c != '_' {
-                        return Ok(());
-                    }
-                }
-                Err(Invalid {
-                    msg: "Must not contain only digits or underscore"
-                        .to_string(),
-                    args: vec![],
-                    human_readable: "Must not contain only digits or \
-                                     underscore"
-                        .to_string(),
-                })
-            },
-            None => Ok(()),
+fn not_contain_only_digits_or_underscore(
+) -> Box<dyn Fn(&String) -> ValidatorResult> {
+    Box::new(move |s: &String| {
+        for c in s.chars() {
+            if !DIGITS.contains(&c) && c != '_' {
+                return Ok(());
+            }
         }
+        Err(Invalid {
+            msg: "Must not contain only digits or underscore".to_string(),
+            args: vec![],
+            human_readable: "Must not contain only digits or underscore"
+                .to_string(),
+        })
     })
 }
 
+// check if the needle is given (present)
 fn not_contain_if_given(needle: Option<String>) -> SV {
     let n = needle.unwrap_or_default();
     Box::new(move |s: &String| {
@@ -82,12 +71,12 @@ fn not_contain_if_given(needle: Option<String>) -> SV {
     })
 }
 
-fn not_overlap_with(field: &'static str) -> Box<dyn Fn(Option<String>) -> SV> {
-    Box::new(move |needle: Option<String>| {
+fn not_overlap_with(field: &'static str) -> Box<dyn Fn(String) -> SV> {
+    Box::new(move |needle: String| {
         let f = field.to_string();
         Box::new(move |s: &String| {
             let n = needle.clone();
-            if not_contain_if_given(n)(s).is_err() {
+            if not_contain_if_given(Some(n))(s).is_err() {
                 return Err(Invalid {
                     msg: "Must not overlap with %1.".to_string(),
                     args: vec![f.to_string()],
@@ -99,39 +88,31 @@ fn not_overlap_with(field: &'static str) -> Box<dyn Fn(Option<String>) -> SV> {
     })
 }
 
-fn not_start_with_if_present(
+fn not_start_with(
     needle: &'static str,
-) -> Box<dyn Fn(&Option<String>) -> ValidatorResult> {
-    Box::new(move |s: &Option<String>| {
-        match &s {
-            Some(v) if !v.is_empty() && v.replacen(needle, "", 1) == v[1..] => {
-                Err(Invalid {
-                    msg: "Must not start with '%1'".to_string(),
-                    args: vec![needle.to_string()],
-                    human_readable: format!("Must not start with '{}'", needle),
-                })
-            },
-            _ => Ok(()),
+) -> Box<dyn Fn(&String) -> ValidatorResult> {
+    Box::new(move |s: &String| {
+        if !s.is_empty() && s.replacen(needle, "", 1) == s[1..] {
+            return Err(Invalid {
+                msg: "Must not start with '%1'".to_string(),
+                args: vec![needle.to_string()],
+                human_readable: format!("Must not start with '{}'", needle),
+            });
         }
+        Ok(())
     })
 }
 
-fn not_start_with_digits_if_present(
-) -> Box<dyn Fn(&Option<String>) -> ValidatorResult> {
-    Box::new(move |s: &Option<String>| {
-        match &s {
-            Some(v) if !v.is_empty() => {
-                if !DIGITS.contains(&v.chars().next().unwrap()) {
-                    return Ok(());
-                }
-                Err(Invalid {
-                    msg: "Must not start with digits".to_string(),
-                    args: vec![],
-                    human_readable: "Must not start with digits".to_string(),
-                })
-            },
-            _ => Ok(()),
+fn not_start_with_digits() -> Box<dyn Fn(&String) -> ValidatorResult> {
+    Box::new(move |s: &String| {
+        if !s.is_empty() && DIGITS.contains(&s.chars().next().unwrap()) {
+            return Err(Invalid {
+                msg: "Must not start with digits".to_string(),
+                args: vec![],
+                human_readable: "Must not start with digits".to_string(),
+            });
         }
+        Ok(())
     })
 }
 
@@ -164,7 +145,7 @@ mod test {
     use super::*;
 
     #[test]
-    fn test_alphanumeric_underscore_if_present() {
+    fn test_contain_only_alphanumeric_or_underscore() {
         let tests: [(&'static str, bool); 5] = [
             ("$", false),
             ("(text)", false),
@@ -176,7 +157,7 @@ mod test {
         for (i, (s, expected)) in tests.iter().enumerate() {
             assert_eq!(
                 *expected,
-                alphanumeric_underscore_if_present()(&Some(s.to_string()))
+                contain_only_alphanumeric_or_underscore()(&s.to_string())
                     .is_ok(),
                 "#{} value: {}",
                 i,
@@ -186,7 +167,7 @@ mod test {
     }
 
     #[test]
-    fn test_not_contain_only_digits_or_underscore_if_present() {
+    fn test_not_contain_only_digits_or_underscore() {
         let tests: [(&'static str, bool); 5] = [
             ("123456789", false),
             ("123_456", false),
@@ -198,10 +179,7 @@ mod test {
         for (i, (s, expected)) in tests.iter().enumerate() {
             assert_eq!(
                 *expected,
-                not_contain_only_digits_or_underscore_if_present()(&Some(
-                    s.to_string()
-                ))
-                .is_ok(),
+                not_contain_only_digits_or_underscore()(&s.to_string()).is_ok(),
                 "#{} value: {}",
                 i,
                 s
@@ -247,7 +225,7 @@ mod test {
         for (i, (needle, s, expected)) in tests.iter().enumerate() {
             assert_eq!(
                 *expected,
-                not_overlap_with(field_name)(Some(needle.to_string()))(
+                not_overlap_with(field_name)(needle.to_string())(
                     &s.to_string()
                 )
                 .is_ok(),
@@ -261,7 +239,7 @@ mod test {
     }
 
     #[test]
-    fn test_not_start_with_if_present() {
+    fn test_not_start_with() {
         let tests: [(&'static str, &'static str, bool); 5] = [
             ("@", "@23456789", false),
             ("_", "__12345", false),
@@ -273,7 +251,7 @@ mod test {
         for (i, (needle, s, expected)) in tests.iter().enumerate() {
             assert_eq!(
                 *expected,
-                not_start_with_if_present(needle)(&Some(s.to_string())).is_ok(),
+                not_start_with(needle)(&s.to_string()).is_ok(),
                 "#{} needle: {} value: {}",
                 i,
                 needle,
@@ -283,7 +261,7 @@ mod test {
     }
 
     #[test]
-    fn test_not_start_with_digits_if_present() {
+    fn test_not_start_with_digits() {
         let tests: [(&'static str, bool); 5] = [
             ("0123456789", false),
             ("12345", false),
@@ -295,8 +273,7 @@ mod test {
         for (i, (s, expected)) in tests.iter().enumerate() {
             assert_eq!(
                 *expected,
-                not_start_with_digits_if_present()(&Some(s.to_string()))
-                    .is_ok(),
+                not_start_with_digits()(&s.to_string()).is_ok(),
                 "#{} value: {}",
                 i,
                 s

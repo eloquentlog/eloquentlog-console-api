@@ -21,7 +21,7 @@ const BCRYPT_COST: u32 = 12;
 #[derive(Debug)]
 pub struct NewUser {
     pub name: Option<String>,
-    pub username: Option<String>,
+    pub username: String,
     pub email: String,
     pub password: Vec<u8>,
     pub state: UserState,
@@ -38,7 +38,7 @@ impl Default for NewUser {
     fn default() -> Self {
         Self {
             name: None,
-            username: None,
+            username: "".to_string(),
             email: "".to_string(), // validation error
             password: vec![],      // validation error
 
@@ -92,7 +92,7 @@ pub struct User {
     pub id: i64,
     pub uuid: Uuid,
     pub name: Option<String>,
-    pub username: Option<String>,
+    pub username: String,
     pub email: String,
     pub password: Vec<u8>,
     pub state: UserState,
@@ -231,7 +231,7 @@ impl User {
     {
         let q = diesel::insert_into(users::table).values((
             Some(users::name.eq(&user.name)),
-            Some(users::username.eq(&user.username)),
+            users::username.eq(&user.username),
             users::email.eq(&user.email),
             users::password.eq(&user.password),
             // default
@@ -275,7 +275,7 @@ pub mod data {
                 id: 1,
                 uuid: Uuid::new_v4(),
                 name: Some("Oswald".to_string()),
-                username: Some("oswald".to_string()),
+                username: "oswald".to_string(),
                 email: "oswald@example.org".to_string(),
                 password: b"Pa$$w0rd".to_vec(),
                 state: UserState::Active,
@@ -292,7 +292,7 @@ pub mod data {
                 id: 2,
                 uuid: Uuid::new_v4(),
                 name: Some("Weenie".to_string()),
-                username: Some("weenie".to_string()),
+                username: "weenie".to_string(),
                 email: "weenie@example.org".to_string(),
                 password: b"Pa$$w0rd".to_vec(),
                 state: UserState::Active,
@@ -309,7 +309,7 @@ pub mod data {
                 id: 3,
                 uuid: Uuid::new_v4(),
                 name: Some("Hennry the Penguin".to_string()),
-                username: Some("hennry".to_string()),
+                username: "hennry".to_string(),
                 email: "hennry@example.org".to_string(),
                 password: b"Pa$$w0rd".to_vec(),
                 state: UserState::Pending,
@@ -337,7 +337,7 @@ mod test {
     fn test_new_user_format() {
         let u = NewUser {
             name: Some("Hennry the Penguin".to_string()),
-            username: Some("hennry".to_string()),
+            username: "hennry".to_string(),
             email: "hennry@example.org".to_string(),
             password: b"password".to_vec(),
             state: UserState::Pending,
@@ -354,7 +354,7 @@ mod test {
         };
 
         assert_eq!(u.name, None);
-        assert_eq!(u.username, None);
+        assert_eq!(u.username, "".to_string());
         assert_eq!(u.email, "".to_string());
         assert_eq!(u.password, Vec::new() as Vec<u8>);
         assert_eq!(u.state, UserState::Pending);
@@ -365,7 +365,7 @@ mod test {
     fn test_new_user_from() {
         let data = RequestData {
             name: Some("Hennry the Penguin".to_string()),
-            username: Some("hennry".to_string()),
+            username: "hennry".to_string(),
             email: "hennry@example.org".to_string(),
             password: "password".to_string(),
         };
@@ -411,14 +411,10 @@ mod test {
             let username = diesel::insert_into(users::table)
                 .values(u)
                 .returning(users::username)
-                .get_result::<Option<String>>(conn)
+                .get_result::<String>(conn)
                 .unwrap_or_else(|e| panic!("Error at inserting: {}", e));
 
-            assert!(!User::check_username_uniqueness(
-                &username.unwrap(),
-                conn,
-                logger,
-            ));
+            assert!(!User::check_username_uniqueness(&username, conn, logger));
             assert!(User::check_username_uniqueness("another", conn, logger));
         });
     }
@@ -472,7 +468,7 @@ mod test {
         run(|conn, _, logger| {
             let mut u = NewUser {
                 name: Some("Johnny Snowman".to_string()),
-                username: Some("johnny".to_string()),
+                username: "johnny".to_string(),
                 email: "johnny@example.org".to_string(),
 
                 ..Default::default()

@@ -10,8 +10,8 @@ fn test_login() {
         let password = "pa$$w0rD";
         let mut u = user::NewUser {
             name: None,
-            username: None,
-            email: "foo@example.org".to_string(),
+            username: "johnny".to_string(),
+            email: "johnny@example.org".to_string(),
 
             ..Default::default()
         };

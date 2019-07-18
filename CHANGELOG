@@ -1,3 +1,6 @@
+Thu 19 Jul 2019 Yasuhiro Яша Asaka <yasuhiro.asaka@grauwoelfchen.net>
+	* User.username is required now (on signup)
+
 Mon 01 Apr 2019 Yasuhiro Яша Asaka <yasuhiro.asaka@grauwoelfchen.net>
 	* Add asynchronous worker
 
