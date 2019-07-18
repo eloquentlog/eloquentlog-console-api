@@ -27,6 +27,7 @@ bcrypt = "0.3"
 chrono = { version = "0.4.6", features = ["serde"] }
 dotenv = "0.10"
 fourche = { git = "https://gitlab.com/grauwoelfchen/fourche.git", branch = "master" }
+fnv = "1.0.3"
 jsonwebtoken = "5.0"
 lazy_static = "1.0"
 parking_lot = "0.7.1"
