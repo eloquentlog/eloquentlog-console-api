@@ -7,10 +7,13 @@ extern crate chrono;
 extern crate diesel;
 extern crate dotenv;
 extern crate fourche;
+extern crate fnv;
 extern crate parking_lot;
 extern crate redis;
 extern crate rocket;
+extern crate uuid;
 
+#[macro_use]
 extern crate eloquentlog_backend_api;
 
 mod authentication;
@@ -25,14 +28,20 @@ use regex::Regex;
 use diesel::prelude::*;
 use diesel::PgConnection;
 use dotenv::dotenv;
+use chrono::{Utc, TimeZone};
+use fnv::FnvHashMap;
 use parking_lot::Mutex;
+use rocket::http::Header;
 use rocket::local::Client;
+use uuid::Uuid;
 
 use eloquentlog_backend_api::server;
 use eloquentlog_backend_api::db::{DbConn, DbPool, init_pool as init_db_pool};
 use eloquentlog_backend_api::mq::{MqConn, MqPool, init_pool as init_mq_pool};
-use eloquentlog_backend_api::config::Config;
+use eloquentlog_backend_api::config;
 use eloquentlog_backend_api::logger::{Logger, get_logger};
+use eloquentlog_backend_api::model::{user, ticket, ticket::Claims};
+use eloquentlog_backend_api::route::AUTHORIZATION_HEADER_KEY;
 
 // NOTE:
 // For now, run tests sequencially :'(
@@ -45,9 +54,9 @@ lazy_static! {
 
 lazy_static! {
     static ref RE: Regex = Regex::new(r"\n\s{2}|\n|(:)\s").unwrap();
-    static ref CONFIG: Config = {
+    static ref CONFIG: config::Config = {
         dotenv().ok();
-        Config::from("testing").unwrap()
+        config::Config::from("testing").unwrap()
     };
     static ref DB_POOL: DbPool =
         { init_db_pool(&CONFIG.database_url, CONFIG.database_max_pool_size) };
@@ -66,7 +75,7 @@ where T: FnOnce(
             Client,
             &PgConnection,
             &redis::Connection,
-            &Config,
+            &config::Config,
             &Logger,
         ) -> ()
         + panic::UnwindSafe {
@@ -136,4 +145,60 @@ pub fn get_mq_conn(connection_pool: &MqPool) -> MqConn {
         Ok(conn) => MqConn(conn),
         Err(e) => panic!("err: {}", e),
     }
+}
+
+// test data fixtures
+
+type UserFixture = FnvHashMap<&'static str, user::User>;
+
+lazy_static! {
+    pub static ref USERS: UserFixture = fnvhashmap! {
+        "oswald" => user::User {
+            id: 1,
+            uuid: Uuid::new_v4(),
+            name: Some("Oswald".to_string()),
+            username: "oswald".to_string(),
+            email: "oswald@example.org".to_string(),
+            password: b"Pa$$w0rd".to_vec(),
+            state: user::UserState::Active,
+            access_token: None,
+            access_token_granted_at: None,
+            reset_password_state: user::UserResetPasswordState::Never,
+            reset_password_token: None,
+            reset_password_token_expires_at: None,
+            reset_password_token_granted_at: None,
+            created_at: Utc.ymd(2019, 7, 7).and_hms(7, 20, 15).naive_utc(),
+            updated_at: Utc.ymd(2019, 7, 7).and_hms(7, 20, 15).naive_utc(),
+        }
+    };
+}
+
+fn build_authorization_header<'a>(
+    user: &user::User,
+    config: &config::Config,
+) -> Header<'a>
+{
+    // TODO: into
+    let token = ticket::Token {
+        value: user.uuid.to_urn().to_string(),
+        granted_at: Utc::now().timestamp(),
+        expires_at: 0,
+    };
+    Header::new(
+        AUTHORIZATION_HEADER_KEY,
+        ticket::AuthorizationClaims::encode(
+            token,
+            &config.authorization_ticket_issuer,
+            &config.authorization_ticket_key_id,
+            &config.authorization_ticket_secret,
+        )
+        .to_string(),
+    )
+}
+
+fn load_user(user: &user::User, db_conn: &PgConnection) -> user::User {
+    diesel::insert_into(user::users::table)
+        .values(user)
+        .get_result::<user::User>(db_conn)
+        .unwrap_or_else(|e| panic!("Error at inserting: {}", e))
 }

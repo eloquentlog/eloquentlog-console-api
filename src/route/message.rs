@@ -12,7 +12,7 @@ use validation::message::Validator;
 const MESSAGES_PER_REQUEST: i64 = 100;
 
 #[get("/messages")]
-pub fn get(user: User, conn: DbConn, logger: SyncLogger) -> Response {
+pub fn get(user: &User, conn: DbConn, logger: SyncLogger) -> Response {
     let res: Response = Default::default();
 
     // TODO: fetch messages for the user
@@ -34,7 +34,7 @@ pub fn get(user: User, conn: DbConn, logger: SyncLogger) -> Response {
 // ```
 #[post("/messages", format = "json", data = "<data>")]
 pub fn post(
-    user: User,
+    user: &User,
     data: Json<RequestData>,
     conn: DbConn,
     logger: SyncLogger,
@@ -66,7 +66,7 @@ pub fn post(
 
 #[put("/messages/<id>", format = "json", data = "<data>")]
 pub fn put(
-    user: User,
+    user: &User,
     id: usize,
     data: Json<RequestData>,
     conn: DbConn,

@@ -14,23 +14,27 @@ use model::user::User;
 use request::ticket::AuthorizationTicket;
 
 /// User
-impl<'a, 'r> FromRequest<'a, 'r> for User {
+impl<'a, 'r> FromRequest<'a, 'r> for &'a User {
     type Error = ();
 
-    fn from_request(req: &'a Request<'r>) -> request::Outcome<User, ()> {
-        let ticket = req.guard::<AuthorizationTicket>().unwrap();
+    fn from_request(req: &'a Request<'r>) -> request::Outcome<&'a User, ()> {
+        let signin = req.local_cache(|| {
+            let config = req.guard::<State<Config>>().unwrap();
+            let db_conn = req.guard::<DbConn>().unwrap();
+            let logger = req.guard::<SyncLogger>().unwrap();
 
-        let config = req.guard::<State<Config>>()?;
-        let conn = req.guard::<DbConn>()?;
-        let logger = req.guard::<SyncLogger>()?;
+            let ticket =
+                req.local_cache(|| req.guard::<AuthorizationTicket>().unwrap());
 
-        if let Some(user) = User::find_by_ticket::<AuthorizationClaims>(
-            &ticket,
-            &config.authorization_ticket_issuer,
-            &config.authorization_ticket_secret,
-            &conn,
-            &logger,
-        ) {
+            User::find_by_ticket::<AuthorizationClaims>(
+                &ticket,
+                &config.authorization_ticket_issuer,
+                &config.authorization_ticket_secret,
+                &db_conn,
+                &logger,
+            )
+        });
+        if let Some(ref user) = signin {
             return request::Outcome::Success(user);
         }
         request::Outcome::Forward(())
