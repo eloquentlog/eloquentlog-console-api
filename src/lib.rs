@@ -75,6 +75,30 @@ pub mod model;
 pub mod request;
 pub mod route;
 
+// macros
+
+#[macro_export]
+macro_rules! hashmap(
+    { $($key:expr => $value:expr),+ } => {
+        {
+            let mut m = ::std::collections::HashMap::new();
+            $(m.insert($key, $value);)+
+            m
+        }
+    };
+);
+
+#[macro_export]
+macro_rules! fnvhashmap(
+    { $($key:expr => $value:expr),+ } => {
+        {
+            let mut m = ::fnv::FnvHashMap::default();
+            $(m.insert($key, $value);)+
+            m
+        }
+    };
+);
+
 use rocket_slog::SlogFairing;
 
 pub fn server(c: &config::Config) -> rocket::Rocket {
@@ -109,29 +133,4 @@ pub fn server(c: &config::Config) -> rocket::Rocket {
             route::error::not_found,
             route::error::unprocessable_entity,
         ])
-}
-
-#[macro_export]
-macro_rules! hashmap(
-    { $($key:expr => $value:expr),+ } => {
-        {
-            let mut m = ::std::collections::HashMap::new();
-            $(m.insert($key, $value);)+
-            m
-        }
-    };
-);
-
-#[cfg(test)]
-mod test {
-    #[macro_export]
-    macro_rules! fnvhashmap(
-        { $($key:expr => $value:expr),+ } => {
-            {
-                let mut m = ::fnv::FnvHashMap::default();
-                $(m.insert($key, $value);)+
-                m
-            }
-        };
-    );
 }

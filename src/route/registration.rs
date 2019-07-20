@@ -78,7 +78,7 @@ pub fn register(
 }
 
 #[post("/deregister", format = "json")]
-pub fn deregister(user: User, logger: SyncLogger) -> Response {
+pub fn deregister(user: &User, logger: SyncLogger) -> Response {
     let res: Response = Default::default();
 
     // TODO

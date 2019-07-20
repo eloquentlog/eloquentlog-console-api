@@ -56,7 +56,7 @@ pub fn login(
 }
 
 #[post("/logout", format = "json")]
-pub fn logout(user: User, logger: SyncLogger) -> Response {
+pub fn logout(user: &User, logger: SyncLogger) -> Response {
     let res: Response = Default::default();
 
     // TODO

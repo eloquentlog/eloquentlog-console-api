@@ -40,6 +40,9 @@ pub enum AuthorizationTicketError {
     Missing,
 }
 
+// Extract and verify a token given through HTTP Authorization header.
+//
+// This should be handled within FromRequest for User.
 impl<'a, 'r> FromRequest<'a, 'r> for AuthorizationTicket {
     type Error = AuthorizationTicketError;
 

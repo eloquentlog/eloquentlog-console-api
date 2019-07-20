@@ -1,57 +1,15 @@
-use chrono::{Utc, TimeZone};
 use diesel::{self, prelude::*};
-use diesel::pg::PgConnection;
-use rocket::http::{ContentType, Header, Status};
+use chrono::{Utc, TimeZone};
+use rocket::http::{ContentType, Status};
 
-use eloquentlog_backend_api::config;
-use eloquentlog_backend_api::model::{message, user, ticket, ticket::Claims};
-use eloquentlog_backend_api::route::AUTHORIZATION_HEADER_KEY;
-use eloquentlog_backend_api::logger::Logger;
+use eloquentlog_backend_api::model::message;
 
-use {minify, run_test};
-
-fn build_test_user(db_conn: &PgConnection, logger: &Logger) -> user::User {
-    let password = "pa$$w0rD";
-    let mut u = user::NewUser {
-        name: None,
-        username: "hennry".to_string(),
-        email: "hennry@example.org".to_string(),
-
-        ..Default::default()
-    };
-    u.set_password(&password);
-
-    user::User::insert(&u, &db_conn, &logger)
-        .unwrap_or_else(|| panic!("Error inserting: {}", u))
-}
-
-fn build_authorization_header<'a>(
-    user: &user::User,
-    config: &config::Config,
-) -> Header<'a>
-{
-    // TODO: into
-    let token = ticket::Token {
-        value: user.uuid.to_urn().to_string(),
-        granted_at: Utc::now().timestamp(),
-        expires_at: 0,
-    };
-    Header::new(
-        AUTHORIZATION_HEADER_KEY,
-        ticket::AuthorizationClaims::encode(
-            token,
-            &config.authorization_ticket_issuer,
-            &config.authorization_ticket_key_id,
-            &config.authorization_ticket_secret,
-        )
-        .to_string(),
-    )
-}
+use {minify, run_test, build_authorization_header, load_user, USERS};
 
 #[test]
 fn test_get_no_message() {
-    run_test(|client, db_conn, _, config, logger| {
-        let user = build_test_user(&db_conn, &logger);
+    run_test(|client, db_conn, _, config, _| {
+        let user = load_user(&USERS.get("oswald").unwrap(), &db_conn);
         let auth = build_authorization_header(&user, &config);
 
         let mut res = client.get("/_api/messages").header(auth).dispatch();
@@ -63,11 +21,12 @@ fn test_get_no_message() {
 
 #[test]
 fn test_get_recent_messages() {
-    run_test(|client, db_conn, _, config, logger| {
-        let user = build_test_user(&db_conn, &logger);
+    run_test(|client, db_conn, _, config, _| {
+        let user = load_user(&USERS.get("oswald").unwrap(), &db_conn);
         let auth = build_authorization_header(&user, &config);
 
-        let dt = Utc.ymd(2019, 8, 7).and_hms_milli(6, 5, 4, 333); // 2019-08-07T06:05:04.333
+        // 2019-08-07T06:05:04.333
+        let dt = Utc.ymd(2019, 8, 7).and_hms_milli(6, 5, 4, 333);
         let m = message::Message {
             id: 1,
             code: None,
@@ -114,8 +73,8 @@ fn test_get_recent_messages() {
 
 #[test]
 fn test_post_with_validation_errors() {
-    run_test(|client, db_conn, _, config, logger| {
-        let user = build_test_user(&db_conn, &logger);
+    run_test(|client, db_conn, _, config, _| {
+        let user = load_user(&USERS.get("oswald").unwrap(), &db_conn);
         let auth = build_authorization_header(&user, &config);
 
         let mut res = client
@@ -138,8 +97,8 @@ fn test_post_with_validation_errors() {
 
 #[test]
 fn test_post() {
-    run_test(|client, db_conn, _, config, logger| {
-        let user = build_test_user(&db_conn, &logger);
+    run_test(|client, db_conn, _, config, _| {
+        let user = load_user(&USERS.get("oswald").unwrap(), &db_conn);
         let auth = build_authorization_header(&user, &config);
 
         let mut res = client
@@ -163,8 +122,8 @@ fn test_post() {
 
 #[test]
 fn test_put() {
-    run_test(|client, db_conn, _, config, logger| {
-        let user = build_test_user(&db_conn, &logger);
+    run_test(|client, db_conn, _, config, _| {
+        let user = load_user(&USERS.get("oswald").unwrap(), &db_conn);
         let auth = build_authorization_header(&user, &config);
 
         let m = message::NewMessage {
