@@ -73,7 +73,7 @@ pub mod test {
     }
 
     pub fn clean(conn: &PgConnection) {
-        let tables = ["messages", "user_emails", "users"].join(", ");
+        let tables = ["users", "user_emails", "messages"].join(", ");
         let q = format!("TRUNCATE TABLE {} RESTART IDENTITY CASCADE;", tables);
         let _ = diesel::sql_query(q)
             .execute(conn)

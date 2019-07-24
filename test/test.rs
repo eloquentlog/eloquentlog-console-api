@@ -116,19 +116,13 @@ fn clean(db_conn: &PgConnection, _: &redis::Connection) {
         .deferrable()
         .read_write()
         .run(|| {
-            // TODO: back to TRUNCATE with ALTER TABLE for REFERENCES
-            for table in ["messages", "user_emails", "users"].iter() {
-                let _ = diesel::sql_query(format!("DELETE FROM {};", table))
-                    .execute(db_conn)
-                    .expect("Failed to delete");
-
-                let _ = diesel::sql_query(format!(
-                    "ALTER SEQUENCE {}_id_seq RESTART WITH 1;",
-                    table
-                ))
+            let tables = ["users", "user_emails", "messages"].join(", ");
+            let q =
+                format!("TRUNCATE TABLE {} RESTART IDENTITY CASCADE;", tables);
+            let _ = diesel::sql_query(q)
                 .execute(db_conn)
-                .expect("Failed to reset sequence");
-            }
+                .expect("Failed to delete");
+
             Ok(())
         });
 }
