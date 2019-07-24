@@ -183,6 +183,7 @@ mod data {
     use fnv::FnvHashMap;
 
     use fnvhashmap;
+    use model::user::data::USERS;
 
     type UserEmailFixture = FnvHashMap<&'static str, UserEmail>;
 
@@ -190,7 +191,7 @@ mod data {
         pub static ref USER_EMAILS: UserEmailFixture = fnvhashmap! {
             "oswald's primary address" => UserEmail {
                 id: 1,
-                user_id: 1,
+                user_id: USERS.get("oswald").unwrap().id,
                 email: Some("oswald@example.org".to_string()),
                 role: UserEmailRole::Primary,
                 activation_state: UserEmailActivationState::Done,
@@ -202,7 +203,7 @@ mod data {
             },
             "weenie's primary address" => UserEmail {
                 id: 2,
-                user_id: 2,
+                user_id: USERS.get("weenie").unwrap().id,
                 email: Some("weenie@example.org".to_string()),
                 role: UserEmailRole::Primary,
                 activation_state: UserEmailActivationState::Done,
@@ -232,7 +233,7 @@ mod data {
 mod test {
     use super::*;
 
-    use model::user;
+    use model::user::{User, users};
 
     use model::test::run;
     use model::user::data::USERS;
@@ -254,7 +255,7 @@ mod test {
     fn test_new_user_email_from_user() {
         run(|conn, _, _| {
             let u = USERS.get("weenie").unwrap();
-            let user = diesel::insert_into(user::users::table)
+            let user = diesel::insert_into(users::table)
                 .values(u)
                 .get_result::<User>(conn)
                 .unwrap_or_else(|e| panic!("Error at inserting: {}", e));
@@ -282,9 +283,9 @@ mod test {
     fn test_find_by_id() {
         run(|conn, _, logger| {
             let u = USERS.get("hennry").unwrap();
-            let user_id = diesel::insert_into(user::users::table)
+            let user_id = diesel::insert_into(users::table)
                 .values(u)
-                .returning(user::users::id)
+                .returning(users::id)
                 .get_result::<i64>(conn)
                 .unwrap_or_else(|e| panic!("Error inserting: {}", e));
 
@@ -309,7 +310,7 @@ mod test {
     fn test_insert_should_panic_on_failure() {
         run(|conn, _, logger| {
             let u = USERS.get("oswald").unwrap();
-            let user = diesel::insert_into(user::users::table)
+            let user = diesel::insert_into(users::table)
                 .values(u)
                 .get_result::<User>(conn)
                 .unwrap_or_else(|e| panic!("Error at inserting: {}", e));
@@ -329,7 +330,7 @@ mod test {
     fn test_insert() {
         run(|conn, _, logger| {
             let u = USERS.get("hennry").unwrap();
-            let user = diesel::insert_into(user::users::table)
+            let user = diesel::insert_into(users::table)
                 .values(u)
                 .get_result::<User>(conn)
                 .unwrap_or_else(|e| panic!("Error at inserting: {}", e));
@@ -354,7 +355,7 @@ mod test {
     fn test_grant_activation_token() {
         run(|conn, _, logger| {
             let u = USERS.get("hennry").unwrap();
-            let user = diesel::insert_into(user::users::table)
+            let user = diesel::insert_into(users::table)
                 .values(u)
                 .get_result::<User>(conn)
                 .unwrap_or_else(|e| panic!("Error at inserting: {}", e));

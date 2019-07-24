@@ -26,6 +26,7 @@ pub struct NewMessage {
     pub format: LogFormat,
     pub title: Option<String>,
     pub content: Option<String>,
+    pub user_id: i64,
 }
 
 impl fmt::Display for NewMessage {
@@ -46,6 +47,7 @@ impl Default for NewMessage {
             format: LogFormat::TOML,
             title: None, // validation error
             content: None,
+            user_id: 0,
         }
     }
 }
@@ -63,6 +65,7 @@ impl From<RequestData> for NewMessage {
             ),
             title: data.title,
             content: data.content,
+            user_id: 0,
         }
     }
 }
@@ -88,6 +91,24 @@ pub struct Message {
     pub content: Option<String>,
     pub created_at: NaiveDateTime,
     pub updated_at: NaiveDateTime,
+    pub user_id: i64,
+}
+
+impl Clone for Message {
+    fn clone(&self) -> Self {
+        let level = format!("{}", self.level);
+        let format = format!("{}", self.format);
+        Message {
+            code: self.code.clone(),
+            lang: self.lang.clone(),
+            level: LogLevel::from(level),
+            format: LogFormat::from(format),
+            title: self.title.clone(),
+            content: self.content.clone(),
+
+            ..*self
+        }
+    }
 }
 
 impl fmt::Display for Message {
@@ -97,13 +118,16 @@ impl fmt::Display for Message {
 }
 
 impl Message {
-    pub fn first(
+    pub fn first_by_user_id(
         id: i64,
+        user_id: i64,
         conn: &PgConnection,
         logger: &Logger,
     ) -> Option<Self>
     {
-        let q = messages::table.find(id);
+        let q = messages::table
+            .filter(messages::user_id.eq(user_id))
+            .find(id);
         info!(logger, "{}", debug_query::<Pg, _>(&q).to_string());
 
         match q.first::<Message>(conn) {
@@ -139,13 +163,15 @@ impl Message {
         }
     }
 
-    pub fn recent(
+    pub fn recent_by_user_id(
+        user_id: i64,
         count: i64,
         conn: &PgConnection,
         logger: &Logger,
     ) -> Vec<Message>
     {
         let q = messages::table
+            .filter(messages::user_id.eq(user_id))
             .limit(count)
             .order(messages::created_at.desc());
         info!(logger, "{}", debug_query::<Pg, _>(&q).to_string());
@@ -206,6 +232,7 @@ mod data {
                 content: None,
                 created_at: Utc.ymd(2019, 7, 7).and_hms(7, 20, 15).naive_utc(),
                 updated_at: Utc.ymd(2019, 7, 7).and_hms(7, 20, 15).naive_utc(),
+                user_id: 0, // dummy
             }
         };
     }
@@ -213,14 +240,23 @@ mod data {
 
 #[cfg(test)]
 mod test {
-    use model::test::run;
     use super::*;
 
+    use model::user::{User, users};
+
     use model::message::data::MESSAGES;
+    use model::test::run;
+    use model::user::data::USERS;
 
     #[test]
     fn test_insert() {
         run(|conn, _, logger| {
+            let u = USERS.get("weenie").unwrap();
+            let user = diesel::insert_into(users::table)
+                .values(u)
+                .get_result::<User>(conn)
+                .unwrap_or_else(|e| panic!("Error at inserting: {}", e));
+
             let m = NewMessage {
                 code: None,
                 lang: "en".to_string(),
@@ -228,6 +264,7 @@ mod test {
                 format: LogFormat::TOML,
                 title: Some("title".to_string()),
                 content: None,
+                user_id: user.id,
             };
             let result = Message::insert(&m, conn, logger);
             assert!(result.is_some());
@@ -243,7 +280,14 @@ mod test {
     #[test]
     fn test_update() {
         run(|conn, _, logger| {
-            let m = MESSAGES.get("blank message");
+            let u = USERS.get("weenie").unwrap();
+            let user = diesel::insert_into(users::table)
+                .values(u)
+                .get_result::<User>(conn)
+                .unwrap_or_else(|e| panic!("Error at inserting: {}", e));
+
+            let mut m = MESSAGES.get("blank message").unwrap().clone();
+            m.user_id = user.id;
             let message = diesel::insert_into(messages::table)
                 .values(m)
                 .get_result::<Message>(conn)

@@ -12,7 +12,7 @@ CREATE SEQUENCE user_emails_id_seq
 
 CREATE TABLE user_emails (
   id BIGINT NOT NULL PRIMARY KEY DEFAULT nextval('user_emails_id_seq'),
-  user_id BIGINT REFERENCES users (id) NOT NULL,
+  user_id BIGINT REFERENCES users (id) MATCH FULL NOT NULL,
   email CHARACTER VARYING(64) NULL,
   role e_user_email_role NOT NULL DEFAULT 'general',
   activation_state e_user_email_activation_state NOT NULL DEFAULT 'pending',

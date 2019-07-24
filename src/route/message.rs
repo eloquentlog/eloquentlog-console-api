@@ -15,10 +15,14 @@ const MESSAGES_PER_REQUEST: i64 = 100;
 pub fn get(user: &User, conn: DbConn, logger: SyncLogger) -> Response {
     let res: Response = Default::default();
 
-    // TODO: fetch messages for the user
     info!(logger, "user: {}", user.uuid);
 
-    let messages = Message::recent(MESSAGES_PER_REQUEST, &conn, &logger);
+    let messages = Message::recent_by_user_id(
+        user.id,
+        MESSAGES_PER_REQUEST,
+        &conn,
+        &logger,
+    );
     res.format(json!({ "messages": messages }))
 }
 
@@ -53,7 +57,8 @@ pub fn post(
             }))
         },
         Ok(_) => {
-            let m = NewMessage::from(data.0.clone());
+            let mut m = NewMessage::from(data.0.clone());
+            m.user_id = user.id;
             if let Some(id) = Message::insert(&m, &conn, &logger) {
                 return res.format(json!({"message": {
                     "id": id,
@@ -75,16 +80,13 @@ pub fn put(
 {
     let res: Response = Default::default();
 
-    // TODO: update messages for the user
-    info!(logger, "user: {}", user.uuid);
-
     let message_id = data.0.id.unwrap_or_default();
     if message_id == 0 || id != message_id {
-        info!(logger, "message_id: {}", message_id);
+        info!(logger, "user: {}, message_id: {}", user.uuid, message_id);
         return res.status(Status::NotFound).format(json!(null));
     }
 
-    let result = Message::first(id as i64, &conn, &logger);
+    let result = Message::first_by_user_id(id as i64, user.id, &conn, &logger);
     if result.is_none() {
         return res.status(Status::NotFound).format(json!(null));
     }
@@ -97,7 +99,7 @@ pub fn put(
             }))
         },
         Ok(_) => {
-            // TODO
+            // TODO: refactor construction
             let data = data.0.clone();
             let mut m = result.unwrap();
             m.code = data.code;

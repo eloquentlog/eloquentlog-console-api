@@ -1,0 +1,4 @@
+DROP INDEX IF EXISTS messages_user_id_idx;
+
+ALTER TABLE messages DROP CONSTRAINT IF EXISTS messages_user_id_fkey RESTRICT;
+ALTER TABLE messages DROP COLUMN IF EXISTS user_id RESTRICT;
