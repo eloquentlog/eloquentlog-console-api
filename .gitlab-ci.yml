@@ -70,7 +70,7 @@ setup-checksum:
   script:
     - curl --version
     - export VALUE=$(md5sum Cargo.lock | awk '{print $1}') &&
-      curl --request PUT --header "${API_HEADER}"
+      curl --silent --request PUT --header "${API_HEADER}"
       "${GITLAB_COM}/projects/${PROJECT_ID}/variables/CARGO_LOCK_CHECKSUM"
       --form "value=${VALUE}"
 
