@@ -49,7 +49,7 @@ uuid = { version = "0.7", features = ["v4"] }
 [dependencies.diesel]
 version = "1.4.2"
 default-features = false
-features = ["chrono", "postgres", "r2d2", "uuidv07", "32-column-tables"]
+features = ["chrono", "postgres", "r2d2", "uuidv07"]
 
 [dependencies.rocket_contrib]
 version = "*"
