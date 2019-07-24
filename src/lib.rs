@@ -1,8 +1,7 @@
 #![feature(
     proc_macro_hygiene,
     decl_macro,
-    custom_attribute,
-    type_alias_enum_variants
+    custom_attribute
 )]
 
 //! Eloquentlog Backend API
