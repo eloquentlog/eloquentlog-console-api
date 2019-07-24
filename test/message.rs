@@ -37,6 +37,7 @@ fn test_get_recent_messages() {
             content: None,
             created_at: dt.naive_utc(),
             updated_at: dt.naive_utc(),
+            user_id: user.id,
         };
 
         let id = diesel::insert_into(message::messages::table)
@@ -62,10 +63,11 @@ fn test_get_recent_messages() {
   "lang": "en",
   "level": "Information",
   "title": "title",
-  "updated_at": "2019-08-07T06:05:04.333"
+  "updated_at": "2019-08-07T06:05:04.333",
+  "user_id": {}
 }}]
 }}"#,
-                id
+                id, user.id
             ))
         );
     });
@@ -133,6 +135,7 @@ fn test_put() {
             format: message::LogFormat::TOML,
             title: Some("title".to_string()),
             content: None,
+            user_id: user.id,
         };
 
         let id = diesel::insert_into(message::messages::table)
