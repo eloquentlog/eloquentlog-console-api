@@ -46,9 +46,6 @@ pub fn post(
 {
     let res: Response = Default::default();
 
-    // TODO: save messages for the user
-    info!(logger, "user: {}", user.uuid);
-
     let v = Validator::new(&data, &logger);
     match v.validate() {
         Err(errors) => {
@@ -60,6 +57,7 @@ pub fn post(
             let mut m = NewMessage::from(data.0.clone());
             m.user_id = user.id;
             if let Some(id) = Message::insert(&m, &conn, &logger) {
+                info!(logger, "user: {}", user.uuid);
                 return res.format(json!({"message": {
                     "id": id,
                 }}));
