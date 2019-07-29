@@ -7,7 +7,7 @@ use rocket_slog::SyncLogger;
 use config::Config;
 use db::DbConn;
 use model::user::User;
-use model::ticket::{AuthorizationClaims, Claims, Token};
+use model::token::{AuthorizationClaims, Claims, TokenData};
 use request::user::UserSignIn as RequestData;
 use response::{Response, no_content_for};
 
@@ -32,18 +32,18 @@ pub fn login(
             // set valid expires_at and impl review mechanism (check also
             // `validate_exp` for Validation struct for JWT)
             // e.g. let expires_at = (now + Duration::weeks(2)).timestamp();
-            let token = Token {
+            let data = TokenData {
                 value: user.uuid.to_urn().to_string(),
                 granted_at: Utc::now().timestamp(),
                 expires_at: 0,
             };
-            let ticket = AuthorizationClaims::encode(
-                token,
-                &config.authorization_ticket_issuer,
-                &config.authorization_ticket_key_id,
-                &config.authorization_ticket_secret,
+            let token = AuthorizationClaims::encode(
+                data,
+                &config.authorization_token_issuer,
+                &config.authorization_token_key_id,
+                &config.authorization_token_secret,
             );
-            res.format(json!({"ticket": ticket.to_string()}))
+            res.format(json!({"token": token.to_string()}))
         },
         _ => {
             warn!(logger, "login failed: username {}", data.username);

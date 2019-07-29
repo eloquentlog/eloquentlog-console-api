@@ -5,12 +5,12 @@ use rocket::http::Status;
 use rocket::request::FromRequest;
 
 use config::Config;
-use model::ticket::{AuthorizationClaims, Claims};
+use model::token::{AuthorizationClaims, Claims};
 use route::AUTHORIZATION_HEADER_KEY;
 
-pub struct AuthorizationTicket(pub String);
+pub struct AuthorizationToken(pub String);
 
-impl Deref for AuthorizationTicket {
+impl Deref for AuthorizationToken {
     type Target = str;
 
     fn deref(&self) -> &str {
@@ -18,7 +18,7 @@ impl Deref for AuthorizationTicket {
     }
 }
 
-fn verify_authorization_ticket(
+fn verify_authorization_token(
     value: &str,
     config: &Config,
 ) -> Result<String, String>
@@ -26,15 +26,15 @@ fn verify_authorization_ticket(
     // as validations
     let _ = AuthorizationClaims::decode(
         &value,
-        &config.authorization_ticket_issuer,
-        &config.authorization_ticket_secret,
+        &config.authorization_token_issuer,
+        &config.authorization_token_secret,
     )
     .expect("Invalid value");
     Ok(value.to_string())
 }
 
 #[derive(Debug)]
-pub enum AuthorizationTicketError {
+pub enum AuthorizationTokenError {
     BadCount,
     Invalid,
     Missing,
@@ -43,8 +43,8 @@ pub enum AuthorizationTicketError {
 // Extract and verify a token given through HTTP Authorization header.
 //
 // This should be handled within FromRequest for User.
-impl<'a, 'r> FromRequest<'a, 'r> for AuthorizationTicket {
-    type Error = AuthorizationTicketError;
+impl<'a, 'r> FromRequest<'a, 'r> for AuthorizationToken {
+    type Error = AuthorizationTokenError;
 
     fn from_request(
         req: &'a Request<'r>,
@@ -55,25 +55,25 @@ impl<'a, 'r> FromRequest<'a, 'r> for AuthorizationTicket {
             0 => {
                 request::Outcome::Failure((
                     Status::BadRequest,
-                    AuthorizationTicketError::Missing,
+                    AuthorizationTokenError::Missing,
                 ))
             },
             1 => {
-                let value = keys[0];
-                if !value.contains('.') {
+                let token = keys[0];
+                if !token.contains('.') {
                     return request::Outcome::Failure((
                         Status::BadRequest,
-                        AuthorizationTicketError::Invalid,
+                        AuthorizationTokenError::Invalid,
                     ));
                 }
 
                 let config = req.guard::<State<Config>>().unwrap();
-                match verify_authorization_ticket(value, &config) {
-                    Ok(v) => request::Outcome::Success(AuthorizationTicket(v)),
+                match verify_authorization_token(token, &config) {
+                    Ok(v) => request::Outcome::Success(AuthorizationToken(v)),
                     _ => {
                         request::Outcome::Failure((
                             Status::BadRequest,
-                            AuthorizationTicketError::Invalid,
+                            AuthorizationTokenError::Invalid,
                         ))
                     },
                 }
@@ -81,7 +81,7 @@ impl<'a, 'r> FromRequest<'a, 'r> for AuthorizationTicket {
             _ => {
                 request::Outcome::Failure((
                     Status::BadRequest,
-                    AuthorizationTicketError::BadCount,
+                    AuthorizationTokenError::BadCount,
                 ))
             },
         }
