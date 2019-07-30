@@ -104,8 +104,8 @@ pub fn server(c: &config::Config) -> rocket::Rocket {
         .mount(
             "/_api",
             routes![
-                route::authentication::login,
-                route::authentication::login_options,
+                route::authentication::signin,
+                route::authentication::signin_options,
                 route::authentication::logout,
                 route::message::get,
                 route::message::post,

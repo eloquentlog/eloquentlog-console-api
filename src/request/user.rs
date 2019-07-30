@@ -61,22 +61,22 @@ impl Default for UserSignUp {
     }
 }
 
-/// UserSignIn
-pub enum UserSignInError {
+/// UserSignin
+pub enum UserSigninError {
     Io(io::Error),
     Empty,
 }
 
-const USER_SIGN_IN_LENGTH_LIMIT: u64 = 256;
+const USER_SIGNIN_LENGTH_LIMIT: u64 = 256;
 
 #[derive(Clone, Debug, Deserialize)]
-pub struct UserSignIn {
+pub struct UserSignin {
     pub username: String,
     pub password: String,
 }
 
-impl<'v> FromData<'v> for UserSignIn {
-    type Error = UserSignInError;
+impl<'v> FromData<'v> for UserSignin {
+    type Error = UserSigninError;
     type Owned = String;
     type Borrowed = str;
 
@@ -85,13 +85,13 @@ impl<'v> FromData<'v> for UserSignIn {
         data: Data,
     ) -> Transform<data::Outcome<Self::Owned, Self::Error>>
     {
-        let mut stream = data.open().take(USER_SIGN_IN_LENGTH_LIMIT);
+        let mut stream = data.open().take(USER_SIGNIN_LENGTH_LIMIT);
         let mut string =
-            String::with_capacity((USER_SIGN_IN_LENGTH_LIMIT / 2) as usize);
+            String::with_capacity((USER_SIGNIN_LENGTH_LIMIT / 2) as usize);
         let outcome = match stream.read_to_string(&mut string) {
             Ok(_) => Success(string),
             Err(e) => {
-                Failure((Status::InternalServerError, UserSignInError::Io(e)))
+                Failure((Status::InternalServerError, UserSigninError::Io(e)))
             },
         };
 
@@ -104,25 +104,25 @@ impl<'v> FromData<'v> for UserSignIn {
     ) -> data::Outcome<Self, Self::Error>
     {
         let input = outcome.borrowed()?;
-        let user_login: UserSignIn = match serde_json::from_str(input) {
+        let user_signin: UserSignin = match serde_json::from_str(input) {
             Ok(v) => v,
             Err(_) => {
                 return Failure((
                     Status::UnprocessableEntity,
-                    UserSignInError::Empty,
+                    UserSigninError::Empty,
                 ));
             },
         };
 
-        if user_login.username == "" || user_login.password == "" {
+        if user_signin.username == "" || user_signin.password == "" {
             return Failure((
                 Status::UnprocessableEntity,
-                UserSignInError::Empty,
+                UserSigninError::Empty,
             ));
         }
-        Success(UserSignIn {
-            username: user_login.username,
-            password: user_login.password,
+        Success(UserSignin {
+            username: user_signin.username,
+            password: user_signin.password,
         })
     }
 }

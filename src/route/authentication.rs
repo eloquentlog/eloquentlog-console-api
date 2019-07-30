@@ -8,16 +8,16 @@ use config::Config;
 use db::DbConn;
 use model::user::User;
 use model::token::{AuthorizationClaims, Claims, TokenData};
-use request::user::UserSignIn as RequestData;
+use request::user::UserSignin as RequestData;
 use response::{Response, no_content_for};
 
-#[options("/login")]
-pub fn login_options<'a>() -> RawResponse<'a> {
+#[options("/signin")]
+pub fn signin_options<'a>() -> RawResponse<'a> {
     no_content_for("POST")
 }
 
-#[post("/login", data = "<data>", format = "json")]
-pub fn login(
+#[post("/signin", data = "<data>", format = "json")]
+pub fn signin(
     conn: DbConn,
     data: RequestData,
     logger: SyncLogger,
@@ -46,7 +46,7 @@ pub fn login(
             res.format(json!({"token": token.to_string()}))
         },
         _ => {
-            warn!(logger, "login failed: username {}", data.username);
+            warn!(logger, "signin failed: username {}", data.username);
 
             res.status(Status::Unauthorized).format(json!({
                 "message": "The credentials you've entered are incorrect"
