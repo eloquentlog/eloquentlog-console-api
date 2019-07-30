@@ -11,7 +11,7 @@ mod user_state;
 mod user_reset_password_state;
 
 // non-persistent (deciduous) entities
-pub mod ticket;
+pub mod token;
 
 // models
 pub mod message;

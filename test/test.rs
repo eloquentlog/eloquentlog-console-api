@@ -40,7 +40,7 @@ use eloquentlog_backend_api::db::{DbConn, DbPool, init_pool as init_db_pool};
 use eloquentlog_backend_api::mq::{MqConn, MqPool, init_pool as init_mq_pool};
 use eloquentlog_backend_api::config;
 use eloquentlog_backend_api::logger::{Logger, get_logger};
-use eloquentlog_backend_api::model::{user, ticket, ticket::Claims};
+use eloquentlog_backend_api::model::{user, token, token::Claims};
 use eloquentlog_backend_api::route::AUTHORIZATION_HEADER_KEY;
 
 // NOTE:
@@ -172,19 +172,19 @@ fn build_authorization_header<'a>(
     config: &config::Config,
 ) -> Header<'a>
 {
-    // TODO: into
-    let token = ticket::Token {
+    // TODO: implement into
+    let data = token::TokenData {
         value: user.uuid.to_urn().to_string(),
         granted_at: Utc::now().timestamp(),
         expires_at: 0,
     };
     Header::new(
         AUTHORIZATION_HEADER_KEY,
-        ticket::AuthorizationClaims::encode(
-            token,
-            &config.authorization_ticket_issuer,
-            &config.authorization_ticket_key_id,
-            &config.authorization_ticket_secret,
+        token::AuthorizationClaims::encode(
+            data,
+            &config.authorization_token_issuer,
+            &config.authorization_token_key_id,
+            &config.authorization_token_secret,
         )
         .to_string(),
     )

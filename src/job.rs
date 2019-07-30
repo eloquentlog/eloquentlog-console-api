@@ -6,7 +6,7 @@ use slog::Logger;
 
 use config::Config;
 use model::user_email::UserEmail;
-use model::ticket::{ActivationClaims, Claims, Token};
+use model::token::{ActivationClaims, Claims, TokenData};
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub enum JobKind {
@@ -67,8 +67,8 @@ where T: fmt::Debug + Copy + Into<i64>
                     email.email.as_ref().unwrap()
                 );
 
-                // TODO: into
-                let token = Token {
+                // TODO: implement UserEmail into TokenData
+                let data = TokenData {
                     value: email.activation_token.as_ref().unwrap().to_string(),
                     granted_at: email
                         .activation_token_granted_at
@@ -80,15 +80,15 @@ where T: fmt::Debug + Copy + Into<i64>
                         .timestamp(),
                 };
 
-                let ticket = ActivationClaims::encode(
-                    token,
-                    &config.activation_ticket_issuer,
-                    &config.activation_ticket_key_id,
-                    &config.activation_ticket_secret,
+                let token = ActivationClaims::encode(
+                    data,
+                    &config.activation_token_issuer,
+                    &config.activation_token_key_id,
+                    &config.activation_token_secret,
                 );
 
                 // TODO
-                dbg!(ticket);
+                dbg!(token);
             },
             _ => {
                 error!(logger, "not found :'(");

@@ -2,12 +2,12 @@ use std::env;
 
 #[derive(Clone)]
 pub struct Config {
-    pub activation_ticket_issuer: String,
-    pub activation_ticket_key_id: String,
-    pub activation_ticket_secret: String,
-    pub authorization_ticket_issuer: String,
-    pub authorization_ticket_key_id: String,
-    pub authorization_ticket_secret: String,
+    pub activation_token_issuer: String,
+    pub activation_token_key_id: String,
+    pub activation_token_secret: String,
+    pub authorization_token_issuer: String,
+    pub authorization_token_key_id: String,
+    pub authorization_token_secret: String,
     pub database_url: String,
     pub database_max_pool_size: u32,
     pub env_name: &'static str,
@@ -18,25 +18,19 @@ pub struct Config {
 impl Default for Config {
     fn default() -> Config {
         Config {
-            activation_ticket_issuer: env::var("ACTIVATION_TICKET_ISSUER")
-                .expect("ACTIVATION_TICKET_ISSUER is not set"),
-            activation_ticket_key_id: env::var("ACTIVATION_TICKET_KEY_ID")
-                .expect("ACTIVATION_TICKET_KEY_ID is not set"),
-            activation_ticket_secret: env::var("ACTIVATION_TICKET_SECRET")
-                .expect("ACTIVATION_TICKET_SECRET is not set"),
+            activation_token_issuer: env::var("ACTIVATION_TOKEN_ISSUER")
+                .expect("ACTIVATION_TOKEN_ISSUER is not set"),
+            activation_token_key_id: env::var("ACTIVATION_TOKEN_KEY_ID")
+                .expect("ACTIVATION_TOKEN_KEY_ID is not set"),
+            activation_token_secret: env::var("ACTIVATION_TOKEN_SECRET")
+                .expect("ACTIVATION_TOKEN_SECRET is not set"),
 
-            authorization_ticket_issuer: env::var(
-                "AUTHORIZATION_TICKET_ISSUER",
-            )
-            .expect("AUTHORIZATION_TICKET_ISSUER is not set"),
-            authorization_ticket_key_id: env::var(
-                "AUTHORIZATION_TICKET_KEY_ID",
-            )
-            .expect("AUTHORIZATION_TICKET_KEY_ID is not set"),
-            authorization_ticket_secret: env::var(
-                "AUTHORIZATION_TICKET_SECRET",
-            )
-            .expect("AUTHORIZATION_TICKET_SECRET is not set"),
+            authorization_token_issuer: env::var("AUTHORIZATION_TOKEN_ISSUER")
+                .expect("AUTHORIZATION_TOKEN_ISSUER is not set"),
+            authorization_token_key_id: env::var("AUTHORIZATION_TOKEN_KEY_ID")
+                .expect("AUTHORIZATION_TOKEN_KEY_ID is not set"),
+            authorization_token_secret: env::var("AUTHORIZATION_TOKEN_SECRET")
+                .expect("AUTHORIZATION_TOKEN_SECRET is not set"),
 
             database_max_pool_size: 0,
             database_url: env::var("DATABASE_URL")
@@ -97,25 +91,25 @@ impl Config {
             };
 
         Config {
-            activation_ticket_issuer: env::var("TEST_ACTIVATION_TICKET_ISSUER")
-                .expect("TEST_ACTIVATION_TICKET_ISSUER is not set"),
-            activation_ticket_key_id: env::var("TEST_ACTIVATION_TICKET_KEY_ID")
-                .expect("TEST_ACTIVATION_TICKET_KEY_ID is not set"),
-            activation_ticket_secret: env::var("TEST_ACTIVATION_TICKET_SECRET")
-                .expect("TEST_ACTIVATION_TICKET_SECRET is not set"),
+            activation_token_issuer: env::var("TEST_ACTIVATION_TOKEN_ISSUER")
+                .expect("TEST_ACTIVATION_TOKEN_ISSUER is not set"),
+            activation_token_key_id: env::var("TEST_ACTIVATION_TOKEN_KEY_ID")
+                .expect("TEST_ACTIVATION_TOKEN_KEY_ID is not set"),
+            activation_token_secret: env::var("TEST_ACTIVATION_TOKEN_SECRET")
+                .expect("TEST_ACTIVATION_TOKEN_SECRET is not set"),
 
-            authorization_ticket_issuer: env::var(
-                "TEST_AUTHORIZATION_TICKET_ISSUER",
+            authorization_token_issuer: env::var(
+                "TEST_AUTHORIZATION_TOKEN_ISSUER",
             )
-            .expect("TEST_AUTHORIZATION_TICKET_ISSUER is not set"),
-            authorization_ticket_key_id: env::var(
-                "TEST_AUTHORIZATION_TICKET_KEY_ID",
+            .expect("TEST_AUTHORIZATION_TOKEN_ISSUER is not set"),
+            authorization_token_key_id: env::var(
+                "TEST_AUTHORIZATION_TOKEN_KEY_ID",
             )
-            .expect("TEST_AUTHORIZATION_TICKET_KEY_ID is not set"),
-            authorization_ticket_secret: env::var(
-                "TEST_AUTHORIZATION_TICKET_SECRET",
+            .expect("TEST_AUTHORIZATION_TOKEN_KEY_ID is not set"),
+            authorization_token_secret: env::var(
+                "TEST_AUTHORIZATION_TOKEN_SECRET",
             )
-            .expect("TEST_AUTHORIZATION_TICKET_SECRET is not set"),
+            .expect("TEST_AUTHORIZATION_TOKEN_SECRET is not set"),
 
             database_max_pool_size,
             database_url: env::var("TEST_DATABASE_URL")
@@ -167,22 +161,22 @@ mod test {
         lazy_static! {
             static ref ENV_LOCK: Mutex<()> = Mutex::new(());
             static ref TESTS: HashMap<&'static str, &'static str> = hashmap! {
-                "ACTIVATION_TICKET_ISSUER" => "com.eloquentlog",
-                "ACTIVATION_TICKET_KEY_ID" => "key_id-activation",
-                "ACTIVATION_TICKET_SECRET" => "secret-activation",
-                "AUTHORIZATION_TICKET_ISSUER" => "com.eloquentlog",
-                "AUTHORIZATION_TICKET_KEY_ID" => "key_id-authorization",
-                "AUTHORIZATION_TICKET_SECRET" => "secret-authorization",
+                "ACTIVATION_TOKEN_ISSUER" => "com.eloquentlog",
+                "ACTIVATION_TOKEN_KEY_ID" => "key_id-activation",
+                "ACTIVATION_TOKEN_SECRET" => "secret-activation",
+                "AUTHORIZATION_TOKEN_ISSUER" => "com.eloquentlog",
+                "AUTHORIZATION_TOKEN_KEY_ID" => "key_id-authorization",
+                "AUTHORIZATION_TOKEN_SECRET" => "secret-authorization",
                 "DATABASE_URL" =>
                     "postgresql://u$er:pa$$w0rd@localhost:5432/dbname",
                 "QUEUE_URL" => "redis://u$er:pa$$w0rd@localhost:6379/queue",
 
-                "TEST_ACTIVATION_TICKET_ISSUER" => "com.eloquentlog",
-                "TEST_ACTIVATION_TICKET_KEY_ID" => "test-key_id-activation",
-                "TEST_ACTIVATION_TICKET_SECRET" => "test-secret-activation",
-                "TEST_AUTHORIZATION_TICKET_ISSUER" => "com.eloquentlog",
-                "TEST_AUTHORIZATION_TICKET_KEY_ID" => "test-key_id-authorization",
-                "TEST_AUTHORIZATION_TICKET_SECRET" => "test-secret-authorization",
+                "TEST_ACTIVATION_TOKEN_ISSUER" => "com.eloquentlog",
+                "TEST_ACTIVATION_TOKEN_KEY_ID" => "test-key_id-activation",
+                "TEST_ACTIVATION_TOKEN_SECRET" => "test-secret-activation",
+                "TEST_AUTHORIZATION_TOKEN_ISSUER" => "com.eloquentlog",
+                "TEST_AUTHORIZATION_TOKEN_KEY_ID" => "test-key_id-authorization",
+                "TEST_AUTHORIZATION_TOKEN_SECRET" => "test-secret-authorization",
                 "TEST_DATABASE_URL" =>
                     "postgresql://u$er:pa$$w0rd@localhost:5432/dbname",
                 "TEST_QUEUE_URL" => "redis://u$er:pa$$w0rd@localhost:6379/queue"
@@ -228,12 +222,12 @@ mod test {
         #[test]
         fn test_from_production_without_valid_env_vars() {
             with(r#"
-TEST_ACTIVATION_TICKET_ISSUER
-TEST_ACTIVATION_TICKET_KEY_ID
-TEST_ACTIVATION_TICKET_SECRET
-TEST_AUTHORIZATION_TICKET_ISSUER
-TEST_AUTHORIZATION_TICKET_KEY_ID
-TEST_AUTHORIZATION_TICKET_SECRET
+TEST_ACTIVATION_TOKEN_ISSUER
+TEST_ACTIVATION_TOKEN_KEY_ID
+TEST_ACTIVATION_TOKEN_SECRET
+TEST_AUTHORIZATION_TOKEN_ISSUER
+TEST_AUTHORIZATION_TOKEN_KEY_ID
+TEST_AUTHORIZATION_TOKEN_SECRET
 TEST_DATABASE_URL
 TEST_QUEUE_URL
 "#, || {
@@ -250,12 +244,12 @@ TEST_QUEUE_URL
         #[test]
         fn test_from_testing_without_valid_env_vars() {
             with(r#"
-ACTIVATION_TICKET_ISSUER
-ACTIVATION_TICKET_KEY_ID
-ACTIVATION_TICKET_SECRET
-AUTHORIZATION_TICKET_ISSUER
-AUTHORIZATION_TICKET_KEY_ID
-AUTHORIZATION_TICKET_SECRET
+ACTIVATION_TOKEN_ISSUER
+ACTIVATION_TOKEN_KEY_ID
+ACTIVATION_TOKEN_SECRET
+AUTHORIZATION_TOKEN_ISSUER
+AUTHORIZATION_TOKEN_KEY_ID
+AUTHORIZATION_TOKEN_SECRET
 DATABASE_URL
 QUEUE_URL
 "#, || {
@@ -272,12 +266,12 @@ QUEUE_URL
         #[test]
         fn test_from_development_without_valid_env_vars() {
             with(r#"
-TEST_ACTIVATION_TICKET_ISSUER
-TEST_ACTIVATION_TICKET_KEY_ID
-TEST_ACTIVATION_TICKET_SECRET
-TEST_AUTHORIZATION_TICKET_ISSUER
-TEST_AUTHORIZATION_TICKET_KEY_ID
-TEST_AUTHORIZATION_TICKET_SECRET
+TEST_ACTIVATION_TOKEN_ISSUER
+TEST_ACTIVATION_TOKEN_KEY_ID
+TEST_ACTIVATION_TOKEN_SECRET
+TEST_AUTHORIZATION_TOKEN_ISSUER
+TEST_AUTHORIZATION_TOKEN_KEY_ID
+TEST_AUTHORIZATION_TOKEN_SECRET
 TEST_DATABASE_URL
 TEST_QUEUE_URL
 "#, || {
@@ -294,12 +288,12 @@ TEST_QUEUE_URL
         #[test]
         fn test_from_production() {
             with(r#"
-ACTIVATION_TICKET_ISSUER
-ACTIVATION_TICKET_KEY_ID
-ACTIVATION_TICKET_SECRET
-AUTHORIZATION_TICKET_ISSUER
-AUTHORIZATION_TICKET_KEY_ID
-AUTHORIZATION_TICKET_SECRET
+ACTIVATION_TOKEN_ISSUER
+ACTIVATION_TOKEN_KEY_ID
+ACTIVATION_TOKEN_SECRET
+AUTHORIZATION_TOKEN_ISSUER
+AUTHORIZATION_TOKEN_KEY_ID
+AUTHORIZATION_TOKEN_SECRET
 DATABASE_URL
 QUEUE_URL
 "#, || {
@@ -315,12 +309,12 @@ QUEUE_URL
         #[test]
         fn test_from_testing() {
             with(r#"
-TEST_ACTIVATION_TICKET_ISSUER
-TEST_ACTIVATION_TICKET_KEY_ID
-TEST_ACTIVATION_TICKET_SECRET
-TEST_AUTHORIZATION_TICKET_ISSUER
-TEST_AUTHORIZATION_TICKET_KEY_ID
-TEST_AUTHORIZATION_TICKET_SECRET
+TEST_ACTIVATION_TOKEN_ISSUER
+TEST_ACTIVATION_TOKEN_KEY_ID
+TEST_ACTIVATION_TOKEN_SECRET
+TEST_AUTHORIZATION_TOKEN_ISSUER
+TEST_AUTHORIZATION_TOKEN_KEY_ID
+TEST_AUTHORIZATION_TOKEN_SECRET
 TEST_DATABASE_URL
 TEST_QUEUE_URL
 "#, || {
@@ -336,12 +330,12 @@ TEST_QUEUE_URL
         #[test]
         fn test_from_development() {
             with(r#"
-ACTIVATION_TICKET_ISSUER
-ACTIVATION_TICKET_KEY_ID
-ACTIVATION_TICKET_SECRET
-AUTHORIZATION_TICKET_ISSUER
-AUTHORIZATION_TICKET_KEY_ID
-AUTHORIZATION_TICKET_SECRET
+ACTIVATION_TOKEN_ISSUER
+ACTIVATION_TOKEN_KEY_ID
+ACTIVATION_TOKEN_SECRET
+AUTHORIZATION_TOKEN_ISSUER
+AUTHORIZATION_TOKEN_KEY_ID
+AUTHORIZATION_TOKEN_SECRET
 DATABASE_URL
 QUEUE_URL
 "#, || {

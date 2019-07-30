@@ -9,9 +9,9 @@ use serde_json;
 
 use config::Config;
 use db::DbConn;
-use model::ticket::AuthorizationClaims;
+use model::token::AuthorizationClaims;
 use model::user::User;
-use request::ticket::AuthorizationTicket;
+use request::token::AuthorizationToken;
 
 /// User
 impl<'a, 'r> FromRequest<'a, 'r> for &'a User {
@@ -23,13 +23,13 @@ impl<'a, 'r> FromRequest<'a, 'r> for &'a User {
             let db_conn = req.guard::<DbConn>().unwrap();
             let logger = req.guard::<SyncLogger>().unwrap();
 
-            let ticket =
-                req.local_cache(|| req.guard::<AuthorizationTicket>().unwrap());
+            let token =
+                req.local_cache(|| req.guard::<AuthorizationToken>().unwrap());
 
-            User::find_by_ticket::<AuthorizationClaims>(
-                &ticket,
-                &config.authorization_ticket_issuer,
-                &config.authorization_ticket_secret,
+            User::find_by_token::<AuthorizationClaims>(
+                &token,
+                &config.authorization_token_issuer,
+                &config.authorization_token_secret,
                 &db_conn,
                 &logger,
             )

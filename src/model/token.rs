@@ -1,13 +1,13 @@
-//! Ticket handles encoding/decoding using Claims and Token.
+//! Token handles encoding/decoding of raw token using Claims.
 use std::fmt;
 
 use jsonwebtoken::{
     Algorithm, Header, Validation, decode as decode_token, decode_header,
-    encode as encode_token,
+    encode as encode_data,
 };
 
 #[derive(Clone)]
-pub struct Token {
+pub struct TokenData {
     pub value: String, // subject
 
     // timestamp values
@@ -15,7 +15,7 @@ pub struct Token {
     pub expires_at: i64,
 }
 
-impl fmt::Display for Token {
+impl fmt::Display for TokenData {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
         fmt.write_str(&self.value)?;
         Ok(())
@@ -29,13 +29,13 @@ where Self: std::marker::Sized
     const LEEWAY: i64;
 
     fn decode(
-        ticket: &str, // encoded string
+        token: &str, // encoded string
         issuer: &str,
         secret: &str,
     ) -> Result<Self, jsonwebtoken::errors::Error>;
 
     fn encode(
-        token: Token, // contains subject
+        data: TokenData, // contains subject
         issuer: &str,
         kei_id: &str,
         secret: &str,
@@ -59,13 +59,13 @@ impl Claims for ActivationClaims {
     const LEEWAY: i64 = 36; // seconds
 
     fn decode(
-        ticket: &str,
+        token: &str,
         issuer: &str,
         secret: &str,
     ) -> Result<Self, jsonwebtoken::errors::Error>
     {
         // self check
-        let header = decode_header(&ticket).expect("Invalid token");
+        let header = decode_header(&token).expect("Invalid token");
         if header.alg != Self::ALGORITHM {
             return Err(jsonwebtoken::errors::Error::from(
                 jsonwebtoken::errors::ErrorKind::InvalidToken,
@@ -83,14 +83,14 @@ impl Claims for ActivationClaims {
             ..Validation::default()
         };
 
-        match decode_token::<Self>(&ticket, secret.as_ref(), &v) {
+        match decode_token::<Self>(&token, secret.as_ref(), &v) {
             Ok(v) => Ok(v.claims),
             Err(e) => Err(e),
         }
     }
 
     fn encode(
-        token: Token,
+        data: TokenData,
         issuer: &str,
         key_id: &str,
         secret: &str,
@@ -98,18 +98,18 @@ impl Claims for ActivationClaims {
     {
         // TODO: aud
         let c = Self {
-            sub: token.value,
-            iat: token.granted_at as usize,
+            sub: data.value,
+            iat: data.granted_at as usize,
             iss: issuer.to_string(),
-            exp: token.expires_at as usize,
-            nbf: token.granted_at as usize,
+            exp: data.expires_at as usize,
+            nbf: data.granted_at as usize,
         };
 
         let mut h = Header::default();
         h.alg = Self::ALGORITHM;
         h.kid = Some(key_id.to_string());
 
-        encode_token(&h, &c, secret.as_ref()).unwrap()
+        encode_data(&h, &c, secret.as_ref()).unwrap()
     }
 
     fn get_subject(&self) -> String {
@@ -132,13 +132,13 @@ impl Claims for AuthorizationClaims {
     const LEEWAY: i64 = 36; // seconds
 
     fn decode(
-        ticket: &str,
+        token: &str,
         issuer: &str,
         secret: &str,
     ) -> Result<Self, jsonwebtoken::errors::Error>
     {
         // self check
-        let header = decode_header(&ticket).expect("Invalid token");
+        let header = decode_header(&token).expect("Invalid token");
         if header.alg != Self::ALGORITHM {
             return Err(jsonwebtoken::errors::Error::from(
                 jsonwebtoken::errors::ErrorKind::InvalidToken,
@@ -156,14 +156,14 @@ impl Claims for AuthorizationClaims {
             ..Validation::default()
         };
 
-        match decode_token::<Self>(&ticket, secret.as_ref(), &v) {
+        match decode_token::<Self>(&token, secret.as_ref(), &v) {
             Ok(v) => Ok(v.claims),
             Err(e) => Err(e),
         }
     }
 
     fn encode(
-        token: Token,
+        data: TokenData,
         issuer: &str,
         key_id: &str,
         secret: &str,
@@ -171,18 +171,18 @@ impl Claims for AuthorizationClaims {
     {
         // TODO: aud
         let c = Self {
-            sub: token.value,
-            iat: token.granted_at as usize,
+            sub: data.value,
+            iat: data.granted_at as usize,
             iss: issuer.to_string(),
-            exp: token.expires_at as usize,
-            nbf: token.granted_at as usize,
+            exp: data.expires_at as usize,
+            nbf: data.granted_at as usize,
         };
 
         let mut h = Header::default();
         h.alg = Self::ALGORITHM;
         h.kid = Some(key_id.to_string());
 
-        encode_token(&h, &c, secret.as_ref()).unwrap()
+        encode_data(&h, &c, secret.as_ref()).unwrap()
     }
 
     fn get_subject(&self) -> String {
@@ -206,7 +206,7 @@ mod test {
         let now = Utc::now();
         let ts = now.timestamp();
 
-        let t = Token {
+        let t = TokenData {
             value: "dummy".to_string(),
             granted_at: ts,
             expires_at: ts,
@@ -218,21 +218,21 @@ mod test {
     #[test]
     fn test_activation_claims_encode() {
         let now = Utc.ymd(2019, 6, 11).and_hms(23, 19, 32);
-        let token = Token {
+        let data = TokenData {
             value: "dummy".to_string(),
             granted_at: now.timestamp(),
             expires_at: (now + Duration::hours(24)).timestamp(),
         };
 
-        let ticket = ActivationClaims::encode(
-            token.clone(),
+        let token = ActivationClaims::encode(
+            data.clone(),
             "issuer",
             "key_id",
             "secret",
         );
 
         assert_eq!(
-            ticket,
+            token,
             [
                 "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiIsImtpZCI6ImtleV9pZCJ9",
                 concat!(
@@ -246,13 +246,13 @@ mod test {
             ].join(".")
         );
 
-        let s: Vec<&str> = ticket.split('.').collect();
+        let s: Vec<&str> = token.split('.').collect();
         let body = &decode(s[1]).unwrap()[..]; // base64
         let json = String::from_utf8_lossy(body).to_string();
 
         let claims: ActivationClaims =
             serde_json::from_str(&json).ok().unwrap();
-        assert_eq!(claims.sub, token.value);
+        assert_eq!(claims.sub, data.value);
         assert_eq!(claims.iss, "issuer");
         assert_eq!(claims.iat, 1_560_295_172);
         assert_eq!(claims.exp, claims.iat + 60 * 60 * 24); // +86400 (1560381572)
@@ -266,28 +266,28 @@ mod test {
                 (
                     // expires
                     "dummy",
-                    &config.activation_ticket_issuer,
-                    &config.activation_ticket_secret,
+                    &config.activation_token_issuer,
+                    &config.activation_token_secret,
                     Utc.ymd(2001, 1, 1).and_hms(10, 0, 0),
                 ),
                 (
                     // not before
                     "dummy",
-                    &config.activation_ticket_issuer,
-                    &config.activation_ticket_secret,
+                    &config.activation_token_issuer,
+                    &config.activation_token_secret,
                     Utc::now() + Duration::hours(3),
                 ),
                 (
                     // wrong issuer
                     "dummy",
                     "unknown",
-                    &config.activation_ticket_secret,
+                    &config.activation_token_secret,
                     Utc::now(),
                 ),
                 (
                     // invalid secret
                     "dummy",
-                    &config.activation_ticket_issuer,
+                    &config.activation_token_issuer,
                     "invalid",
                     Utc::now(),
                 ),
@@ -295,19 +295,19 @@ mod test {
             for (_, (value, issuer, secret, granted_at)) in
                 tests.iter().enumerate()
             {
-                let token = Token {
+                let data = TokenData {
                     value: value.to_string(),
                     granted_at: granted_at.timestamp(),
                     expires_at: (*granted_at + Duration::hours(24)).timestamp(),
                 };
-                let ticket = ActivationClaims::encode(
-                    token,
-                    &config.activation_ticket_issuer,
-                    &config.activation_ticket_key_id,
-                    &config.activation_ticket_secret,
+                let token = ActivationClaims::encode(
+                    data,
+                    &config.activation_token_issuer,
+                    &config.activation_token_key_id,
+                    &config.activation_token_secret,
                 );
                 assert!(
-                    ActivationClaims::decode(&ticket, issuer, secret).is_err()
+                    ActivationClaims::decode(&token, issuer, secret).is_err()
                 );
             }
         });
@@ -316,27 +316,27 @@ mod test {
     #[test]
     fn test_activation_claims_decode() {
         let granted_at = Utc::now();
-        let token = Token {
+        let data = TokenData {
             value: "dummy".to_string(),
             granted_at: granted_at.timestamp(),
             expires_at: (granted_at + Duration::hours(24)).timestamp(),
         };
 
-        let ticket = ActivationClaims::encode(
-            token.clone(),
+        let token = ActivationClaims::encode(
+            data.clone(),
             "issuer",
             "key_id",
             "secret",
         );
 
-        let claims = ActivationClaims::decode(&ticket, "issuer", "secret")
+        let claims = ActivationClaims::decode(&token, "issuer", "secret")
             .ok()
             .unwrap();
 
-        assert_eq!(claims.sub, token.value);
+        assert_eq!(claims.sub, data.value);
         assert_eq!(claims.iss, "issuer");
-        assert_eq!(claims.iat, token.granted_at as usize);
+        assert_eq!(claims.iat, data.granted_at as usize);
         assert_eq!(claims.exp, claims.iat + 60 * 60 * 24); // +86400 (1560381572)
-        assert_eq!(claims.nbf, token.granted_at as usize);
+        assert_eq!(claims.nbf, data.granted_at as usize);
     }
 }

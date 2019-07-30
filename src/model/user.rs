@@ -9,7 +9,7 @@ use uuid::Uuid;
 
 pub use model::user_state::*;
 pub use model::user_reset_password_state::*;
-pub use model::ticket::Claims;
+pub use model::token::Claims;
 pub use schema::users;
 
 use logger::Logger;
@@ -209,16 +209,17 @@ impl User {
         }
     }
 
-    pub fn find_by_ticket<T: Claims>(
-        ticket: &str,
+    pub fn find_by_token<T: Claims>(
+        token: &str,
         issuer: &str,
         secret: &str,
         conn: &PgConnection,
         logger: &Logger,
     ) -> Option<Self>
     {
-        // TODO: support user activation ticket
-        let c = T::decode(ticket, issuer, secret).expect("Invalid value");
+        // TODO: support user activation token
+        let c = T::decode(token, issuer, secret).expect("Invalid value");
+        // authorization token
         Self::find_by_uuid(c.get_subject().as_ref(), conn, logger)
     }
 
