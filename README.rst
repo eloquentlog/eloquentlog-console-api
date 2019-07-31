@@ -78,7 +78,7 @@ Use cargo-watch_
       -H "Accept: application/json" \
       -d "{}" \
       -X POST \
-      http://localhost:8000/_api/login
+      http://localhost:8000/_api/signin
 
 Testing
 -------
