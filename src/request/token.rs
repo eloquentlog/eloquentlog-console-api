@@ -6,7 +6,6 @@ use rocket::request::FromRequest;
 
 use config::Config;
 use model::token::{AuthorizationClaims, Claims};
-use route::AUTHORIZATION_HEADER_KEY;
 
 pub struct AuthorizationToken(pub String);
 
@@ -50,8 +49,8 @@ impl<'a, 'r> FromRequest<'a, 'r> for AuthorizationToken {
         req: &'a Request<'r>,
     ) -> request::Outcome<Self, Self::Error> {
         let headers = req.headers();
-        let keys: Vec<_> = headers.get(AUTHORIZATION_HEADER_KEY).collect();
-        match keys.len() {
+        let auth: Vec<_> = headers.get("Authorization").collect();
+        match auth.len() {
             0 => {
                 request::Outcome::Failure((
                     Status::BadRequest,
@@ -59,7 +58,15 @@ impl<'a, 'r> FromRequest<'a, 'r> for AuthorizationToken {
                 ))
             },
             1 => {
-                let token = keys[0];
+                // TODO: Improve format validation
+                if !auth[0].starts_with("Bearer") {
+                    return request::Outcome::Failure((
+                        Status::BadRequest,
+                        AuthorizationTokenError::Invalid,
+                    ));
+                }
+
+                let token = (&auth[0])[6..].to_string();
                 if !token.contains('.') {
                     return request::Outcome::Failure((
                         Status::BadRequest,
@@ -68,7 +75,7 @@ impl<'a, 'r> FromRequest<'a, 'r> for AuthorizationToken {
                 }
 
                 let config = req.guard::<State<Config>>().unwrap();
-                match verify_authorization_token(token, &config) {
+                match verify_authorization_token(&token, &config) {
                     Ok(v) => request::Outcome::Success(AuthorizationToken(v)),
                     _ => {
                         request::Outcome::Failure((

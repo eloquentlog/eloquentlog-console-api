@@ -6,7 +6,7 @@ use rocket::request::Request;
 use rocket::response::Responder;
 use rocket::response::Response as RawResponse;
 
-use route::{AUTHORIZATION_HEADER_KEY, ORIGIN, MAX_AGE, VARY};
+use route::{ORIGIN, MAX_AGE, VARY};
 
 #[derive(Debug)]
 pub struct Response {
@@ -57,7 +57,7 @@ pub fn no_content_for<'a>(methods: &str) -> RawResponse<'a> {
     res.set_header(ContentType::JSON);
     res.set_raw_header(
         "Access-Control-Allow-Headers",
-        format!("Content-Type,{}", AUTHORIZATION_HEADER_KEY),
+        "Content-Type,Authorization",
     );
     res.set_raw_header(
         "Access-Control-Allow-Methods",
