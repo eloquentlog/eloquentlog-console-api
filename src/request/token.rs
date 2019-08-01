@@ -7,6 +7,8 @@ use rocket::request::FromRequest;
 use config::Config;
 use model::token::{AuthorizationClaims, Claims};
 
+const AUTHORIZATION_HEADER_PREFIX: &str = "Bearer ";
+
 pub struct AuthorizationToken(pub String);
 
 impl Deref for AuthorizationToken {
@@ -48,9 +50,8 @@ impl<'a, 'r> FromRequest<'a, 'r> for AuthorizationToken {
     fn from_request(
         req: &'a Request<'r>,
     ) -> request::Outcome<Self, Self::Error> {
-        let headers = req.headers();
-        let auth: Vec<_> = headers.get("Authorization").collect();
-        match auth.len() {
+        let headers: Vec<_> = req.headers().get("Authorization").collect();
+        match headers.len() {
             0 => {
                 request::Outcome::Failure((
                     Status::BadRequest,
@@ -58,15 +59,16 @@ impl<'a, 'r> FromRequest<'a, 'r> for AuthorizationToken {
                 ))
             },
             1 => {
-                // TODO: Improve format validation
-                if !auth[0].starts_with("Bearer") {
+                let h = &headers[0];
+                if !h.starts_with(AUTHORIZATION_HEADER_PREFIX) {
                     return request::Outcome::Failure((
                         Status::BadRequest,
                         AuthorizationTokenError::Invalid,
                     ));
                 }
 
-                let token = (&auth[0])[6..].to_string();
+                // TODO: validate format
+                let token = h[AUTHORIZATION_HEADER_PREFIX.len()..].to_string();
                 if !token.contains('.') {
                     return request::Outcome::Failure((
                         Status::BadRequest,
@@ -76,7 +78,7 @@ impl<'a, 'r> FromRequest<'a, 'r> for AuthorizationToken {
 
                 let config = req.guard::<State<Config>>().unwrap();
                 match verify_authorization_token(&token, &config) {
-                    Ok(v) => request::Outcome::Success(AuthorizationToken(v)),
+                    Ok(t) => request::Outcome::Success(AuthorizationToken(t)),
                     _ => {
                         request::Outcome::Failure((
                             Status::BadRequest,
