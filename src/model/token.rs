@@ -1,6 +1,10 @@
 //! Token handles encoding/decoding of raw token using Claims.
 use std::fmt;
 
+use chrono::Utc;
+
+use model::user::User;
+
 use jsonwebtoken::{
     Algorithm, Header, Validation, decode as decode_token, decode_header,
     encode as encode_data,
@@ -19,6 +23,16 @@ impl fmt::Display for TokenData {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
         fmt.write_str(&self.value)?;
         Ok(())
+    }
+}
+
+impl From<&User> for TokenData {
+    fn from(item: &User) -> Self {
+        Self {
+            value: item.uuid.to_urn().to_string(),
+            granted_at: Utc::now().timestamp(),
+            expires_at: 0,
+        }
     }
 }
 
