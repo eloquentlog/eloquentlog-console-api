@@ -6,7 +6,7 @@ use slog::Logger;
 
 use config::Config;
 use model::user_email::UserEmail;
-use model::token::{ActivationClaims, Claims, TokenData};
+use model::token::{ActivationClaims, Claims};
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub enum JobKind {
@@ -67,21 +67,8 @@ where T: fmt::Debug + Copy + Into<i64>
                     email.email.as_ref().unwrap()
                 );
 
-                // TODO: implement UserEmail into TokenData
-                let data = TokenData {
-                    value: email.activation_token.as_ref().unwrap().to_string(),
-                    granted_at: email
-                        .activation_token_granted_at
-                        .unwrap()
-                        .timestamp(),
-                    expires_at: email
-                        .activation_token_expires_at
-                        .unwrap()
-                        .timestamp(),
-                };
-
                 let token = ActivationClaims::encode(
-                    data,
+                    email.into(),
                     &config.activation_token_issuer,
                     &config.activation_token_key_id,
                     &config.activation_token_secret,

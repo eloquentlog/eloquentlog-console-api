@@ -10,6 +10,8 @@ use jsonwebtoken::{
     encode as encode_data,
 };
 
+use model::user_email::UserEmail;
+
 #[derive(Clone)]
 pub struct TokenData {
     pub value: String, // subject
@@ -32,6 +34,16 @@ impl From<&User> for TokenData {
             value: item.uuid.to_urn().to_string(),
             granted_at: Utc::now().timestamp(),
             expires_at: 0,
+        }
+    }
+}
+
+impl From<&UserEmail> for TokenData {
+    fn from(item: &UserEmail) -> Self {
+        Self {
+            value: item.activation_token.as_ref().unwrap().to_string(),
+            granted_at: item.activation_token_granted_at.unwrap().timestamp(),
+            expires_at: item.activation_token_expires_at.unwrap().timestamp(),
         }
     }
 }
