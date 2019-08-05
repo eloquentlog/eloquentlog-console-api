@@ -6,6 +6,8 @@ use jsonwebtoken::{
     encode as encode_data,
 };
 
+use model::user_email::UserEmail;
+
 #[derive(Clone)]
 pub struct TokenData {
     pub value: String, // subject
@@ -19,6 +21,16 @@ impl fmt::Display for TokenData {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
         fmt.write_str(&self.value)?;
         Ok(())
+    }
+}
+
+impl From<&UserEmail> for TokenData {
+    fn from(item: &UserEmail) -> Self {
+        Self {
+            value: item.activation_token.as_ref().unwrap().to_string(),
+            granted_at: item.activation_token_granted_at.unwrap().timestamp(),
+            expires_at: item.activation_token_expires_at.unwrap().timestamp(),
+        }
     }
 }
 
