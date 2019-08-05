@@ -171,14 +171,8 @@ fn build_authorization_header<'a>(
     config: &config::Config,
 ) -> Header<'a>
 {
-    // TODO: implement into
-    let data = token::TokenData {
-        value: user.uuid.to_urn().to_string(),
-        granted_at: Utc::now().timestamp(),
-        expires_at: 0,
-    };
     let token = token::AuthorizationClaims::encode(
-        data,
+        user.into(),
         &config.authorization_token_issuer,
         &config.authorization_token_key_id,
         &config.authorization_token_secret,

@@ -10,7 +10,7 @@ use {minify, run_test, build_authorization_header, load_user, USERS};
 fn test_get_no_message() {
     run_test(|client, db_conn, _, config, _| {
         let user = load_user(&USERS.get("oswald").unwrap(), &db_conn);
-        let auth = build_authorization_header(&user, &config);
+        let auth = build_authorization_header(&user, config);
 
         let mut res = client.get("/_api/messages").header(auth).dispatch();
 
@@ -23,7 +23,7 @@ fn test_get_no_message() {
 fn test_get_recent_messages() {
     run_test(|client, db_conn, _, config, _| {
         let user = load_user(&USERS.get("oswald").unwrap(), &db_conn);
-        let auth = build_authorization_header(&user, &config);
+        let auth = build_authorization_header(&user, config);
 
         // 2019-08-07T06:05:04.333
         let dt = Utc.ymd(2019, 8, 7).and_hms_milli(6, 5, 4, 333);
@@ -77,7 +77,7 @@ fn test_get_recent_messages() {
 fn test_post_with_validation_errors() {
     run_test(|client, db_conn, _, config, _| {
         let user = load_user(&USERS.get("oswald").unwrap(), &db_conn);
-        let auth = build_authorization_header(&user, &config);
+        let auth = build_authorization_header(&user, config);
 
         let mut res = client
             .post("/_api/messages")
@@ -101,7 +101,7 @@ fn test_post_with_validation_errors() {
 fn test_post() {
     run_test(|client, db_conn, _, config, _| {
         let user = load_user(&USERS.get("oswald").unwrap(), &db_conn);
-        let auth = build_authorization_header(&user, &config);
+        let auth = build_authorization_header(&user, config);
 
         let mut res = client
             .post("/_api/messages")
@@ -126,7 +126,7 @@ fn test_post() {
 fn test_put() {
     run_test(|client, db_conn, _, config, _| {
         let user = load_user(&USERS.get("oswald").unwrap(), &db_conn);
-        let auth = build_authorization_header(&user, &config);
+        let auth = build_authorization_header(&user, config);
 
         let m = message::NewMessage {
             code: None,
