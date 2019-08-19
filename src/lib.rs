@@ -22,6 +22,7 @@ extern crate jsonwebtoken;
 #[cfg(test)]
 #[macro_use]
 extern crate lazy_static;
+extern crate lettre;
 
 #[cfg(test)]
 extern crate parking_lot;
@@ -66,6 +67,7 @@ pub mod mq;
 pub mod config;
 pub mod job;
 pub mod logger;
+pub mod mailer;
 pub mod model;
 pub mod request;
 pub mod route;

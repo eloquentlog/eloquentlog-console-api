@@ -7,6 +7,7 @@ use slog::Logger;
 use config::Config;
 use model::user_email::UserEmail;
 use model::token::{ActivationClaims, Claims};
+use mailer::user::Mailer as UserMailer;
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub enum JobKind {
@@ -32,16 +33,16 @@ where T: fmt::Debug + Copy + Into<i64>
     pub fn invoke(
         &self,
         db_conn: &PgConnection,
-        logger: &Logger,
         config: &Config,
+        logger: &Logger,
     )
     {
         match self.kind {
             JobKind::SendUserActivationEmail => {
-                self.send_user_activation_email(db_conn, logger, config);
+                self.send_user_activation_email(db_conn, config, logger);
             },
             JobKind::SendPasswordResetEmail => {
-                self.send_password_reset_email(db_conn, logger, config);
+                self.send_password_reset_email(db_conn, config, logger);
             },
         }
     }
@@ -49,8 +50,8 @@ where T: fmt::Debug + Copy + Into<i64>
     fn send_user_activation_email(
         &self,
         db_conn: &PgConnection,
-        logger: &Logger,
         config: &Config,
+        logger: &Logger,
     )
     {
         let args = self.args.as_slice();
@@ -60,22 +61,20 @@ where T: fmt::Debug + Copy + Into<i64>
 
         let id = args[0].into();
         match UserEmail::find_by_id(id, db_conn, &logger) {
-            Some(ref email) => {
-                info!(
-                    logger,
-                    "user_email.email: {}",
-                    email.email.as_ref().unwrap()
-                );
+            Some(ref user_email) => {
+                let email = user_email.email.as_ref().unwrap();
+                info!(logger, "user_email.email: {}", email);
 
                 let token = ActivationClaims::encode(
-                    email.into(),
+                    user_email.into(),
                     &config.activation_token_issuer,
                     &config.activation_token_key_id,
                     &config.activation_token_secret,
                 );
+                info!(logger, "token: {}", token);
 
-                // TODO
-                dbg!(token);
+                let mut mailer = UserMailer::new(config, logger);
+                mailer.to(email).send(format!("token: {}", token));
             },
             _ => {
                 error!(logger, "not found :'(");
@@ -86,8 +85,8 @@ where T: fmt::Debug + Copy + Into<i64>
     fn send_password_reset_email(
         &self,
         _: &PgConnection,
-        logger: &Logger,
         _: &Config,
+        logger: &Logger,
     )
     {
         // TODO
