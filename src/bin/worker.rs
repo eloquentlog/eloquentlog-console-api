@@ -1,5 +1,6 @@
 extern crate dotenv;
 extern crate fourche;
+extern crate native_tls;
 extern crate redis;
 
 #[macro_use(error, info)]

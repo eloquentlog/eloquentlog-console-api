@@ -1,8 +1,13 @@
-use lettre::{EmailAddress, Envelope, Transport, SendableEmail, SmtpClient};
+use lettre::{
+    ClientSecurity, ClientTlsParameters, EmailAddress, Envelope, Transport,
+    SendableEmail, SmtpClient,
+};
 use lettre::smtp::ConnectionReuseParameters;
 use lettre::smtp::authentication::{Credentials, Mechanism};
 use lettre::smtp::error::SmtpResult;
 use lettre::smtp::extension::ClientId;
+use lettre::smtp::client::net::DEFAULT_TLS_PROTOCOLS;
+use native_tls::TlsConnector;
 use slog::Logger;
 use uuid::Uuid;
 
@@ -10,6 +15,7 @@ use config::Config;
 
 struct Header<'a> {
     id: Uuid,
+    from: &'a str,
     to: &'a str,
 }
 
@@ -17,6 +23,7 @@ impl<'a> Default for Header<'a> {
     fn default() -> Self {
         Self {
             id: Uuid::nil(),
+            from: "",
             to: "",
         }
     }
@@ -32,18 +39,29 @@ pub struct Mailer<'a> {
 }
 
 impl<'a> Mailer<'a> {
+    // TODO: connection manager (r2d2)
     pub fn build_client(config: &Config) -> Client<'a> {
-        let client = SmtpClient::new_simple(&config.mailer_smtp_hostname)
-            .unwrap()
-            .hello_name(ClientId::Domain(config.mailer_domain.to_string()))
-            .credentials(Credentials::new(
-                config.mailer_smtp_username.to_string(),
-                config.mailer_smtp_password.to_string(),
-            ))
-            .smtp_utf8(true)
-            .authentication_mechanism(Mechanism::Plain)
-            .connection_reuse(ConnectionReuseParameters::ReuseUnlimited)
-            .transport();
+        let mut tls_builder = TlsConnector::builder();
+        tls_builder.min_protocol_version(Some(DEFAULT_TLS_PROTOCOLS[0]));
+        let tls_parameters = ClientTlsParameters::new(
+            config.mailer_smtp_host.to_string(),
+            tls_builder.build().unwrap(),
+        );
+        // with custom port
+        let client = SmtpClient::new(
+            (config.mailer_smtp_host.as_str(), config.mailer_smtp_port),
+            ClientSecurity::Wrapper(tls_parameters),
+        )
+        .unwrap()
+        .hello_name(ClientId::Domain(config.mailer_domain.to_string()))
+        .credentials(Credentials::new(
+            config.mailer_smtp_username.to_string(),
+            config.mailer_smtp_password.to_string(),
+        ))
+        .smtp_utf8(true)
+        .authentication_mechanism(Mechanism::Plain)
+        .connection_reuse(ConnectionReuseParameters::ReuseUnlimited)
+        .transport();
         Box::new(client)
     }
 
@@ -68,6 +86,7 @@ impl<'a> Mailer<'a> {
     pub fn to(&mut self, to: &'a str) -> &mut Self {
         self.header = Header {
             id: Uuid::new_v4(),
+            from: &self.config.mailer_from_email,
             to,
         };
         self
@@ -75,12 +94,10 @@ impl<'a> Mailer<'a> {
 
     pub fn send(&mut self, payload: String) -> bool {
         let email = SendableEmail::new(
+            // TODO: sender alias
             Envelope::new(
-                None, // from
-                vec![
-                    // to
-                    EmailAddress::new(self.header.to.to_string()).unwrap(),
-                ],
+                Some(EmailAddress::new(self.header.from.to_string()).unwrap()),
+                vec![EmailAddress::new(self.header.to.to_string()).unwrap()],
             )
             .unwrap(),
             self.header.id.to_urn().to_string(),
