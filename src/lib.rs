@@ -23,6 +23,7 @@ extern crate jsonwebtoken;
 #[macro_use]
 extern crate lazy_static;
 extern crate lettre;
+extern crate native_tls;
 
 #[cfg(test)]
 extern crate parking_lot;

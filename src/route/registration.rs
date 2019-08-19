@@ -37,12 +37,12 @@ pub fn register(
             }))
         },
         Ok(_) => {
-            let result: Result<(), Error> = db_conn
+            let result: Result<UserEmail, Error> = db_conn
                 .build_transaction()
                 .serializable()
                 .deferrable()
                 .read_write()
-                .run(|| {
+                .run::<UserEmail, diesel::result::Error, _>(|| {
                     let mut u = NewUser::from(&data.0);
                     u.set_password(&data.password);
                     let user = User::insert(&u, &db_conn, &logger).unwrap();
@@ -55,24 +55,24 @@ pub fn register(
                         error!(logger, "error: {}", e);
                         return Err(Error::RollbackTransaction);
                     }
-                    // send email
+                    Ok(user_email)
+                });
+
+            match result {
+                Ok(user_email) => {
                     let job = Job::<i64> {
                         kind: JobKind::SendUserActivationEmail,
                         args: vec![user_email.id],
                     };
+                    // TODO: Consider about retrying
                     let queue = Queue::new("default", &mq_conn);
                     if let Err(err) = queue.enqueue::<Job<i64>>(job) {
                         error!(logger, "error: {}", err);
-                        return Err(Error::RollbackTransaction);
                     }
-                    Ok(())
-                });
-
-            // unexpected
-            if result.is_err() {
-                return res.status(Status::InternalServerError);
+                    res
+                },
+                _ => res.status(Status::InternalServerError),
             }
-            res
         },
     }
 }

@@ -12,8 +12,10 @@ pub struct Config {
     pub database_max_pool_size: u32,
     pub env_name: &'static str,
     pub mailer_domain: String,
-    pub mailer_sender: String,
-    pub mailer_smtp_hostname: String,
+    pub mailer_from_email: String,
+    pub mailer_from_alias: String,
+    pub mailer_smtp_host: String,
+    pub mailer_smtp_port: u16,
     pub mailer_smtp_username: String,
     pub mailer_smtp_password: String,
     pub queue_url: String,
@@ -45,10 +47,13 @@ impl Default for Config {
 
             mailer_domain: env::var("MAILER_DOMAIN")
                 .expect("MAILER_DOMAIN is not set"),
-            mailer_sender: env::var("MAILER_SENDER")
-                .expect("MAILER_SENDER is not set"),
-            mailer_smtp_hostname: env::var("MAILER_SMTP_HOSTNAME")
-                .expect("MAILER_SMTP_HOSTNAME is not set"),
+            mailer_from_email: env::var("MAILER_FROM_EMAIL")
+                .expect("MAILER_FROM_EMAIL is not set"),
+            mailer_from_alias: env::var("MAILER_FROM_ALIAS")
+                .expect("MAILER_FROM_ALIAS is not set"),
+            mailer_smtp_host: env::var("MAILER_SMTP_HOST")
+                .expect("MAILER_SMTP_HOST is not set"),
+            mailer_smtp_port: 587,
             mailer_smtp_username: env::var("MAILER_SMTP_USERNAME")
                 .expect("MAILER_SMTP_USERNAME is not set"),
             mailer_smtp_password: env::var("MAILER_SMTP_PASSWORD")
@@ -82,10 +87,16 @@ impl Config {
             Err(_) => 8,
         };
 
+        let mailer_smtp_port: u16 = match env::var("MAILER_SMTP_PORT") {
+            Ok(v) => v.parse::<u16>().unwrap(),
+            Err(_) => 587,
+        };
+
         Config {
             env_name: &"production",
             database_max_pool_size,
             queue_max_pool_size,
+            mailer_smtp_port,
 
             ..Default::default()
         }
@@ -107,6 +118,11 @@ impl Config {
                 Ok(v) => v.parse::<u32>().unwrap(),
                 Err(_) => 2,
             };
+
+        let mailer_smtp_port: u16 = match env::var("TEST_MAILER_SMTP_PORT") {
+            Ok(v) => v.parse::<u16>().unwrap(),
+            Err(_) => 587,
+        };
 
         Config {
             activation_token_issuer: env::var("TEST_ACTIVATION_TOKEN_ISSUER")
@@ -137,10 +153,13 @@ impl Config {
 
             mailer_domain: env::var("TEST_MAILER_DOMAIN")
                 .expect("TEST_MAILER_DOMAIN is not set"),
-            mailer_sender: env::var("TEST_MAILER_SENDER")
-                .expect("TEST_MAILER_SENDER is not set"),
-            mailer_smtp_hostname: env::var("TEST_MAILER_SMTP_HOSTNAME")
-                .expect("TEST_MAILER_SMTP_HOSTNAME is not set"),
+            mailer_from_email: env::var("TEST_MAILER_FROM_EMAIL")
+                .expect("TEST_MAILER_FROM_EMAIL is not set"),
+            mailer_from_alias: env::var("TEST_MAILER_FROM_ALIAS")
+                .expect("TEST_MAILER_FROM_ALIAS is not set"),
+            mailer_smtp_host: env::var("TEST_MAILER_SMTP_HOST")
+                .expect("TEST_MAILER_SMTP_HOST is not set"),
+            mailer_smtp_port,
             mailer_smtp_username: env::var("TEST_MAILER_SMTP_USERNAME")
                 .expect("TEST_MAILER_SMTP_USERNAME is not set"),
             mailer_smtp_password: env::var("TEST_MAILER_SMTP_PASSWORD")
@@ -154,21 +173,27 @@ impl Config {
 
     fn development_config() -> Config {
         let database_max_pool_size: u32 =
-            match env::var("TEST_DATABASE_MAX_POOL_SIZE") {
+            match env::var("DATABASE_MAX_POOL_SIZE") {
                 Ok(v) => v.parse::<u32>().unwrap(),
                 Err(_) => 4,
             };
 
-        let queue_max_pool_size: u32 =
-            match env::var("TEST_DATABASE_MAX_POOL_SIZE") {
-                Ok(v) => v.parse::<u32>().unwrap(),
-                Err(_) => 4,
-            };
+        let queue_max_pool_size: u32 = match env::var("DATABASE_MAX_POOL_SIZE")
+        {
+            Ok(v) => v.parse::<u32>().unwrap(),
+            Err(_) => 4,
+        };
+
+        let mailer_smtp_port: u16 = match env::var("MAILER_SMTP_PORT") {
+            Ok(v) => v.parse::<u16>().unwrap(),
+            Err(_) => 587,
+        };
 
         Config {
             env_name: &"development",
             database_max_pool_size,
             queue_max_pool_size,
+            mailer_smtp_port,
 
             ..Default::default()
         }
@@ -201,8 +226,9 @@ mod test {
                 "DATABASE_URL" =>
                     "postgresql://u$er:pa$$w0rd@localhost:5432/dbname",
                 "MAILER_DOMAIN" => "eloquentlog.com",
-                "MAILER_SENDER" => "Eloquentlog <no-reply@eloquentlog.com>",
-                "MAILER_SMTP_HOSTNAME" => "server.tld",
+                "MAILER_FROM_EMAIL" => "no-reply@eloquentlog.com",
+                "MAILER_FROM_ALIAS" => "Eloquentlog - Development",
+                "MAILER_SMTP_HOST" => "server.tld",
                 "MAILER_SMTP_USERNAME" => "username",
                 "MAILER_SMTP_PASSWORD" => "password",
                 "QUEUE_URL" => "redis://u$er:pa$$w0rd@localhost:6379/queue",
@@ -216,8 +242,9 @@ mod test {
                 "TEST_DATABASE_URL" =>
                     "postgresql://u$er:pa$$w0rd@localhost:5432/dbname",
                 "TEST_MAILER_DOMAIN" => "eloquentlog.com",
-                "TEST_MAILER_SENDER" => "Eloquentlog <no-reply@eloquentlog.com>",
-                "TEST_MAILER_SMTP_HOSTNAME" => "server.tld",
+                "TEST_MAILER_FROM_EMAIL" => "no-reply@eloquentlog.com",
+                "TEST_MAILER_FROM_ALIAS" => "Eloquentlog - Testing",
+                "TEST_MAILER_SMTP_HOST" => "server.tld",
                 "TEST_MAILER_SMTP_USERNAME" => "username",
                 "TEST_MAILER_SMTP_PASSWORD" => "password",
                 "TEST_QUEUE_URL" => "redis://u$er:pa$$w0rd@localhost:6379/queue"
@@ -271,8 +298,9 @@ TEST_AUTHORIZATION_TOKEN_KEY_ID
 TEST_AUTHORIZATION_TOKEN_SECRET
 TEST_DATABASE_URL
 TEST_MAILER_DOMAIN
-TEST_MAILER_SENDER
-TEST_MAILER_SMTP_HOSTNAME
+TEST_MAILER_FROM_EMAIL
+TEST_MAILER_FROM_ALIAS
+TEST_MAILER_SMTP_HOST
 TEST_MAILER_SMTP_PASSWORD
 TEST_MAILER_SMTP_USERNAME
 TEST_QUEUE_URL
@@ -298,8 +326,9 @@ AUTHORIZATION_TOKEN_KEY_ID
 AUTHORIZATION_TOKEN_SECRET
 DATABASE_URL
 MAILER_DOMAIN
-MAILER_SENDER
-MAILER_SMTP_HOSTNAME
+MAILER_FROM_EMAIL
+MAILER_FROM_ALIAS
+MAILER_SMTP_HOST
 MAILER_SMTP_PASSWORD
 MAILER_SMTP_USERNAME
 QUEUE_URL
@@ -325,8 +354,9 @@ TEST_AUTHORIZATION_TOKEN_KEY_ID
 TEST_AUTHORIZATION_TOKEN_SECRET
 TEST_DATABASE_URL
 TEST_MAILER_DOMAIN
-TEST_MAILER_SENDER
-TEST_MAILER_SMTP_HOSTNAME
+TEST_MAILER_FROM_EMAIL
+TEST_MAILER_FROM_ALIAS
+TEST_MAILER_SMTP_HOST
 TEST_MAILER_SMTP_PASSWORD
 TEST_MAILER_SMTP_USERNAME
 TEST_QUEUE_URL
@@ -352,8 +382,9 @@ AUTHORIZATION_TOKEN_KEY_ID
 AUTHORIZATION_TOKEN_SECRET
 DATABASE_URL
 MAILER_DOMAIN
-MAILER_SENDER
-MAILER_SMTP_HOSTNAME
+MAILER_FROM_EMAIL
+MAILER_FROM_ALIAS
+MAILER_SMTP_HOST
 MAILER_SMTP_PASSWORD
 MAILER_SMTP_USERNAME
 QUEUE_URL
@@ -378,8 +409,9 @@ TEST_AUTHORIZATION_TOKEN_KEY_ID
 TEST_AUTHORIZATION_TOKEN_SECRET
 TEST_DATABASE_URL
 TEST_MAILER_DOMAIN
-TEST_MAILER_SENDER
-TEST_MAILER_SMTP_HOSTNAME
+TEST_MAILER_FROM_EMAIL
+TEST_MAILER_FROM_ALIAS
+TEST_MAILER_SMTP_HOST
 TEST_MAILER_SMTP_PASSWORD
 TEST_MAILER_SMTP_USERNAME
 TEST_QUEUE_URL
@@ -404,8 +436,9 @@ AUTHORIZATION_TOKEN_KEY_ID
 AUTHORIZATION_TOKEN_SECRET
 DATABASE_URL
 MAILER_DOMAIN
-MAILER_SENDER
-MAILER_SMTP_HOSTNAME
+MAILER_FROM_EMAIL
+MAILER_FROM_ALIAS
+MAILER_SMTP_HOST
 MAILER_SMTP_PASSWORD
 MAILER_SMTP_USERNAME
 QUEUE_URL
