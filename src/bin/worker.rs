@@ -51,7 +51,7 @@ fn main() {
                     job.kind,
                     job.args.as_slice()
                 );
-                job.invoke(&db_conn, &logger, &config);
+                job.invoke(&db_conn, &config, &logger);
             },
             Err(e) => {
                 error!(logger, "err: {}", e);

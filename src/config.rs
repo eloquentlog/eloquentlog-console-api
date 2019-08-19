@@ -11,6 +11,11 @@ pub struct Config {
     pub database_url: String,
     pub database_max_pool_size: u32,
     pub env_name: &'static str,
+    pub mailer_domain: String,
+    pub mailer_sender: String,
+    pub mailer_smtp_hostname: String,
+    pub mailer_smtp_username: String,
+    pub mailer_smtp_password: String,
     pub queue_url: String,
     pub queue_max_pool_size: u32,
 }
@@ -35,7 +40,20 @@ impl Default for Config {
             database_max_pool_size: 0,
             database_url: env::var("DATABASE_URL")
                 .expect("DATABASE_URL is not set"),
+
             env_name: &"undefined",
+
+            mailer_domain: env::var("MAILER_DOMAIN")
+                .expect("MAILER_DOMAIN is not set"),
+            mailer_sender: env::var("MAILER_SENDER")
+                .expect("MAILER_SENDER is not set"),
+            mailer_smtp_hostname: env::var("MAILER_SMTP_HOSTNAME")
+                .expect("MAILER_SMTP_HOSTNAME is not set"),
+            mailer_smtp_username: env::var("MAILER_SMTP_USERNAME")
+                .expect("MAILER_SMTP_USERNAME is not set"),
+            mailer_smtp_password: env::var("MAILER_SMTP_PASSWORD")
+                .expect("MAILER_SMTP_PASSWORD is not set"),
+
             queue_max_pool_size: 0,
             queue_url: env::var("QUEUE_URL").expect("QUEUE_URL is not set"),
         }
@@ -114,7 +132,20 @@ impl Config {
             database_max_pool_size,
             database_url: env::var("TEST_DATABASE_URL")
                 .expect("TEST_DATABASE_URL is not set"),
+
             env_name: &"testing",
+
+            mailer_domain: env::var("TEST_MAILER_DOMAIN")
+                .expect("TEST_MAILER_DOMAIN is not set"),
+            mailer_sender: env::var("TEST_MAILER_SENDER")
+                .expect("TEST_MAILER_SENDER is not set"),
+            mailer_smtp_hostname: env::var("TEST_MAILER_SMTP_HOSTNAME")
+                .expect("TEST_MAILER_SMTP_HOSTNAME is not set"),
+            mailer_smtp_username: env::var("TEST_MAILER_SMTP_USERNAME")
+                .expect("TEST_MAILER_SMTP_USERNAME is not set"),
+            mailer_smtp_password: env::var("TEST_MAILER_SMTP_PASSWORD")
+                .expect("TEST_MAILER_SMTP_PASSWORD is not set"),
+
             queue_max_pool_size,
             queue_url: env::var("TEST_QUEUE_URL")
                 .expect("TEST_QUEUE_URL is not set"),
@@ -169,6 +200,11 @@ mod test {
                 "AUTHORIZATION_TOKEN_SECRET" => "secret-authorization",
                 "DATABASE_URL" =>
                     "postgresql://u$er:pa$$w0rd@localhost:5432/dbname",
+                "MAILER_DOMAIN" => "eloquentlog.com",
+                "MAILER_SENDER" => "Eloquentlog <no-reply@eloquentlog.com>",
+                "MAILER_SMTP_HOSTNAME" => "server.tld",
+                "MAILER_SMTP_USERNAME" => "username",
+                "MAILER_SMTP_PASSWORD" => "password",
                 "QUEUE_URL" => "redis://u$er:pa$$w0rd@localhost:6379/queue",
 
                 "TEST_ACTIVATION_TOKEN_ISSUER" => "com.eloquentlog",
@@ -179,6 +215,11 @@ mod test {
                 "TEST_AUTHORIZATION_TOKEN_SECRET" => "test-secret-authorization",
                 "TEST_DATABASE_URL" =>
                     "postgresql://u$er:pa$$w0rd@localhost:5432/dbname",
+                "TEST_MAILER_DOMAIN" => "eloquentlog.com",
+                "TEST_MAILER_SENDER" => "Eloquentlog <no-reply@eloquentlog.com>",
+                "TEST_MAILER_SMTP_HOSTNAME" => "server.tld",
+                "TEST_MAILER_SMTP_USERNAME" => "username",
+                "TEST_MAILER_SMTP_PASSWORD" => "password",
                 "TEST_QUEUE_URL" => "redis://u$er:pa$$w0rd@localhost:6379/queue"
             };
         }
@@ -229,6 +270,11 @@ TEST_AUTHORIZATION_TOKEN_ISSUER
 TEST_AUTHORIZATION_TOKEN_KEY_ID
 TEST_AUTHORIZATION_TOKEN_SECRET
 TEST_DATABASE_URL
+TEST_MAILER_DOMAIN
+TEST_MAILER_SENDER
+TEST_MAILER_SMTP_HOSTNAME
+TEST_MAILER_SMTP_PASSWORD
+TEST_MAILER_SMTP_USERNAME
 TEST_QUEUE_URL
 "#, || {
                 let result = panic::catch_unwind(|| {
@@ -251,6 +297,11 @@ AUTHORIZATION_TOKEN_ISSUER
 AUTHORIZATION_TOKEN_KEY_ID
 AUTHORIZATION_TOKEN_SECRET
 DATABASE_URL
+MAILER_DOMAIN
+MAILER_SENDER
+MAILER_SMTP_HOSTNAME
+MAILER_SMTP_PASSWORD
+MAILER_SMTP_USERNAME
 QUEUE_URL
 "#, || {
                 let result = panic::catch_unwind(|| {
@@ -273,6 +324,11 @@ TEST_AUTHORIZATION_TOKEN_ISSUER
 TEST_AUTHORIZATION_TOKEN_KEY_ID
 TEST_AUTHORIZATION_TOKEN_SECRET
 TEST_DATABASE_URL
+TEST_MAILER_DOMAIN
+TEST_MAILER_SENDER
+TEST_MAILER_SMTP_HOSTNAME
+TEST_MAILER_SMTP_PASSWORD
+TEST_MAILER_SMTP_USERNAME
 TEST_QUEUE_URL
 "#, || {
                 let result = panic::catch_unwind(|| {
@@ -295,6 +351,11 @@ AUTHORIZATION_TOKEN_ISSUER
 AUTHORIZATION_TOKEN_KEY_ID
 AUTHORIZATION_TOKEN_SECRET
 DATABASE_URL
+MAILER_DOMAIN
+MAILER_SENDER
+MAILER_SMTP_HOSTNAME
+MAILER_SMTP_PASSWORD
+MAILER_SMTP_USERNAME
 QUEUE_URL
 "#, || {
                 let c = Config::from("production").unwrap();
@@ -316,6 +377,11 @@ TEST_AUTHORIZATION_TOKEN_ISSUER
 TEST_AUTHORIZATION_TOKEN_KEY_ID
 TEST_AUTHORIZATION_TOKEN_SECRET
 TEST_DATABASE_URL
+TEST_MAILER_DOMAIN
+TEST_MAILER_SENDER
+TEST_MAILER_SMTP_HOSTNAME
+TEST_MAILER_SMTP_PASSWORD
+TEST_MAILER_SMTP_USERNAME
 TEST_QUEUE_URL
 "#, || {
                 let c = Config::from("testing").unwrap();
@@ -337,6 +403,11 @@ AUTHORIZATION_TOKEN_ISSUER
 AUTHORIZATION_TOKEN_KEY_ID
 AUTHORIZATION_TOKEN_SECRET
 DATABASE_URL
+MAILER_DOMAIN
+MAILER_SENDER
+MAILER_SMTP_HOSTNAME
+MAILER_SMTP_PASSWORD
+MAILER_SMTP_USERNAME
 QUEUE_URL
 "#, || {
                 let c = Config::from("development").unwrap();
