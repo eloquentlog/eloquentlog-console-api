@@ -7,7 +7,7 @@ use slog::Logger;
 use config::Config;
 use model::user_email::UserEmail;
 use model::token::{ActivationClaims, Claims};
-use mailer::user::Mailer as UserMailer;
+use mailer::user::UserMailer;
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub enum JobKind {
@@ -58,7 +58,6 @@ where T: fmt::Debug + Copy + Into<i64>
         if args.is_empty() {
             return;
         }
-
         let id = args[0].into();
         match UserEmail::find_by_id(id, db_conn, &logger) {
             Some(ref user_email) => {
@@ -74,7 +73,7 @@ where T: fmt::Debug + Copy + Into<i64>
                 info!(logger, "token: {}", token);
 
                 let mut mailer = UserMailer::new(config, logger);
-                mailer.to(email).send(format!("token: {}", token));
+                mailer.to(email).send_user_activation_email(token);
             },
             _ => {
                 error!(logger, "not found :'(");
