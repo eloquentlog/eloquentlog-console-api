@@ -8,6 +8,7 @@ pub struct Config {
     pub authorization_token_issuer: String,
     pub authorization_token_key_id: String,
     pub authorization_token_secret: String,
+    pub application_url: String,
     pub database_url: String,
     pub database_max_pool_size: u32,
     pub env_name: &'static str,
@@ -38,6 +39,9 @@ impl Default for Config {
                 .expect("AUTHORIZATION_TOKEN_KEY_ID is not set"),
             authorization_token_secret: env::var("AUTHORIZATION_TOKEN_SECRET")
                 .expect("AUTHORIZATION_TOKEN_SECRET is not set"),
+
+            application_url: env::var("APPLICATION_URL")
+                .expect("APPLICATION_URL is not set"),
 
             database_max_pool_size: 0,
             database_url: env::var("DATABASE_URL")
@@ -145,6 +149,9 @@ impl Config {
             )
             .expect("TEST_AUTHORIZATION_TOKEN_SECRET is not set"),
 
+            application_url: env::var("TEST_APPLICATION_URL")
+                .expect("TEST_APPLICATION_URL is not set"),
+
             database_max_pool_size,
             database_url: env::var("TEST_DATABASE_URL")
                 .expect("TEST_DATABASE_URL is not set"),
@@ -223,6 +230,7 @@ mod test {
                 "AUTHORIZATION_TOKEN_ISSUER" => "com.eloquentlog",
                 "AUTHORIZATION_TOKEN_KEY_ID" => "key_id-authorization",
                 "AUTHORIZATION_TOKEN_SECRET" => "secret-authorization",
+                "APPLICATION_URL" => "http://127.0.0.1:3000",
                 "DATABASE_URL" =>
                     "postgresql://u$er:pa$$w0rd@localhost:5432/dbname",
                 "MAILER_DOMAIN" => "eloquentlog.com",
@@ -239,6 +247,7 @@ mod test {
                 "TEST_AUTHORIZATION_TOKEN_ISSUER" => "com.eloquentlog",
                 "TEST_AUTHORIZATION_TOKEN_KEY_ID" => "test-key_id-authorization",
                 "TEST_AUTHORIZATION_TOKEN_SECRET" => "test-secret-authorization",
+                "TEST_APPLICATION_URL" => "http://127.0.0.1:3000",
                 "TEST_DATABASE_URL" =>
                     "postgresql://u$er:pa$$w0rd@localhost:5432/dbname",
                 "TEST_MAILER_DOMAIN" => "eloquentlog.com",
@@ -296,6 +305,7 @@ TEST_ACTIVATION_TOKEN_SECRET
 TEST_AUTHORIZATION_TOKEN_ISSUER
 TEST_AUTHORIZATION_TOKEN_KEY_ID
 TEST_AUTHORIZATION_TOKEN_SECRET
+TEST_APPLICATION_URL
 TEST_DATABASE_URL
 TEST_MAILER_DOMAIN
 TEST_MAILER_FROM_EMAIL
@@ -324,6 +334,7 @@ ACTIVATION_TOKEN_SECRET
 AUTHORIZATION_TOKEN_ISSUER
 AUTHORIZATION_TOKEN_KEY_ID
 AUTHORIZATION_TOKEN_SECRET
+APPLICATION_URL
 DATABASE_URL
 MAILER_DOMAIN
 MAILER_FROM_EMAIL
@@ -352,6 +363,7 @@ TEST_ACTIVATION_TOKEN_SECRET
 TEST_AUTHORIZATION_TOKEN_ISSUER
 TEST_AUTHORIZATION_TOKEN_KEY_ID
 TEST_AUTHORIZATION_TOKEN_SECRET
+TEST_APPLICATION_URL
 TEST_DATABASE_URL
 TEST_MAILER_DOMAIN
 TEST_MAILER_FROM_EMAIL
@@ -380,6 +392,7 @@ ACTIVATION_TOKEN_SECRET
 AUTHORIZATION_TOKEN_ISSUER
 AUTHORIZATION_TOKEN_KEY_ID
 AUTHORIZATION_TOKEN_SECRET
+APPLICATION_URL
 DATABASE_URL
 MAILER_DOMAIN
 MAILER_FROM_EMAIL
@@ -407,6 +420,7 @@ TEST_ACTIVATION_TOKEN_SECRET
 TEST_AUTHORIZATION_TOKEN_ISSUER
 TEST_AUTHORIZATION_TOKEN_KEY_ID
 TEST_AUTHORIZATION_TOKEN_SECRET
+TEST_APPLICATION_URL
 TEST_DATABASE_URL
 TEST_MAILER_DOMAIN
 TEST_MAILER_FROM_EMAIL
@@ -434,6 +448,7 @@ ACTIVATION_TOKEN_SECRET
 AUTHORIZATION_TOKEN_ISSUER
 AUTHORIZATION_TOKEN_KEY_ID
 AUTHORIZATION_TOKEN_SECRET
+APPLICATION_URL
 DATABASE_URL
 MAILER_DOMAIN
 MAILER_FROM_EMAIL
