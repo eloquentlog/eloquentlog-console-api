@@ -124,6 +124,8 @@ test:
     TEST_AUTHORIZATION_TOKEN_ISSUER: "test-authorization-token-issuer"
     TEST_AUTHORIZATION_TOKEN_KEY_ID: "test-authorization-token-key_id"
     TEST_AUTHORIZATION_TOKEN_SECRET: "test-authorization-token-secret"
+    TEST_APPLICATION_URL: "http://127.0.0.1:3000"
+    TEST_DATABASE_URL: "postgresql://eloquentlog:eloquentlog@postgres:5432/eloquentlog_test"
     TEST_MAILER_DOMAIN: "example.com"
     TEST_MAILER_FROM_EMAIL: "no-reply@example.com"
     TEST_MAILER_FROM_ALIAS: "Eloquentlog - Testing"
@@ -131,7 +133,6 @@ test:
     TEST_MAILER_SMTP_PORT: 587
     TEST_MAILER_SMTP_PASSWORD: "username"
     TEST_MAILER_SMTP_USERNAME: "password"
-    TEST_DATABASE_URL: "postgresql://eloquentlog:eloquentlog@postgres:5432/eloquentlog_test"
     TEST_QUEUE_URL: "redis://redis:6379/0"
   before_script:
     - *postgresql

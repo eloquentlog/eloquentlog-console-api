@@ -23,6 +23,7 @@ extern crate jsonwebtoken;
 #[macro_use]
 extern crate lazy_static;
 extern crate lettre;
+extern crate lettre_email;
 extern crate native_tls;
 
 #[cfg(test)]

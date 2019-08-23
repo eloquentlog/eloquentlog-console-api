@@ -1,8 +1,7 @@
 pub mod user;
 
 use lettre::{
-    ClientSecurity, ClientTlsParameters, EmailAddress, Envelope, Transport,
-    SendableEmail, SmtpClient,
+    ClientSecurity, ClientTlsParameters, Transport, SendableEmail, SmtpClient,
 };
 use lettre::smtp::ConnectionReuseParameters;
 use lettre::smtp::authentication::{Credentials, Mechanism};
@@ -11,22 +10,19 @@ use lettre::smtp::extension::ClientId;
 use lettre::smtp::client::net::DEFAULT_TLS_PROTOCOLS;
 use native_tls::TlsConnector;
 use slog::Logger;
-use uuid::Uuid;
 
 use config::Config;
 
 struct Header<'a> {
-    id: Uuid,
-    from: &'a str,
-    to: &'a str,
+    from: (&'a str, &'a str),
+    to: (&'a str, &'a str),
 }
 
 impl<'a> Default for Header<'a> {
     fn default() -> Self {
         Self {
-            id: Uuid::nil(),
-            from: "",
-            to: "",
+            from: ("", ""),
+            to: ("", ""),
         }
     }
 }
@@ -34,7 +30,6 @@ impl<'a> Default for Header<'a> {
 type Client<'a> = Box<dyn Transport<'a, Result = SmtpResult>>;
 
 pub struct Mailer<'a> {
-    header: Header<'a>,
     client: Option<Client<'a>>,
     config: &'a Config,
     logger: &'a Logger,
@@ -43,13 +38,16 @@ pub struct Mailer<'a> {
 impl<'a> Mailer<'a> {
     // TODO: connection manager (r2d2)
     pub fn build_client(config: &Config) -> Client<'a> {
+        // NOTE
+        // This TlsConnectors uses SSL/TLS.
+        // Thus, you may want to use 25/465 than 587.
         let mut tls_builder = TlsConnector::builder();
         tls_builder.min_protocol_version(Some(DEFAULT_TLS_PROTOCOLS[0]));
         let tls_parameters = ClientTlsParameters::new(
             config.mailer_smtp_host.to_string(),
             tls_builder.build().unwrap(),
         );
-        // with custom port
+
         let client = SmtpClient::new(
             (config.mailer_smtp_host.as_str(), config.mailer_smtp_port),
             ClientSecurity::Wrapper(tls_parameters),
@@ -68,13 +66,9 @@ impl<'a> Mailer<'a> {
     }
 
     pub fn new(config: &'a Config, logger: &'a Logger) -> Self {
-        let header = Header {
-            ..Default::default()
-        };
         let client = None;
 
         Self {
-            header,
             client,
             config,
             logger,
@@ -85,27 +79,10 @@ impl<'a> Mailer<'a> {
         self.client = client;
     }
 
-    pub fn to(&mut self, to: &'a str) -> &mut Self {
-        self.header = Header {
-            id: Uuid::new_v4(),
-            from: &self.config.mailer_from_email,
-            to,
-        };
-        self
-    }
-
-    pub fn send(&mut self, payload: String) -> bool {
-        let email = SendableEmail::new(
-            // TODO: sender alias
-            Envelope::new(
-                Some(EmailAddress::new(self.header.from.to_string()).unwrap()),
-                vec![EmailAddress::new(self.header.to.to_string()).unwrap()],
-            )
-            .unwrap(),
-            self.header.id.to_urn().to_string(),
-            payload.into_bytes(),
-        );
-
+    // send transports an email.
+    //
+    // `lettre_email::Email` implements Into<lettre::SenderableEmail>
+    pub fn send(&mut self, email: SendableEmail) -> bool {
         let result;
         if let Some(ref mut c) = self.client {
             result = c.send(email);
@@ -124,6 +101,7 @@ impl<'a> Mailer<'a> {
 mod test {
     use super::*;
 
+    use lettre::{EmailAddress, Envelope};
     use lettre::smtp::response::{
         Category, Code, Detail, Response as SmtpResponse, Severity,
     };
@@ -173,7 +151,19 @@ mod test {
             mailer.inject(Some(Box::new(transport)));
 
             let u = USERS.get("oswald").unwrap();
-            assert!(!mailer.to(&u.email).send("Hello, world!".to_string()));
+            let email = SendableEmail::new(
+                Envelope::new(
+                    Some(
+                        EmailAddress::new(config.mailer_from_email.to_string())
+                            .unwrap(),
+                    ),
+                    vec![EmailAddress::new(u.email.to_string()).unwrap()],
+                )
+                .unwrap(),
+                "id".to_string(),
+                b"Hello, world!".to_vec(),
+            );
+            assert!(!mailer.send(email));
         })
     }
 
@@ -195,7 +185,19 @@ mod test {
             mailer.inject(Some(Box::new(transport)));
 
             let u = USERS.get("oswald").unwrap();
-            assert!(mailer.to(&u.email).send("Hello, world!".to_string()));
+            let email = SendableEmail::new(
+                Envelope::new(
+                    Some(
+                        EmailAddress::new(config.mailer_from_email.to_string())
+                            .unwrap(),
+                    ),
+                    vec![EmailAddress::new(u.email.to_string()).unwrap()],
+                )
+                .unwrap(),
+                "id".to_string(),
+                b"Hello, world!".to_vec(),
+            );
+            assert!(mailer.send(email));
         })
     }
 }
