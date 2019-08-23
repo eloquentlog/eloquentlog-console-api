@@ -1,3 +1,5 @@
+//! Mailer sends email.
+
 pub mod user;
 
 use lettre::{
@@ -38,7 +40,7 @@ pub struct Mailer<'a> {
 impl<'a> Mailer<'a> {
     // TODO: connection manager (r2d2)
     pub fn build_client(config: &Config) -> Client<'a> {
-        // NOTE
+        // NOTE:
         // This TlsConnectors uses SSL/TLS.
         // Thus, you may want to use 25/465 than 587.
         let mut tls_builder = TlsConnector::builder();
@@ -79,9 +81,9 @@ impl<'a> Mailer<'a> {
         self.client = client;
     }
 
-    // send transports an email.
-    //
-    // `lettre_email::Email` implements Into<lettre::SenderableEmail>
+    /// Transports an email.
+    ///
+    /// `lettre_email::Email` implements Into<lettre::SenderableEmail>.
     pub fn send(&mut self, email: SendableEmail) -> bool {
         let result;
         if let Some(ref mut c) = self.client {
@@ -102,36 +104,12 @@ mod test {
     use super::*;
 
     use lettre::{EmailAddress, Envelope};
-    use lettre::smtp::response::{
-        Category, Code, Detail, Response as SmtpResponse, Severity,
-    };
+    use lettre::smtp::response::{Category, Code, Detail, Severity};
 
     use model::test::run;
     use model::user::data::USERS;
 
-    // NOTE:
-    // Apparently, in v0.9.2, it seems that `StubTransport` holds `StubResult`
-    // as a response. It makes us hard to replace an transport instance while
-    // testing in our usage. Thus, we simply use a mocked transport with
-    // SmtpResponse.
-    //
-    // https://docs.rs/lettre/0.9.2/src/lettre/stub/mod.rs.html#11
-    struct MockTransport {
-        response: SmtpResponse,
-    }
-
-    impl<'a> Transport<'a> for MockTransport {
-        type Result = SmtpResult;
-
-        fn send(&mut self, _email: SendableEmail) -> SmtpResult {
-            let response = self.response.clone();
-            if response.is_positive() {
-                Ok(response)
-            } else {
-                Err(response.into())
-            }
-        }
-    }
+    include!("./mock_transport.rs");
 
     #[test]
     fn test_email_send_failure() {
@@ -143,11 +121,7 @@ mod test {
                 Category::Connections,
                 Detail::Zero,
             );
-            let response = SmtpResponse {
-                code,
-                message: vec![],
-            };
-            let transport = MockTransport { response };
+            let transport = MockTransport::new(code, vec![]);
             mailer.inject(Some(Box::new(transport)));
 
             let u = USERS.get("oswald").unwrap();
@@ -177,11 +151,7 @@ mod test {
                 Category::MailSystem,
                 Detail::Zero,
             );
-            let response = SmtpResponse {
-                code,
-                message: vec![],
-            };
-            let transport = MockTransport { response };
+            let transport = MockTransport::new(code, vec![]);
             mailer.inject(Some(Box::new(transport)));
 
             let u = USERS.get("oswald").unwrap();
