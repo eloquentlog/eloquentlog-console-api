@@ -183,6 +183,10 @@ clean:  ## Tidy up
 	@cargo clean
 .PHONY: clean
 
+doc:  ## Generate doc for lib
+	@cargo doc --lib --no-deps
+.PHONY: doc
+
 help:  ## Display this message
 	@grep --extended-regexp '^[0-9a-z\:\\]+: ' $(MAKEFILE_LIST) | \
 	  grep --extended-regexp '  ## ' | \

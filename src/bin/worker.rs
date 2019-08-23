@@ -17,7 +17,7 @@ use redis::Client;
 use eloquentlog_backend_api::config::Config;
 use eloquentlog_backend_api::db::establish_connection;
 use eloquentlog_backend_api::job::Job;
-use eloquentlog_backend_api::logger;
+use eloquentlog_backend_api::logger::get_logger;
 
 fn get_env() -> String {
     match env::var("ENV") {
@@ -40,7 +40,7 @@ fn main() {
     // postgresql
     let db_conn = establish_connection(&config);
 
-    let logger = logger::get_logger(&config);
+    let logger = get_logger(&config);
     let queue = Queue::new("default", &mq_conn);
 
     loop {
