@@ -67,11 +67,15 @@ test\:unit:  ## Run unit tests
 	@cargo test --lib
 .PHONY: test\:unit
 
-test\:integration:  ## Run integrations test only
+test\:integration:  ## Run integration tests
 	@cargo test --test integration
 .PHONY: test\:integration
 
-test\:all:  ## Run unit tests and integration tests [alias: test]
+test\:doc:  ## Run doc tests
+	@cargo test --doc
+.PHONY: test\:doc
+
+test\:all: | test\:doc  ## Run doc, unit and integration tests [alias: test]
 	@cargo test --lib --test integration
 .PHONY: test\:all
 
