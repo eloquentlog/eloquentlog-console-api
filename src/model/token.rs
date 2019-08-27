@@ -1,7 +1,7 @@
 //! Token handles encoding/decoding of raw token using Claims.
 use std::fmt;
 
-use chrono::Utc;
+use chrono::{NaiveDateTime, Utc};
 
 use model::user::User;
 
@@ -68,6 +68,8 @@ where Self: std::marker::Sized
     ) -> String;
 
     fn get_subject(&self) -> String;
+    fn get_issued_at(&self) -> NaiveDateTime;
+    fn get_expiration_time(&self) -> NaiveDateTime;
 }
 
 /// ActivationClaims
@@ -91,12 +93,14 @@ impl Claims for ActivationClaims {
     ) -> Result<Self, jsonwebtoken::errors::Error>
     {
         // self check
-        let header = decode_header(&token).expect("Invalid token");
-        if header.alg != Self::ALGORITHM {
-            return Err(jsonwebtoken::errors::Error::from(
-                jsonwebtoken::errors::ErrorKind::InvalidToken,
-            ));
-        }
+        let _ = match decode_header(&token) {
+            Ok(ref header) if header.alg == Self::ALGORITHM => header,
+            _ => {
+                return Err(jsonwebtoken::errors::Error::from(
+                    jsonwebtoken::errors::ErrorKind::InvalidToken,
+                ));
+            },
+        };
 
         // TODO: validate aud
         let v = Validation {
@@ -140,6 +144,14 @@ impl Claims for ActivationClaims {
 
     fn get_subject(&self) -> String {
         self.sub.to_string()
+    }
+
+    fn get_issued_at(&self) -> NaiveDateTime {
+        NaiveDateTime::from_timestamp(self.iat as i64, 0)
+    }
+
+    fn get_expiration_time(&self) -> NaiveDateTime {
+        NaiveDateTime::from_timestamp(self.exp as i64, 0)
     }
 }
 
@@ -213,6 +225,14 @@ impl Claims for AuthorizationClaims {
 
     fn get_subject(&self) -> String {
         self.sub.to_string()
+    }
+
+    fn get_issued_at(&self) -> NaiveDateTime {
+        NaiveDateTime::from_timestamp(self.iat as i64, 0)
+    }
+
+    fn get_expiration_time(&self) -> NaiveDateTime {
+        NaiveDateTime::from_timestamp(self.exp as i64, 0)
     }
 }
 

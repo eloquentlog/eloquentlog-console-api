@@ -93,7 +93,7 @@ impl<'a> Mailer<'a> {
             result = client.send(email);
         }
         if let Err(ref e) = result {
-            error!(self.logger, "e: {}", e);
+            error!(self.logger, "err: {}", e);
         }
         result.is_ok()
     }

@@ -21,6 +21,7 @@ mod message;
 mod error;
 mod registration;
 mod top;
+mod activation;
 
 use std::panic::{self, AssertUnwindSafe};
 use regex::Regex;

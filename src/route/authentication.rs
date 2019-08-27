@@ -18,8 +18,8 @@ pub fn signin_options<'a>() -> RawResponse<'a> {
 
 #[post("/signin", data = "<data>", format = "json")]
 pub fn signin(
-    conn: DbConn,
     data: RequestData,
+    conn: DbConn,
     logger: SyncLogger,
     config: State<Config>,
 ) -> Response
@@ -28,7 +28,7 @@ pub fn signin(
 
     match User::find_by_email_or_uuid(&data.username, &conn, &logger) {
         Some(ref user) if user.verify_password(&data.password) => {
-            // TODO
+            // TODO:
             // set valid expires_at and impl review mechanism (check also
             // `validate_exp` for Validation struct for JWT)
             // e.g. let expires_at = (now + Duration::weeks(2)).timestamp();
