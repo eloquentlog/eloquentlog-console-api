@@ -1,12 +1,16 @@
+use chrono::{Duration, Utc};
 use diesel::result::Error;
 use fourche::queue::Queue;
+use rocket::State;
 use rocket::http::Status;
 use rocket::response::Response as RawResponse;
 use rocket_contrib::json::Json;
 use rocket_slog::SyncLogger;
 
+use config::Config;
 use db::DbConn;
 use job::{Job, JobKind};
+use model::token::{ActivationClaims, Claims, TokenData};
 use model::user::{NewUser, User};
 use model::user_email::{NewUserEmail, UserEmail};
 use response::{Response, no_content_for};
@@ -25,6 +29,7 @@ pub fn register(
     db_conn: DbConn,
     mq_conn: MqConn,
     logger: SyncLogger,
+    config: State<Config>,
 ) -> Response
 {
     let res: Response = Default::default();
@@ -49,9 +54,29 @@ pub fn register(
                     let ue = NewUserEmail::from(&user);
                     let user_email =
                         UserEmail::insert(&ue, &db_conn, &logger).unwrap();
-                    if let Err(e) =
-                        user_email.grant_activation_token(&db_conn, &logger)
-                    {
+
+                    // TODO:
+                    // impl service object handles token generation/activation.
+                    // see also signin
+                    let now = Utc::now();
+                    let data = TokenData {
+                        value: UserEmail::generate_token(),
+                        granted_at: now.timestamp(),
+                        expires_at: (now + Duration::hours(1)).timestamp(),
+                    };
+                    let token = ActivationClaims::encode(
+                        data,
+                        &config.activation_token_issuer,
+                        &config.activation_token_key_id,
+                        &config.activation_token_secret,
+                    );
+                    if let Err(e) = user_email.grant_token::<ActivationClaims>(
+                        &token,
+                        &config.activation_token_issuer,
+                        &config.activation_token_secret,
+                        &db_conn,
+                        &logger,
+                    ) {
                         error!(logger, "error: {}", e);
                         return Err(Error::RollbackTransaction);
                     }

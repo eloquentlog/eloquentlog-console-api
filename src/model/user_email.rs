@@ -1,9 +1,10 @@
 use std::fmt;
 
-use chrono::{Duration, NaiveDateTime, Utc};
+use chrono::NaiveDateTime;
 use diesel::{Associations, Identifiable, Queryable, debug_query, prelude::*};
 use diesel::pg::{Pg, PgConnection};
 
+pub use model::token::Claims;
 pub use model::user_email_activation_state::*;
 pub use model::user_email_role::*;
 pub use schema::user_emails;
@@ -107,6 +108,46 @@ impl UserEmail {
         }
     }
 
+    /// Finds only a non-activated (pending) UserEmail by activation token.
+    pub fn find_by_token<T: Claims>(
+        token: &str,
+        issuer: &str,
+        secret: &str,
+        conn: &PgConnection,
+        logger: &Logger,
+    ) -> Option<Self>
+    {
+        let value = match T::decode(token, issuer, secret) {
+            Ok(claims) => claims.get_subject(),
+            Err(e) => {
+                error!(logger, "err: {}", e);
+                "".to_string()
+            },
+        };
+        if value.is_empty() {
+            return None;
+        }
+
+        let q = user_emails::table
+            .filter(user_emails::activation_token.eq(value))
+            .filter(
+                user_emails::activation_state
+                    .eq(UserEmailActivationState::Pending),
+            )
+            .limit(1);
+
+        info!(logger, "{}", debug_query::<Pg, _>(&q).to_string());
+
+        match q.first::<UserEmail>(conn) {
+            Ok(v) => Some(v),
+            _ => None,
+        }
+    }
+
+    pub fn generate_token() -> String {
+        generate_random_hash(ACTIVATION_HASH_SOURCE, ACTIVATION_HASH_LENGTH)
+    }
+
     /// Save a new user_email into user_emails.
     ///
     /// # Note
@@ -141,26 +182,50 @@ impl UserEmail {
         }
     }
 
-    pub fn grant_activation_token(
+    pub fn activate(
         &self,
         conn: &PgConnection,
         logger: &Logger,
     ) -> Result<String, &'static str>
     {
-        // TODO: check duplication
-        let activation_token = generate_random_hash(
-            ACTIVATION_HASH_SOURCE,
-            ACTIVATION_HASH_LENGTH,
-        );
+        let activation_token = self.activation_token.clone().unwrap();
 
-        let granted_at = Utc::now();
-        let expires_at = granted_at + Duration::hours(24);
+        // TODO: set activation_token to NULL
+        let q = diesel::update(self).set((
+            user_emails::activation_state.eq(UserEmailActivationState::Done),
+            user_emails::activation_token.eq(""),
+        ));
 
+        info!(logger, "{}", debug_query::<Pg, _>(&q).to_string());
+
+        match q.get_result::<Self>(conn) {
+            Err(e) => {
+                error!(logger, "err: {}", e);
+                Err("failed to activate")
+            },
+            Ok(_) => Ok(activation_token),
+        }
+    }
+
+    pub fn grant_token<T: Claims>(
+        &self,
+        token: &str,
+        issuer: &str,
+        secret: &str,
+        conn: &PgConnection,
+        logger: &Logger,
+    ) -> Result<String, &'static str>
+    {
+        // TODO: should we check duplication?
+        let c = T::decode(token, issuer, secret).expect("Invalid value");
+
+        // activation
         let q = diesel::update(self).set((
             user_emails::activation_state.eq(UserEmailActivationState::Pending),
-            user_emails::activation_token.eq(activation_token.clone()),
-            user_emails::activation_token_expires_at.eq(expires_at.naive_utc()),
-            user_emails::activation_token_granted_at.eq(granted_at.naive_utc()),
+            user_emails::activation_token.eq(c.get_subject()),
+            user_emails::activation_token_expires_at
+                .eq(c.get_expiration_time()),
+            user_emails::activation_token_granted_at.eq(c.get_issued_at()),
         ));
 
         info!(logger, "{}", debug_query::<Pg, _>(&q).to_string());
@@ -170,8 +235,12 @@ impl UserEmail {
                 error!(logger, "err: {}", e);
                 Err("failed to grant token")
             },
-            Ok(_) => Ok(activation_token),
+            Ok(user_email) => Ok(user_email.activation_token.unwrap()),
         }
+    }
+
+    pub fn is_primary(&self) -> bool {
+        self.role == UserEmailRole::Primary
     }
 }
 
@@ -233,7 +302,10 @@ mod data {
 mod test {
     use super::*;
 
+    use chrono::{Duration, Utc};
+
     use model::user::{User, users};
+    use model::token::{ActivationClaims, TokenData};
 
     use model::test::run;
     use model::user::data::USERS;
@@ -306,6 +378,122 @@ mod test {
     }
 
     #[test]
+    fn test_find_by_token_not_found() {
+        run(|conn, config, logger| {
+            let u = USERS.get("hennry").unwrap();
+            let user_id = diesel::insert_into(users::table)
+                .values(u)
+                .returning(users::id)
+                .get_result::<i64>(conn)
+                .unwrap_or_else(|e| panic!("Error inserting: {}", e));
+
+            let mut user_email =
+                USER_EMAILS.get("hennry's primary address").unwrap().clone();
+            user_email.user_id = user_id;
+
+            let user_email = diesel::insert_into(user_emails::table)
+                .values(&user_email)
+                .get_result::<UserEmail>(conn)
+                .unwrap_or_else(|e| panic!("Error inserting: {}", e));
+
+            let now = Utc::now();
+            let data = TokenData {
+                value: UserEmail::generate_token(),
+                granted_at: now.timestamp(),
+                expires_at: (now + Duration::hours(1)).timestamp(),
+            };
+            let token = ActivationClaims::encode(
+                data,
+                &config.activation_token_issuer,
+                &config.activation_token_key_id,
+                &config.activation_token_secret,
+            );
+            let _ = user_email
+                .grant_token::<ActivationClaims>(
+                    &token,
+                    &config.activation_token_issuer,
+                    &config.activation_token_secret,
+                    conn,
+                    logger,
+                )
+                .expect("failed to grant activation token");
+
+            // set state as done
+            diesel::update(&user_email)
+                .set(
+                    user_emails::activation_state
+                        .eq(UserEmailActivationState::Done),
+                )
+                .execute(conn)
+                .unwrap_or_else(|e| panic!("Error updating: {}", e));
+
+            let result = UserEmail::find_by_token::<ActivationClaims>(
+                &token,
+                &config.activation_token_issuer,
+                &config.activation_token_secret,
+                conn,
+                logger,
+            );
+            assert!(result.is_none());
+        })
+    }
+
+    #[test]
+    fn test_find_by_token() {
+        run(|conn, config, logger| {
+            let u = USERS.get("oswald").unwrap();
+            let user_id = diesel::insert_into(users::table)
+                .values(u)
+                .returning(users::id)
+                .get_result::<i64>(conn)
+                .unwrap_or_else(|e| panic!("Error inserting: {}", e));
+
+            let mut user_email =
+                USER_EMAILS.get("oswald's primary address").unwrap().clone();
+            user_email.user_id = user_id;
+
+            let id = diesel::insert_into(user_emails::table)
+                .values(&user_email)
+                .returning(user_emails::id)
+                .get_result::<i64>(conn)
+                .unwrap_or_else(|e| panic!("Error inserting: {}", e));
+
+            let now = Utc::now();
+            let data = TokenData {
+                value: UserEmail::generate_token(),
+                granted_at: now.timestamp(),
+                expires_at: (now + Duration::hours(1)).timestamp(),
+            };
+            let token = ActivationClaims::encode(
+                data,
+                &config.activation_token_issuer,
+                &config.activation_token_key_id,
+                &config.activation_token_secret,
+            );
+            let _ = user_email
+                .grant_token::<ActivationClaims>(
+                    &token,
+                    &config.activation_token_issuer,
+                    &config.activation_token_secret,
+                    conn,
+                    logger,
+                )
+                .expect("failed to grant activation token");
+
+            let result = UserEmail::find_by_token::<ActivationClaims>(
+                &token,
+                &config.activation_token_issuer,
+                &config.activation_token_secret,
+                conn,
+                logger,
+            );
+            let user_email = result.unwrap();
+            assert_eq!(user_email.id, id);
+            assert_eq!(user_email.user_id, user_id);
+        })
+    }
+
+    #[test]
     #[should_panic]
     fn test_insert_should_panic_on_failure() {
         run(|conn, _, logger| {
@@ -352,8 +540,59 @@ mod test {
     }
 
     #[test]
-    fn test_grant_activation_token() {
-        run(|conn, _, logger| {
+    fn test_activate() {
+        run(|conn, config, logger| {
+            let u = USERS.get("oswald").unwrap();
+            let user = diesel::insert_into(users::table)
+                .values(u)
+                .get_result::<User>(conn)
+                .unwrap_or_else(|e| panic!("Error at inserting: {}", e));
+
+            let mut ue =
+                USER_EMAILS.get("oswald's primary address").unwrap().clone();
+            ue.user_id = user.id;
+
+            let user_email = diesel::insert_into(user_emails::table)
+                .values(&ue)
+                .get_result::<UserEmail>(conn)
+                .unwrap_or_else(|e| panic!("Error inserting: {}", e));
+
+            let now = Utc::now();
+            let data = TokenData {
+                value: UserEmail::generate_token(),
+                granted_at: now.timestamp(),
+                expires_at: (now + Duration::hours(1)).timestamp(),
+            };
+            let token = ActivationClaims::encode(
+                data,
+                &config.activation_token_issuer,
+                &config.activation_token_key_id,
+                &config.activation_token_secret,
+            );
+            let _ = user_email
+                .grant_token::<ActivationClaims>(
+                    &token,
+                    &config.activation_token_issuer,
+                    &config.activation_token_secret,
+                    conn,
+                    logger,
+                )
+                .expect("failed to grant activation token");
+
+            let user_email = user_emails::table
+                .filter(user_emails::id.eq(user_email.id))
+                .limit(1)
+                .first::<UserEmail>(conn)
+                .unwrap();
+
+            let result = user_email.activate(conn, logger);
+            assert!(result.is_ok());
+        })
+    }
+
+    #[test]
+    fn test_grant_token() {
+        run(|conn, config, logger| {
             let u = USERS.get("hennry").unwrap();
             let user = diesel::insert_into(users::table)
                 .values(u)
@@ -372,8 +611,26 @@ mod test {
                 .expect("failed to count rows");
             assert_eq!(1, rows_count);
 
-            let token = user_email
-                .grant_activation_token(conn, logger)
+            let now = Utc::now();
+            let data = TokenData {
+                value: UserEmail::generate_token(),
+                granted_at: now.timestamp(),
+                expires_at: (now + Duration::hours(1)).timestamp(),
+            };
+            let token = ActivationClaims::encode(
+                data,
+                &config.activation_token_issuer,
+                &config.activation_token_key_id,
+                &config.activation_token_secret,
+            );
+            let activation_token = user_email
+                .grant_token::<ActivationClaims>(
+                    &token,
+                    &config.activation_token_issuer,
+                    &config.activation_token_secret,
+                    conn,
+                    logger,
+                )
                 .expect("failed to grant activation token");
 
             let rows_count: i64 = user_emails::table
@@ -388,7 +645,7 @@ mod test {
                 .first::<UserEmail>(conn)
                 .unwrap();
 
-            assert_eq!(token, user_email.activation_token.unwrap());
+            assert_eq!(activation_token, user_email.activation_token.unwrap());
         });
     }
 }

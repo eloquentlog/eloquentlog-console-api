@@ -41,6 +41,83 @@ impl<'a, 'r> FromRequest<'a, 'r> for &'a User {
     }
 }
 
+/// UserActivation
+pub enum UserActivationError {
+    Io(io::Error),
+    Empty,
+}
+
+const USER_ACTIVATION_LENGTH_LIMIT: u64 = 512;
+
+#[derive(Clone, Debug, Deserialize)]
+pub struct UserActivation {
+    pub token: String,
+}
+
+impl Default for UserActivation {
+    fn default() -> Self {
+        Self {
+            token: "".to_string(),
+        }
+    }
+}
+
+impl<'v> FromData<'v> for UserActivation {
+    type Error = UserActivationError;
+    type Owned = String;
+    type Borrowed = str;
+
+    fn transform(
+        _: &Request,
+        data: Data,
+    ) -> Transform<data::Outcome<Self::Owned, Self::Error>>
+    {
+        let mut stream = data.open().take(USER_ACTIVATION_LENGTH_LIMIT);
+        let mut string =
+            String::with_capacity((USER_ACTIVATION_LENGTH_LIMIT / 2) as usize);
+        let outcome = match stream.read_to_string(&mut string) {
+            Ok(_) => Success(string),
+            Err(e) => {
+                Failure((
+                    Status::InternalServerError,
+                    UserActivationError::Io(e),
+                ))
+            },
+        };
+
+        Transform::Borrowed(outcome)
+    }
+
+    fn from_data(
+        _: &Request,
+        outcome: Transformed<'v, Self>,
+    ) -> data::Outcome<Self, Self::Error>
+    {
+        let input = outcome.borrowed()?;
+        let user_activation: UserActivation = match serde_json::from_str(input)
+        {
+            Ok(v) => v,
+            Err(_) => {
+                // TODO: log error
+                return Failure((
+                    Status::UnprocessableEntity,
+                    UserActivationError::Empty,
+                ));
+            },
+        };
+
+        if user_activation.token == "" {
+            return Failure((
+                Status::UnprocessableEntity,
+                UserActivationError::Empty,
+            ));
+        }
+        Success(UserActivation {
+            token: user_activation.token,
+        })
+    }
+}
+
 /// UserSignUp
 #[derive(Clone, Deserialize)]
 pub struct UserSignUp {

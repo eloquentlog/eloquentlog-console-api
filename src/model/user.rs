@@ -218,9 +218,10 @@ impl User {
     ) -> Option<Self>
     {
         // TODO: support user activation token
-        let c = T::decode(token, issuer, secret).expect("Invalid value");
+        let claims = T::decode(token, issuer, secret).expect("Invalid value");
+        let uuid = claims.get_subject();
         // authorization token
-        Self::find_by_uuid(c.get_subject().as_ref(), conn, logger)
+        Self::find_by_uuid(&uuid, conn, logger)
     }
 
     /// Save a new user into users.
