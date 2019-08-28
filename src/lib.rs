@@ -108,6 +108,8 @@ pub fn server(c: &config::Config) -> rocket::Rocket {
         .mount(
             "/_api",
             routes![
+                route::activation::activate,
+                route::activation::activate_options,
                 route::authentication::signin,
                 route::authentication::signin_options,
                 route::authentication::logout,
@@ -121,8 +123,6 @@ pub fn server(c: &config::Config) -> rocket::Rocket {
                 route::registration::register,
                 route::registration::register_options,
                 route::registration::deregister,
-                route::user::activate,
-                route::user::activate_options,
             ],
         )
         .manage(c.clone()) // TODO: not good?
