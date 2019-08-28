@@ -98,11 +98,7 @@ macro_rules! fnvhashmap(
     };
 );
 
-use rocket_slog::SlogFairing;
-
-pub fn server(c: &config::Config) -> rocket::Rocket {
-    let logger = logger::get_logger(c);
-
+pub fn server() -> rocket::Rocket {
     rocket::ignite()
         .mount("/", routes![route::top::index])
         .mount(
@@ -125,8 +121,6 @@ pub fn server(c: &config::Config) -> rocket::Rocket {
                 route::registration::deregister,
             ],
         )
-        .manage(c.clone()) // TODO: not good?
-        .attach(SlogFairing::new(logger))
         .register(catchers![
             route::error::bad_request,
             route::error::not_found,

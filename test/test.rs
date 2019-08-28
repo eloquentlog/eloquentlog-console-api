@@ -11,6 +11,7 @@ extern crate fnv;
 extern crate parking_lot;
 extern crate redis;
 extern crate rocket;
+extern crate rocket_slog;
 extern crate uuid;
 
 #[macro_use]
@@ -34,6 +35,7 @@ use fnv::FnvHashMap;
 use parking_lot::Mutex;
 use rocket::http::Header;
 use rocket::local::Client;
+use rocket_slog::SlogFairing;
 use uuid::Uuid;
 
 use eloquentlog_backend_api::server;
@@ -89,9 +91,11 @@ where T: FnOnce(
     setup(&db_conn, &mq_conn);
 
     let result = panic::catch_unwind(AssertUnwindSafe(|| {
-        let server = server(&CONFIG)
+        let server = server()
+            .attach(SlogFairing::new(logger.clone()))
             .manage(DB_POOL.clone())
-            .manage(MQ_POOL.clone());
+            .manage(MQ_POOL.clone())
+            .manage(CONFIG.clone());
         let client = Client::new(server).unwrap();
 
         test(client, &db_conn, &mq_conn, &CONFIG, &logger)

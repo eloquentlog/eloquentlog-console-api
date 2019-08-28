@@ -1,12 +1,15 @@
 extern crate dotenv;
 extern crate rocket;
+extern crate rocket_slog;
 
 extern crate eloquentlog_backend_api;
 
 use std::env;
 
 use dotenv::dotenv;
+use rocket_slog::SlogFairing;
 
+use eloquentlog_backend_api::logger;
 use eloquentlog_backend_api::server;
 use eloquentlog_backend_api::db::init_pool as init_db_pool;
 use eloquentlog_backend_api::mq::init_pool as init_mq_pool;
@@ -25,11 +28,17 @@ fn main() {
 
     dotenv().ok();
     let config = Config::from(name.as_str()).expect("failed to get config");
+    let logger = logger::get_logger(&config);
 
     // connection pools
     let db_pool =
         init_db_pool(&config.database_url, config.database_max_pool_size);
     let mq_pool = init_mq_pool(&config.queue_url, config.queue_max_pool_size);
 
-    server(&config).manage(db_pool).manage(mq_pool).launch();
+    server()
+        .attach(SlogFairing::new(logger))
+        .manage(db_pool)
+        .manage(mq_pool)
+        .manage(config)
+        .launch();
 }
