@@ -10,8 +10,8 @@ pub fn options<'a>(
     logger: SyncLogger,
 ) -> RawResponse<'a>
 {
-    if token.is_some() {
-        info!(logger, "token: {}", token.unwrap());
+    if let Some(value) = token {
+        info!(logger, "token: {}", value);
         no_content_for("GET,PUT")
     } else {
         no_content_for("POST")
