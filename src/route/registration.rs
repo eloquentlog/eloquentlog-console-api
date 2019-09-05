@@ -27,7 +27,7 @@ pub fn register_options<'a>() -> RawResponse<'a> {
 pub fn register(
     data: Json<RequestData>,
     db_conn: DbConn,
-    mq_conn: MqConn,
+    mut mq_conn: MqConn,
     logger: SyncLogger,
     config: State<Config>,
 ) -> Response
@@ -90,7 +90,7 @@ pub fn register(
                         args: vec![user_email.id],
                     };
                     // TODO: Consider about retrying
-                    let queue = Queue::new("default", &mq_conn);
+                    let mut queue = Queue::new("default", &mut mq_conn);
                     if let Err(err) = queue.enqueue::<Job<i64>>(job) {
                         error!(logger, "error: {}", err);
                     }

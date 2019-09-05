@@ -76,7 +76,7 @@ pub fn run_test<T>(test: T)
 where T: FnOnce(
             Client,
             &PgConnection,
-            &redis::Connection,
+            &mut redis::Connection,
             &config::Config,
             &Logger,
         ) -> ()
@@ -85,10 +85,10 @@ where T: FnOnce(
 
     // Use same connection pools across tests
     let db_conn = get_db_conn(&DB_POOL);
-    let mq_conn = get_mq_conn(&MQ_POOL);
+    let mut mq_conn = get_mq_conn(&MQ_POOL);
 
     let logger = get_logger(&CONFIG);
-    setup(&db_conn, &mq_conn);
+    setup(&db_conn, &mut mq_conn);
 
     let result = panic::catch_unwind(AssertUnwindSafe(|| {
         let server = server()
@@ -98,22 +98,23 @@ where T: FnOnce(
             .manage(CONFIG.clone());
         let client = Client::new(server).unwrap();
 
-        test(client, &db_conn, &mq_conn, &CONFIG, &logger)
+        test(client, &db_conn, &mut mq_conn, &CONFIG, &logger)
     }));
     assert!(result.is_ok());
 
-    teardown(&db_conn, &mq_conn);
+    teardown(&db_conn, &mut mq_conn);
 }
 
-fn setup(db_conn: &PgConnection, mq_conn: &redis::Connection) {
+fn setup(db_conn: &PgConnection, mq_conn: &mut redis::Connection) {
     clean(db_conn, mq_conn);
 }
 
-fn teardown(db_conn: &PgConnection, mq_conn: &redis::Connection) {
+fn teardown(db_conn: &PgConnection, mq_conn: &mut redis::Connection) {
     clean(db_conn, mq_conn);
 }
 
-fn clean(db_conn: &PgConnection, _: &redis::Connection) {
+fn clean(db_conn: &PgConnection, _: &mut redis::Connection) {
+    // TODO: clean up also queue
     let _: std::result::Result<(), diesel::result::Error> = db_conn
         .build_transaction()
         .serializable()

@@ -1,5 +1,5 @@
 //! The message queue and its connection manager.
-use std::ops::Deref;
+use std::ops::{Deref, DerefMut};
 
 use rocket::http::Status;
 use rocket::request::{self, FromRequest};
@@ -28,6 +28,12 @@ impl Deref for MqConn {
 
     fn deref(&self) -> &Self::Target {
         &*self.0
+    }
+}
+
+impl DerefMut for MqConn {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut *self.0
     }
 }
 

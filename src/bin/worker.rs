@@ -35,13 +35,13 @@ fn main() {
 
     // redis
     let client = Client::open(config.queue_url.as_str()).unwrap();
-    let mq_conn = client.get_connection().unwrap();
+    let mut mq_conn = client.get_connection().unwrap();
 
     // postgresql
     let db_conn = establish_connection(&config);
 
     let logger = get_logger(&config);
-    let queue = Queue::new("default", &mq_conn);
+    let mut queue = Queue::new("default", &mut mq_conn);
 
     loop {
         match queue.dequeue::<Job<i64>>() {
