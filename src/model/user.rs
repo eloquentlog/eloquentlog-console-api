@@ -1,3 +1,4 @@
+use std::any::Any;
 use std::fmt;
 use std::str;
 
@@ -9,9 +10,12 @@ use uuid::Uuid;
 
 pub use model::user_state::*;
 pub use model::user_reset_password_state::*;
-pub use model::token::Claims;
+pub use model::token::{AuthorizationClaims, ActivationClaims, Claims};
 pub use schema::users;
+pub use schema::user_emails;
 
+use model::user_email::UserEmail;
+use model::user_email_activation_state::UserEmailActivationState;
 use logger::Logger;
 use request::user::UserSignUp as RequestData;
 
@@ -209,7 +213,30 @@ impl User {
         }
     }
 
-    pub fn find_by_token<T: Claims>(
+    pub fn load_with_user_email_activation_token(
+        activation_token: &str,
+        conn: &PgConnection,
+        logger: &Logger,
+    ) -> Result<(User, UserEmail), &'static str>
+    {
+        let q = users::table
+            .inner_join(user_emails::table)
+            .filter(user_emails::activation_token.eq(activation_token))
+            .filter(
+                user_emails::activation_state
+                    .eq(UserEmailActivationState::Pending),
+            )
+            .limit(1);
+
+        info!(logger, "{}", debug_query::<Pg, _>(&q).to_string());
+
+        match q.load::<(User, UserEmail)>(conn) {
+            Ok(ref mut v) if v.len() == 1 => v.pop().ok_or("unexpected :'("),
+            _ => Err("not found"),
+        }
+    }
+
+    pub fn find_by_token<T: Any + Claims>(
         token: &str,
         issuer: &str,
         secret: &str,
@@ -217,11 +244,22 @@ impl User {
         logger: &Logger,
     ) -> Option<Self>
     {
-        // TODO: support user activation token
-        let claims = T::decode(token, issuer, secret).expect("Invalid value");
-        let uuid = claims.get_subject();
-        // authorization token
-        Self::find_by_uuid(&uuid, conn, logger)
+        let t = T::decode(token, issuer, secret).expect("invalid value");
+        let c = &t as &dyn Any;
+        if let Some(claims) = c.downcast_ref::<AuthorizationClaims>() {
+            let uuid = claims.get_subject();
+            return Self::find_by_uuid(&uuid, conn, logger);
+        } else if let Some(claims) = c.downcast_ref::<ActivationClaims>() {
+            let activation_token = claims.get_subject();
+            return Self::load_with_user_email_activation_token(
+                &activation_token,
+                conn,
+                logger,
+            )
+            .map(|(user, _)| user)
+            .ok();
+        }
+        None
     }
 
     /// Save a new user into users.
@@ -249,6 +287,25 @@ impl User {
                 None
             },
             Ok(u) => Some(u),
+        }
+    }
+
+    pub fn activate(
+        &self,
+        conn: &PgConnection,
+        logger: &Logger,
+    ) -> Result<String, &'static str>
+    {
+        let q = diesel::update(self).set(users::state.eq(UserState::Active));
+
+        info!(logger, "{}", debug_query::<Pg, _>(&q).to_string());
+
+        match q.get_result::<Self>(conn) {
+            Err(e) => {
+                error!(logger, "err: {}", e);
+                Err("failed to activate")
+            },
+            Ok(_) => Ok(self.uuid.to_urn().to_string()),
         }
     }
 

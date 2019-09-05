@@ -73,6 +73,7 @@ pub mod mailer;
 pub mod model;
 pub mod request;
 pub mod route;
+pub mod service;
 
 // macros
 
