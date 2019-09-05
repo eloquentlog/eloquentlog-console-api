@@ -30,7 +30,7 @@ fn test_register_with_validation_error() {
 
 #[test]
 fn test_register() {
-    run_test(|client, db_conn, mq_conn, _, logger| {
+    run_test(|client, db_conn, mut mq_conn, _, logger| {
         let email = "postmaster@example.org";
         let res = client
             .post("/_api/register")
@@ -52,7 +52,7 @@ fn test_register() {
         assert_eq!(u.email, email);
 
         // TODO: check sent email
-        let queue = Queue::new("default", &mq_conn);
+        let mut queue = Queue::new("default", &mut mq_conn);
         let job = queue.dequeue::<Job<i64>>().ok().unwrap();
         assert_eq!(job.kind, JobKind::SendUserActivationEmail);
         assert_eq!(job.args, vec![1]);
