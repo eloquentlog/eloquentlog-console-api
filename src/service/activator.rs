@@ -64,9 +64,9 @@ impl<'a> UserActivator<'a> {
                     user_email.activate(&self.conn, &self.logger).is_ok() &&
                     user.activate(&self.conn, &self.logger).is_ok()
                 {
-                    return Err(Error::RollbackTransaction);
+                    return Ok(());
                 }
-                Ok(())
+                Err(Error::RollbackTransaction)
             });
         if activation.is_ok() {
             info!(
