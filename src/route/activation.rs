@@ -5,10 +5,9 @@ use rocket_slog::SyncLogger;
 
 use config::Config;
 use db::DbConn;
-use model::user_email::UserEmail;
-use model::token::ActivationClaims;
 use request::user::UserActivation as RequestData;
 use response::{Response, no_content_for};
+use service::activator::UserActivator;
 
 #[options("/user/activate")]
 pub fn activate_options<'a>() -> RawResponse<'a> {
@@ -25,32 +24,12 @@ pub fn activate(
 {
     let res: Response = Default::default();
 
-    match UserEmail::find_by_token::<ActivationClaims>(
-        &data.token,
-        &config.activation_token_issuer,
-        &config.activation_token_secret,
-        &conn,
-        &logger,
-    ) {
-        Some(ref user_email) if user_email.is_primary() => {
-            let _ = user_email.activate(&conn, &logger);
-            info!(
-                logger,
-                "an user email({}) has been activate (granted: {})",
-                user_email.role,
-                user_email
-                    .activation_token_granted_at
-                    .unwrap()
-                    .format("%Y-%m-%d %H:%M:%S"),
-            );
-            res.status(Status::Ok)
-        },
-        _ => {
-            warn!(logger, "activation failed: token {}", data.token);
-
-            res.status(Status::BadRequest).format(json!({
-                "message": "The credentials you've entered is expired/incorrect"
-            }))
-        },
+    let activator = UserActivator::new(&conn, &config, &logger);
+    if activator.activate(&data.token).is_ok() {
+        res.status(Status::Ok)
+    } else {
+        res.status(Status::BadRequest).format(json!({
+            "message": "The token has been expired or is invalid"
+        }))
     }
 }

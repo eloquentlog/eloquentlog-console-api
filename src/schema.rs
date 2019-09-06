@@ -57,3 +57,6 @@ table! {
         updated_at -> Timestamp,
     }
 }
+
+joinable!(user_emails -> users (user_id));
+allow_tables_to_appear_in_same_query!(users, user_emails);
