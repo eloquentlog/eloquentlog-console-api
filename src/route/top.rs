@@ -7,13 +7,14 @@ use model::user::User;
 use response::Response;
 
 #[get("/")]
-pub fn index(
+pub fn index<'a>(
     user: &User,
     _logger: SyncLogger,
     _state: State<Config>,
-) -> Response
+) -> Response<'a>
 {
     let res = Response {
+        cookies: vec![],
         status: Status::Ok,
         data: json!(null),
     };

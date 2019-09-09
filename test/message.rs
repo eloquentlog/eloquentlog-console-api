@@ -1,18 +1,39 @@
 use diesel::{self, prelude::*};
 use chrono::{Utc, TimeZone};
-use rocket::http::{ContentType, Status};
+use rocket::http::{ContentType, Header, Status};
+use serde_json::Value;
 
 use eloquentlog_backend_api::model::message;
 
-use {minify, run_test, build_authorization_header, load_user, USERS};
+use {minify, run_test, load_user, make_raw_password, USERS};
 
 #[test]
 fn test_get_no_message() {
-    run_test(|client, db_conn, _, config, _| {
-        let user = load_user(&USERS.get("oswald").unwrap(), &db_conn);
-        let auth = build_authorization_header(&user, config);
+    run_test(|client, db_conn, _, _, _| {
+        let u = USERS.get("oswald").unwrap().clone();
+        let password = make_raw_password(&u);
+        let user = load_user(u, &db_conn);
 
-        let mut res = client.get("/_api/messages").header(auth).dispatch();
+        let mut res = client
+            .post("/_api/signin")
+            .header(ContentType::JSON)
+            .body(format!(
+                r#"{{
+                    "username": "{}",
+                    "password": "{}"
+                }}"#,
+                user.email, password,
+            ))
+            .dispatch();
+
+        let body = res.body_string().unwrap();
+        let result: Value = serde_json::from_str(&body).unwrap();
+        let token = result["token"].as_str().unwrap();
+
+        let mut res = client
+            .get("/_api/messages")
+            .header(Header::new("Authorization", format!("Bearer {}", token)))
+            .dispatch();
 
         assert_eq!(res.status(), Status::Ok);
         assert!(res.body_string().unwrap().contains("[]"));
@@ -21,9 +42,26 @@ fn test_get_no_message() {
 
 #[test]
 fn test_get_recent_messages() {
-    run_test(|client, db_conn, _, config, _| {
-        let user = load_user(&USERS.get("oswald").unwrap(), &db_conn);
-        let auth = build_authorization_header(&user, config);
+    run_test(|client, db_conn, _, _, _| {
+        let u = USERS.get("oswald").unwrap().clone();
+        let password = make_raw_password(&u);
+        let user = load_user(u, &db_conn);
+
+        let mut res = client
+            .post("/_api/signin")
+            .header(ContentType::JSON)
+            .body(format!(
+                r#"{{
+                    "username": "{}",
+                    "password": "{}"
+                }}"#,
+                user.email, password,
+            ))
+            .dispatch();
+
+        let body = res.body_string().unwrap();
+        let result: Value = serde_json::from_str(&body).unwrap();
+        let token = result["token"].as_str().unwrap();
 
         // 2019-08-07T06:05:04.333
         let dt = Utc.ymd(2019, 8, 7).and_hms_milli(6, 5, 4, 333);
@@ -46,7 +84,10 @@ fn test_get_recent_messages() {
             .get_result::<i64>(db_conn)
             .unwrap_or_else(|_| panic!("Error inserting: {}", m));
 
-        let mut res = client.get("/_api/messages").header(auth).dispatch();
+        let mut res = client
+            .get("/_api/messages")
+            .header(Header::new("Authorization", format!("Bearer {}", token)))
+            .dispatch();
 
         assert_eq!(res.status(), Status::Ok);
 
@@ -75,20 +116,37 @@ fn test_get_recent_messages() {
 
 #[test]
 fn test_post_with_validation_errors() {
-    run_test(|client, db_conn, _, config, _| {
-        let user = load_user(&USERS.get("oswald").unwrap(), &db_conn);
-        let auth = build_authorization_header(&user, config);
+    run_test(|client, db_conn, _, _, _| {
+        let u = USERS.get("oswald").unwrap().clone();
+        let password = make_raw_password(&u);
+        let user = load_user(u, &db_conn);
+
+        let mut res = client
+            .post("/_api/signin")
+            .header(ContentType::JSON)
+            .body(format!(
+                r#"{{
+                    "username": "{}",
+                    "password": "{}"
+                }}"#,
+                user.email, password,
+            ))
+            .dispatch();
+
+        let body = res.body_string().unwrap();
+        let result: Value = serde_json::from_str(&body).unwrap();
+        let token = result["token"].as_str().unwrap();
 
         let mut res = client
             .post("/_api/messages")
             .header(ContentType::JSON)
-            .header(auth)
+            .header(Header::new("Authorization", format!("Bearer {}", token)))
             .body(
                 r#"{
-        "code": "",
-        "title": "New Message",
-        "content": "Hello, world!"
-      }"#,
+                    "code": "",
+                    "title": "New Message",
+                    "content": "Hello, world!"
+                }"#,
             )
             .dispatch();
 
@@ -99,21 +157,38 @@ fn test_post_with_validation_errors() {
 
 #[test]
 fn test_post() {
-    run_test(|client, db_conn, _, config, _| {
-        let user = load_user(&USERS.get("oswald").unwrap(), &db_conn);
-        let auth = build_authorization_header(&user, config);
+    run_test(|client, db_conn, _, _, _| {
+        let u = USERS.get("oswald").unwrap().clone();
+        let password = make_raw_password(&u);
+        let user = load_user(u, &db_conn);
+
+        let mut res = client
+            .post("/_api/signin")
+            .header(ContentType::JSON)
+            .body(format!(
+                r#"{{
+                    "username": "{}",
+                    "password": "{}"
+                }}"#,
+                user.email, password,
+            ))
+            .dispatch();
+
+        let body = res.body_string().unwrap();
+        let result: Value = serde_json::from_str(&body).unwrap();
+        let token = result["token"].as_str().unwrap();
 
         let mut res = client
             .post("/_api/messages")
             .header(ContentType::JSON)
-            .header(auth)
+            .header(Header::new("Authorization", format!("Bearer {}", token)))
             .body(
                 r#"{
-        "format": "toml",
-        "code": "200",
-        "title": "New message",
-        "content": "Hello, world!"
-      }"#,
+                    "format": "toml",
+                    "code": "200",
+                    "title": "New message",
+                    "content": "Hello, world!"
+                }"#,
             )
             .dispatch();
 
@@ -124,9 +199,26 @@ fn test_post() {
 
 #[test]
 fn test_put() {
-    run_test(|client, db_conn, _, config, _| {
-        let user = load_user(&USERS.get("oswald").unwrap(), &db_conn);
-        let auth = build_authorization_header(&user, config);
+    run_test(|client, db_conn, _, _, _| {
+        let u = USERS.get("oswald").unwrap().clone();
+        let password = make_raw_password(&u);
+        let user = load_user(u, &db_conn);
+
+        let mut res = client
+            .post("/_api/signin")
+            .header(ContentType::JSON)
+            .body(format!(
+                r#"{{
+                    "username": "{}",
+                    "password": "{}"
+                }}"#,
+                user.email, password,
+            ))
+            .dispatch();
+
+        let body = res.body_string().unwrap();
+        let result: Value = serde_json::from_str(&body).unwrap();
+        let token = result["token"].as_str().unwrap();
 
         let m = message::NewMessage {
             code: None,
@@ -147,13 +239,13 @@ fn test_put() {
         let mut res = client
             .put(format!("/_api/messages/{}", id))
             .header(ContentType::JSON)
-            .header(auth)
+            .header(Header::new("Authorization", format!("Bearer {}", token)))
             .body(format!(
                 r#"{{
-        "id": {},
-        "title": "Updated message",
-        "content": "Hello, world!"
-      }}"#,
+                    "id": {},
+                    "title": "Updated message",
+                    "content": "Hello, world!"
+                }}"#,
                 id,
             ))
             .dispatch();
