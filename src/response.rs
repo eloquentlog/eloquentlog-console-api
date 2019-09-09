@@ -1,6 +1,6 @@
 use std::io::Cursor;
 
-use rocket::http::{ContentType, Status};
+use rocket::http::{Cookie, ContentType, Status};
 use rocket_contrib::json::JsonValue;
 use rocket::request::Request;
 use rocket::response::Responder;
@@ -9,44 +9,58 @@ use rocket::response::Response as RawResponse;
 use route::{ORIGIN, MAX_AGE, VARY};
 
 #[derive(Debug)]
-pub struct Response {
+pub struct Response<'a> {
+    pub cookies: Vec<Cookie<'a>>,
     pub status: Status,
     pub data: JsonValue,
 }
 
-impl Default for Response {
+impl<'a> Default for Response<'a> {
     fn default() -> Self {
         Self {
+            cookies: vec![],
             status: Status::Ok,
             data: json!(null),
         }
     }
 }
 
-impl Response {
-    pub fn status(mut self, status: Status) -> Response {
+impl<'a> Response<'a> {
+    pub fn cookies(mut self, cookies: Vec<Cookie<'a>>) -> Response<'a> {
+        self.cookies = cookies;
+        self
+    }
+
+    pub fn status(mut self, status: Status) -> Response<'a> {
         self.status = status;
         self
     }
 
     // format its data attribute using json
-    pub fn format(mut self, data: JsonValue) -> Response {
+    pub fn format(mut self, data: JsonValue) -> Response<'a> {
         self.data = data;
         self
     }
 }
 
-impl<'r> Responder<'r> for Response {
+impl<'r> Responder<'r> for Response<'r> {
     fn respond_to(self, _req: &Request) -> Result<RawResponse<'r>, Status> {
-        let body = self.data;
+        let mut builder = RawResponse::build();
 
-        RawResponse::build()
-            .status(self.status)
-            .sized_body(Cursor::new(body.to_string()))
-            .header(ContentType::JSON)
+        builder.status(self.status);
+        builder.header(ContentType::JSON);
+        if !self.cookies.is_empty() {
+            self.cookies.iter().for_each(|c| {
+                builder.header(c);
+            });
+        }
+        builder
             .raw_header("Access-Control-Allow-Origin", ORIGIN)
-            .raw_header("Vary", VARY)
-            .ok()
+            .raw_header("Access-Control-Allow-Credentials", "true")
+            .raw_header("Vary", VARY);
+
+        let body = self.data.to_string();
+        builder.sized_body(Cursor::new(body)).ok()
     }
 }
 
@@ -55,6 +69,7 @@ impl<'r> Responder<'r> for Response {
 pub fn no_content_for<'a>(methods: &str) -> RawResponse<'a> {
     let mut res = RawResponse::new();
     res.set_header(ContentType::JSON);
+    res.set_raw_header("Access-Control-Allow-Credentials", "true");
     res.set_raw_header(
         "Access-Control-Allow-Headers",
         "Content-Type,Authorization",

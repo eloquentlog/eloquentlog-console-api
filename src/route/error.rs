@@ -4,8 +4,9 @@ use rocket::http::Status;
 use response::Response;
 
 #[catch(400)]
-pub fn bad_request(_req: &Request) -> Response {
+pub fn bad_request<'a>(_req: &Request) -> Response<'a> {
     Response {
+        cookies: vec![],
         status: Status::BadRequest,
         data: json!({
             "data": {
@@ -16,8 +17,9 @@ pub fn bad_request(_req: &Request) -> Response {
 }
 
 #[catch(404)]
-pub fn not_found(req: &Request) -> Response {
+pub fn not_found<'a>(req: &Request) -> Response<'a> {
     Response {
+        cookies: vec![],
         status: Status::NotFound,
         data: json!({
             "data": {
@@ -28,8 +30,9 @@ pub fn not_found(req: &Request) -> Response {
 }
 
 #[catch(422)]
-pub fn unprocessable_entity(_req: &Request) -> Response {
+pub fn unprocessable_entity<'a>(_req: &Request) -> Response<'a> {
     Response {
+        cookies: vec![],
         status: Status::UnprocessableEntity,
         data: json!({
             "data": {

@@ -1,6 +1,6 @@
 use chrono::Utc;
 use rocket::State;
-use rocket::http::Status;
+use rocket::http::{Cookie, SameSite, Status};
 use rocket::response::Response as RawResponse;
 use rocket_slog::SyncLogger;
 
@@ -17,12 +17,12 @@ pub fn signin_options<'a>() -> RawResponse<'a> {
 }
 
 #[post("/signin", data = "<data>", format = "json")]
-pub fn signin(
+pub fn signin<'a>(
     data: RequestData,
     conn: DbConn,
     logger: SyncLogger,
     config: State<Config>,
-) -> Response
+) -> Response<'a>
 {
     let res: Response = Default::default();
 
@@ -37,13 +37,40 @@ pub fn signin(
                 granted_at: Utc::now().timestamp(),
                 expires_at: 0,
             };
-            let token = AuthorizationClaims::encode(
+            let authorization_token = AuthorizationClaims::encode(
                 data,
                 &config.authorization_token_issuer,
                 &config.authorization_token_key_id,
                 &config.authorization_token_secret,
             );
-            res.format(json!({"token": token.to_string()}))
+
+            let parts: Vec<&str> = authorization_token.split('.').collect();
+            // unexpected
+            if parts.len() != 3 {
+                return res.status(Status::InternalServerError).format(json!({
+                    "message": "Something wrong happen, sorry :'("
+                }));
+            }
+
+            // NOTE:
+            // JS should handle this into permanent cookies with expires.
+            // The token is composed from `header.payload`.
+            // TODO:
+            // consider about implementation "Are you there?" modal
+            let token = parts[0..2].join(".");
+
+            // This is session cookie (no expires and max-age)
+            //
+            // TODO:
+            // consider about extension (re-set it again?)
+            let mut signature = Cookie::new("signature", parts[2].to_string());
+            signature.set_domain("127.0.0.1");
+            signature.set_same_site(SameSite::Strict);
+            signature.set_secure(false); // FIXME
+            signature.set_http_only(true);
+
+            res.cookies(vec![signature])
+                .format(json!({ "token": token }))
         },
         _ => {
             warn!(logger, "signin failed: username {}", data.username);

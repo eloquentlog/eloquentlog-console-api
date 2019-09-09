@@ -52,12 +52,6 @@ impl<'a, 'r> FromRequest<'a, 'r> for AuthorizationToken {
     ) -> request::Outcome<Self, Self::Error> {
         let headers: Vec<_> = req.headers().get("Authorization").collect();
         match headers.len() {
-            0 => {
-                request::Outcome::Failure((
-                    Status::BadRequest,
-                    AuthorizationTokenError::Missing,
-                ))
-            },
             1 => {
                 let h = &headers[0];
                 if !h.starts_with(AUTHORIZATION_HEADER_PREFIX) {
@@ -67,14 +61,26 @@ impl<'a, 'r> FromRequest<'a, 'r> for AuthorizationToken {
                     ));
                 }
 
-                // TODO: validate format
-                let token = h[AUTHORIZATION_HEADER_PREFIX.len()..].to_string();
+                // TODO:
+                // * check X-Requested-With header
+                // * validate token format
+
+                let mut token =
+                    h[AUTHORIZATION_HEADER_PREFIX.len()..].to_string();
                 if !token.contains('.') {
                     return request::Outcome::Failure((
                         Status::BadRequest,
                         AuthorizationTokenError::Invalid,
                     ));
                 }
+                // NOTE:
+                // append signature to parts take from authorization header
+                let cookies = req.cookies();
+                token = cookies
+                    .get("signature")
+                    .map(|c| token + "." + c.value())
+                    .or_else(|| Some("".to_string()))
+                    .unwrap();
 
                 let config = req.guard::<State<Config>>().unwrap();
                 match verify_authorization_token(&token, &config) {
@@ -86,6 +92,12 @@ impl<'a, 'r> FromRequest<'a, 'r> for AuthorizationToken {
                         ))
                     },
                 }
+            },
+            0 => {
+                request::Outcome::Failure((
+                    Status::BadRequest,
+                    AuthorizationTokenError::Missing,
+                ))
             },
             _ => {
                 request::Outcome::Failure((
