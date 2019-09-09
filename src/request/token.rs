@@ -63,6 +63,7 @@ impl<'a, 'r> FromRequest<'a, 'r> for AuthorizationToken {
 
                 // TODO:
                 // * check X-Requested-With header
+                // * check Origin and Referer header
                 // * validate token format
 
                 let mut token =

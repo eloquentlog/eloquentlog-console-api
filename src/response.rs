@@ -72,7 +72,7 @@ pub fn no_content_for<'a>(methods: &str) -> RawResponse<'a> {
     res.set_raw_header("Access-Control-Allow-Credentials", "true");
     res.set_raw_header(
         "Access-Control-Allow-Headers",
-        "Content-Type,Authorization",
+        "Authorization,Content-Type,X-Requested-With",
     );
     res.set_raw_header(
         "Access-Control-Allow-Methods",
