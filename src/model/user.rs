@@ -21,6 +21,17 @@ use request::user::UserSignUp as RequestData;
 
 const BCRYPT_COST: u32 = 12;
 
+/// Returns encrypted password hash as bytes using bcrypt.
+fn encrypt_password(password: &str) -> Option<Vec<u8>> {
+    match hash(password, BCRYPT_COST) {
+        Ok(v) => Some(v.into_bytes()),
+        Err(e) => {
+            println!("err: {:?}", e);
+            None
+        },
+    }
+}
+
 /// NewUser
 #[derive(Debug)]
 pub struct NewUser {
@@ -66,17 +77,6 @@ impl<'a> From<&'a RequestData> for NewUser {
 }
 
 impl NewUser {
-    /// Returns encrypted password hash as bytes using bcrypt.
-    fn encrypt_password(password: &str) -> Option<Vec<u8>> {
-        match hash(password, BCRYPT_COST) {
-            Ok(v) => Some(v.into_bytes()),
-            Err(e) => {
-                println!("err: {:?}", e);
-                None
-            },
-        }
-    }
-
     pub fn generate_access_token() -> String {
         // TODO
         // API access token for user
@@ -86,12 +86,12 @@ impl NewUser {
     // NOTE:
     // run asynchronously? It (encrypt_password) may slow.
     pub fn set_password(&mut self, password: &str) {
-        self.password = Self::encrypt_password(password).unwrap();
+        self.password = encrypt_password(password).unwrap();
     }
 }
 
 /// User
-#[derive(Debug, Identifiable, Insertable, Queryable)]
+#[derive(Clone, Debug, Identifiable, Insertable, Queryable)]
 pub struct User {
     pub id: i64,
     pub uuid: Uuid,
@@ -307,6 +307,10 @@ impl User {
             },
             Ok(_) => Ok(self.uuid.to_urn().to_string()),
         }
+    }
+
+    pub fn change_password(&mut self, password: &str) {
+        self.password = encrypt_password(password).unwrap();
     }
 
     /// Checks whether the password given as an argument is valid or not.

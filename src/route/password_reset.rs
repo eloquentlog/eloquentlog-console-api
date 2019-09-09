@@ -19,7 +19,7 @@ pub fn options<'a>(
 }
 
 #[post("/password/reset", format = "json")]
-pub fn request(logger: SyncLogger) -> Response {
+pub fn request<'a>(logger: SyncLogger) -> Response<'a> {
     let res: Response = Default::default();
 
     // TODO
@@ -30,7 +30,7 @@ pub fn request(logger: SyncLogger) -> Response {
 }
 
 #[get("/password/reset?<token>", format = "json")]
-pub fn verify(token: String, logger: SyncLogger) -> Response {
+pub fn verify<'a>(token: String, logger: SyncLogger) -> Response<'a> {
     let res: Response = Default::default();
 
     // TODO
@@ -40,7 +40,7 @@ pub fn verify(token: String, logger: SyncLogger) -> Response {
 }
 
 #[put("/password/reset?<token>", format = "json")]
-pub fn update(token: String, logger: SyncLogger) -> Response {
+pub fn update<'a>(token: String, logger: SyncLogger) -> Response<'a> {
     let res: Response = Default::default();
 
     // TODO

@@ -12,6 +12,7 @@ extern crate parking_lot;
 extern crate redis;
 extern crate rocket;
 extern crate rocket_slog;
+extern crate serde_json;
 extern crate uuid;
 
 #[macro_use]
@@ -33,7 +34,6 @@ use dotenv::dotenv;
 use chrono::{Utc, TimeZone};
 use fnv::FnvHashMap;
 use parking_lot::Mutex;
-use rocket::http::Header;
 use rocket::local::Client;
 use rocket_slog::SlogFairing;
 use uuid::Uuid;
@@ -43,7 +43,7 @@ use eloquentlog_backend_api::db::{DbConn, DbPool, init_pool as init_db_pool};
 use eloquentlog_backend_api::mq::{MqConn, MqPool, init_pool as init_mq_pool};
 use eloquentlog_backend_api::config;
 use eloquentlog_backend_api::logger::{Logger, get_logger};
-use eloquentlog_backend_api::model::{user, token, token::Claims};
+use eloquentlog_backend_api::model::user;
 
 // NOTE:
 // For now, run tests sequencially :'(
@@ -172,25 +172,20 @@ lazy_static! {
     };
 }
 
-fn build_authorization_header<'a>(
-    user: &user::User,
-    config: &config::Config,
-) -> Header<'a>
-{
-    let token = token::AuthorizationClaims::encode(
-        user.into(),
-        &config.authorization_token_issuer,
-        &config.authorization_token_key_id,
-        &config.authorization_token_secret,
-    )
-    .to_string();
+// test utils
 
-    Header::new("Authorization", format!("Bearer {}", token))
-}
+fn load_user(mut user: user::User, db_conn: &PgConnection) -> user::User {
+    user.change_password(&make_raw_password(&user));
 
-fn load_user(user: &user::User, db_conn: &PgConnection) -> user::User {
     diesel::insert_into(user::users::table)
         .values(user)
         .get_result::<user::User>(db_conn)
         .unwrap_or_else(|e| panic!("Error at inserting: {}", e))
+}
+
+/// Creates raw password string.
+///
+/// It works only in test because USERS has `password` as dummy `Vec<u8>`.
+fn make_raw_password(user: &user::User) -> String {
+    user.password.iter().map(|c| *c as char).collect()
 }

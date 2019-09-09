@@ -54,8 +54,8 @@ fn test_activate_with_invalid_token() {
             .header(ContentType::JSON)
             .body(
                 r#"{
-          "token": "invalid-token"
-        }"#
+                    "token": "invalid-token"
+                }"#
                 .to_string(),
             )
             .dispatch();
