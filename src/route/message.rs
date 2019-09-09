@@ -1,18 +1,24 @@
 use rocket::http::Status;
+use rocket::response::Response as RawResponse;
 use rocket_contrib::json::Json;
 use rocket_slog::SyncLogger;
 
 use db::DbConn;
 use model::message::{LogFormat, LogLevel, Message, NewMessage};
 use model::user::User;
-use response::Response;
+use response::{Response, no_content_for};
 use request::message::Message as RequestData;
 use validation::message::Validator;
 
 const MESSAGES_PER_REQUEST: i64 = 100;
 
+#[options("/messages")]
+pub fn get_messages_options<'a>() -> RawResponse<'a> {
+    no_content_for("GET")
+}
+
 #[get("/messages")]
-pub fn get(user: &User, conn: DbConn, logger: SyncLogger) -> Response {
+pub fn get_messages(user: &User, conn: DbConn, logger: SyncLogger) -> Response {
     let res: Response = Default::default();
 
     info!(logger, "user: {}", user.uuid);
