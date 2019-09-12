@@ -17,6 +17,7 @@ use response::{Response, no_content_for};
 use request::user::UserSignUp as RequestData;
 use mq::MqConn;
 use validation::user::Validator;
+use util::split_token;
 
 #[options("/register")]
 pub fn register_options<'a>() -> RawResponse<'a> {
@@ -24,13 +25,13 @@ pub fn register_options<'a>() -> RawResponse<'a> {
 }
 
 #[post("/register", format = "json", data = "<data>")]
-pub fn register(
+pub fn register<'a>(
     data: Json<RequestData>,
     db_conn: DbConn,
     mut mq_conn: MqConn,
     logger: SyncLogger,
     config: State<Config>,
-) -> Response
+) -> Response<'a>
 {
     let res: Response = Default::default();
 
@@ -42,12 +43,12 @@ pub fn register(
             }))
         },
         Ok(_) => {
-            let result: Result<UserEmail, Error> = db_conn
+            let result: Result<(i64, String), Error> = db_conn
                 .build_transaction()
                 .serializable()
                 .deferrable()
                 .read_write()
-                .run::<UserEmail, diesel::result::Error, _>(|| {
+                .run::<(i64, String), diesel::result::Error, _>(|| {
                     let mut u = NewUser::from(&data.0);
                     u.set_password(&data.password);
                     let user = User::insert(&u, &db_conn, &logger).unwrap();
@@ -70,6 +71,7 @@ pub fn register(
                         &config.activation_token_key_id,
                         &config.activation_token_secret,
                     );
+
                     if let Err(e) = user_email.grant_token::<ActivationClaims>(
                         &token,
                         &config.activation_token_issuer,
@@ -80,24 +82,31 @@ pub fn register(
                         error!(logger, "error: {}", e);
                         return Err(Error::RollbackTransaction);
                     }
-                    Ok(user_email)
+                    Ok((user_email.id, token))
                 });
 
-            match result {
-                Ok(user_email) => {
-                    let job = Job::<i64> {
+            if let Ok((id, token)) = result {
+                // TODO:
+                // This enforces user to use same browser also on activation
+                // because of cookie. Consider another mechanims.
+                // Use raw activation token? (+ session token)
+                if let Some((payload, signature)) = split_token(token) {
+                    let job = Job::<String> {
                         kind: JobKind::SendUserActivationEmail,
-                        args: vec![user_email.id],
+                        args: vec![id.to_string(), payload],
                     };
                     // TODO: Consider about retrying
                     let mut queue = Queue::new("default", &mut mq_conn);
-                    if let Err(err) = queue.enqueue::<Job<i64>>(job) {
+                    if let Err(err) = queue.enqueue::<Job<String>>(job) {
                         error!(logger, "error: {}", err);
+                    } else {
+                        return res.cookies(vec![signature]);
                     }
-                    res
-                },
-                _ => res.status(Status::InternalServerError),
+                }
             }
+            res.status(Status::InternalServerError).format(json!({
+                "message": "Something wrong happen, sorry :'("
+            }))
         },
     }
 }

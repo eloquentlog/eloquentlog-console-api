@@ -53,8 +53,8 @@ fn test_register() {
 
         // TODO: check sent email
         let mut queue = Queue::new("default", &mut mq_conn);
-        let job = queue.dequeue::<Job<i64>>().ok().unwrap();
+        let job = queue.dequeue::<Job<String>>().ok().unwrap();
         assert_eq!(job.kind, JobKind::SendUserActivationEmail);
-        assert_eq!(job.args, vec![1]);
+        assert!(!job.args.is_empty());
     });
 }

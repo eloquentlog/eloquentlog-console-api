@@ -1,6 +1,6 @@
 use chrono::Utc;
 use rocket::State;
-use rocket::http::{Cookie, SameSite, Status};
+use rocket::http::Status;
 use rocket::response::Response as RawResponse;
 use rocket_slog::SyncLogger;
 
@@ -10,6 +10,7 @@ use model::user::User;
 use model::token::{AuthorizationClaims, Claims, TokenData};
 use request::user::UserSignin as RequestData;
 use response::{Response, no_content_for};
+use util::split_token;
 
 #[options("/signin")]
 pub fn signin_options<'a>() -> RawResponse<'a> {
@@ -44,30 +45,19 @@ pub fn signin<'a>(
                 &config.authorization_token_secret,
             );
 
-            let parts: Vec<&str> = authorization_token.split('.').collect();
-            // unexpected
-            if parts.len() != 3 {
-                return res.status(Status::InternalServerError).format(json!({
-                    "message": "Something wrong happen, sorry :'("
-                }));
-            }
-
-            // NOTE:
-            // JS should handle this into permanent cookies with expires.
-            // The token is composed from `header.payload`.
             // TODO:
-            // consider about implementation "Are you there?" modal
-            let token = parts[0..2].join(".");
-
-            // This is session cookie (no expires and max-age)
-            //
-            // TODO:
-            // consider about extension (re-set it again?)
-            let mut signature = Cookie::new("signature", parts[2].to_string());
-            signature.set_domain("127.0.0.1");
-            signature.set_same_site(SameSite::Strict);
-            signature.set_secure(false); // FIXME
-            signature.set_http_only(true);
+            // * consider about implementation "Are you there?" modal
+            // * consider about extension (re-set it again?)
+            let (token, signature) = match split_token(authorization_token) {
+                Some(result) => result,
+                None => {
+                    return res.status(Status::InternalServerError).format(
+                        json!({
+                         "message": "Something wrong happen, sorry :'("
+                        }),
+                    );
+                },
+            };
 
             res.cookies(vec![signature])
                 .format(json!({ "token": token }))
