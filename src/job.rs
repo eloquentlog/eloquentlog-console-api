@@ -6,7 +6,6 @@ use diesel::result::Error;
 use slog::Logger;
 
 use config::Config;
-use model::token::{ActivationClaims, Claims};
 use model::user::User;
 use model::user_email::UserEmail;
 use mailer::user::UserMailer;
@@ -30,7 +29,7 @@ pub struct Job<T> {
 }
 
 impl<T> Job<T>
-where T: fmt::Debug + Copy + Into<i64>
+where T: Clone + fmt::Debug + Into<String>
 {
     pub fn invoke(
         &self,
@@ -60,7 +59,12 @@ where T: fmt::Debug + Copy + Into<i64>
         if args.is_empty() {
             return;
         }
-        let id = args[0].into();
+
+        // FIXME
+        // any good way for T? (see also worker.rs)
+        let id = args[0].clone().into().parse::<i64>().unwrap();
+        let token = args[1].clone().into();
+
         let _: Result<_, Error> = db_conn
             .build_transaction()
             .read_only()
@@ -69,13 +73,6 @@ where T: fmt::Debug + Copy + Into<i64>
                 Some(ref user_email) => {
                     let email = user_email.email.as_ref().unwrap();
                     info!(logger, "user_email.email: {}", email);
-
-                    let token = ActivationClaims::encode(
-                        user_email.into(),
-                        &config.activation_token_issuer,
-                        &config.activation_token_key_id,
-                        &config.activation_token_secret,
-                    );
                     info!(logger, "token: {}", token);
 
                     // TODO: replace it find_by_id (or where primary)
@@ -83,14 +80,13 @@ where T: fmt::Debug + Copy + Into<i64>
                         User::find_by_email(email, db_conn, logger).unwrap();
 
                     let mut mailer = UserMailer::new(config, logger);
-                    let user_name = Box::leak(
+                    let name = Box::leak(
                         user.name
                             .unwrap_or_else(|| "".to_string())
                             .into_boxed_str(),
                     );
-                    mailer
-                        .to((email, user_name))
-                        .send_user_activation_email(token);
+                    // TODO: check result (should be Result instead of bool?)
+                    mailer.to((email, name)).send_user_activation_email(token);
                     Ok(())
                 },
                 _ => {

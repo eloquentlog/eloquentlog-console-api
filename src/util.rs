@@ -1,4 +1,5 @@
 use rand::prelude::*;
+use rocket::http::{Cookie, SameSite};
 
 // Creates random hash based on source characters
 pub fn generate_random_hash(source: &[u8], length: i32) -> String {
@@ -15,6 +16,33 @@ pub fn generate_random_hash(source: &[u8], length: i32) -> String {
             char::from(unsafe { *source.get_unchecked(idx) })
         })
         .collect()
+}
+
+pub fn split_token<'a>(token: String) -> Option<(String, Cookie<'a>)> {
+    let parts: Vec<&str> = token.split('.').collect();
+    // unexpected
+    if parts.len() != 3 {
+        return None;
+    }
+
+    // NOTE:
+    // JS should handle this into permanent cookies with expires.
+    // The value should be composed from `header.payload`.
+    // TODO:
+    // consider about implementation "Are you there?" modal
+    let payload = parts[0..2].join(".");
+
+    // This is session cookie (no expires and max-age)
+    //
+    // TODO:
+    // consider about extension (re-set it again?)
+    let mut signature = Cookie::new("signature", parts[2].to_string());
+    signature.set_domain("127.0.0.1");
+    signature.set_same_site(SameSite::Strict);
+    signature.set_secure(false); // FIXME
+    signature.set_http_only(true);
+
+    Some((payload, signature))
 }
 
 #[cfg(test)]

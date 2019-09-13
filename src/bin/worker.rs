@@ -44,7 +44,7 @@ fn main() {
     let mut queue = Queue::new("default", &mut mq_conn);
 
     loop {
-        match queue.dequeue::<Job<i64>>() {
+        match queue.dequeue::<Job<String>>() {
             Ok(job) => {
                 info!(
                     logger,
