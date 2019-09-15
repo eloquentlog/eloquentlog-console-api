@@ -65,6 +65,7 @@ mod util;
 
 pub mod db;
 pub mod mq;
+pub mod ss;
 
 pub mod config;
 pub mod job;

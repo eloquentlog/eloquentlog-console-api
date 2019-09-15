@@ -9,10 +9,10 @@ use {minify, run_test, load_user, make_raw_password, USERS};
 
 #[test]
 fn test_get_no_message() {
-    run_test(|client, db_conn, _, _, _| {
+    run_test(|client, conn_ref, _, _| {
         let u = USERS.get("oswald").unwrap().clone();
         let password = make_raw_password(&u);
-        let user = load_user(u, &db_conn);
+        let user = load_user(u, conn_ref.db);
 
         let mut res = client
             .post("/_api/signin")
@@ -42,10 +42,10 @@ fn test_get_no_message() {
 
 #[test]
 fn test_get_recent_messages() {
-    run_test(|client, db_conn, _, _, _| {
+    run_test(|client, conn_ref, _, _| {
         let u = USERS.get("oswald").unwrap().clone();
         let password = make_raw_password(&u);
-        let user = load_user(u, &db_conn);
+        let user = load_user(u, conn_ref.db);
 
         let mut res = client
             .post("/_api/signin")
@@ -81,7 +81,7 @@ fn test_get_recent_messages() {
         let id = diesel::insert_into(message::messages::table)
             .values(&m)
             .returning(message::messages::id)
-            .get_result::<i64>(db_conn)
+            .get_result::<i64>(conn_ref.db)
             .unwrap_or_else(|_| panic!("Error inserting: {}", m));
 
         let mut res = client
@@ -116,10 +116,10 @@ fn test_get_recent_messages() {
 
 #[test]
 fn test_post_with_validation_errors() {
-    run_test(|client, db_conn, _, _, _| {
+    run_test(|client, conn_ref, _, _| {
         let u = USERS.get("oswald").unwrap().clone();
         let password = make_raw_password(&u);
-        let user = load_user(u, &db_conn);
+        let user = load_user(u, conn_ref.db);
 
         let mut res = client
             .post("/_api/signin")
@@ -157,10 +157,10 @@ fn test_post_with_validation_errors() {
 
 #[test]
 fn test_post() {
-    run_test(|client, db_conn, _, _, _| {
+    run_test(|client, conn_ref, _, _| {
         let u = USERS.get("oswald").unwrap().clone();
         let password = make_raw_password(&u);
-        let user = load_user(u, &db_conn);
+        let user = load_user(u, conn_ref.db);
 
         let mut res = client
             .post("/_api/signin")
@@ -199,10 +199,10 @@ fn test_post() {
 
 #[test]
 fn test_put() {
-    run_test(|client, db_conn, _, _, _| {
+    run_test(|client, conn, _, _| {
         let u = USERS.get("oswald").unwrap().clone();
         let password = make_raw_password(&u);
-        let user = load_user(u, &db_conn);
+        let user = load_user(u, conn.db);
 
         let mut res = client
             .post("/_api/signin")
@@ -233,7 +233,7 @@ fn test_put() {
         let id = diesel::insert_into(message::messages::table)
             .values(&m)
             .returning(message::messages::id)
-            .get_result::<i64>(db_conn)
+            .get_result::<i64>(conn.db)
             .unwrap_or_else(|_| panic!("Error inserting: {}", m));
 
         let mut res = client
@@ -252,7 +252,7 @@ fn test_put() {
 
         let result = message::messages::table
             .find(id)
-            .first::<message::Message>(db_conn)
+            .first::<message::Message>(conn.db)
             .unwrap();
         assert_eq!("Updated message", result.title);
         assert_eq!("Hello, world!", result.content.unwrap());

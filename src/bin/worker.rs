@@ -34,7 +34,7 @@ fn main() {
     let config = Config::from(name.as_str()).expect("failed to get config");
 
     // redis
-    let client = Client::open(config.queue_url.as_str()).unwrap();
+    let client = Client::open(config.message_queue_url.as_str()).unwrap();
     let mut mq_conn = client.get_connection().unwrap();
 
     // postgresql

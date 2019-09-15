@@ -37,14 +37,15 @@ use mailer::{Client, Header, Mailer};
 /// let config = Config::from("testing").unwrap();
 /// let logger = logger::get_logger(&config);
 ///
-/// let token = "...".to_string();
+/// let t = "...";
+/// let s = "...";
 ///
 /// // you need to initialize it as mut
 /// let mut mailer = UserMailer::new(&config, &logger);
 /// # mailer.inject(Some(Box::new(transport)));
 /// let result = mailer
 ///     .to(("postmaster@eloquentlog.com", "Name"))
-///     .send_user_activation_email(token);
+///     .send_user_activation_email(t, s);
 /// assert!(result);
 /// #
 /// # }
@@ -86,10 +87,10 @@ impl<'a> UserMailer<'a> {
     }
 
     /// Builds an user activation message and send it via actual mailer.
-    pub fn send_user_activation_email(&mut self, token: String) -> bool {
+    pub fn send_user_activation_email(&mut self, t: &str, s: &str) -> bool {
         let url = self.config.application_url.to_string();
         // TODO: build it with rocket::http::uri::Origin?
-        let activation_url = format!("{}/user/activate?token={}", url, token);
+        let activation_url = format!("{}/user/activate?t={}?s={}", url, t, s);
 
         let subject = "Activate your account";
         // TODO: use template file

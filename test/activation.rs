@@ -8,7 +8,7 @@ use run_test;
 
 #[test]
 fn test_activate_with_invalid_token() {
-    run_test(|client, db_conn, _, config, logger| {
+    run_test(|client, conn, config, logger| {
         let mut u = model::user::NewUser {
             name: None,
             username: "johnny".to_string(),
@@ -18,13 +18,13 @@ fn test_activate_with_invalid_token() {
         };
         u.set_password(&"pa$$w0rD");
 
-        let user = model::user::User::insert(&u, &db_conn, &logger)
+        let user = model::user::User::insert(&u, &conn.db, &logger)
             .unwrap_or_else(|| panic!("error: {}", u));
 
         let ue: model::user_email::NewUserEmail = (&user).into();
 
         let user_email =
-            model::user_email::UserEmail::insert(&ue, &db_conn, &logger)
+            model::user_email::UserEmail::insert(&ue, &conn.db, &logger)
                 .unwrap_or_else(|| panic!("error: {}", ue.email));
 
         let now = Utc::now();
@@ -44,7 +44,7 @@ fn test_activate_with_invalid_token() {
                 &token,
                 &config.activation_token_issuer,
                 &config.activation_token_secret,
-                &db_conn,
+                &conn.db,
                 &logger,
             )
             .unwrap();
@@ -67,7 +67,7 @@ fn test_activate_with_invalid_token() {
             &token,
             &config.activation_token_issuer,
             &config.activation_token_secret,
-            &db_conn,
+            &conn.db,
             &logger
         )
         .is_some());
@@ -76,7 +76,7 @@ fn test_activate_with_invalid_token() {
 
 #[test]
 fn test_activate() {
-    run_test(|client, db_conn, _, config, logger| {
+    run_test(|client, conn, config, logger| {
         let mut u = model::user::NewUser {
             name: None,
             username: "johnny".to_string(),
@@ -86,13 +86,13 @@ fn test_activate() {
         };
         u.set_password(&"pa$$w0rD");
 
-        let user = model::user::User::insert(&u, &db_conn, &logger)
+        let user = model::user::User::insert(&u, &conn.db, &logger)
             .unwrap_or_else(|| panic!("error: {}", u));
 
         let ue: model::user_email::NewUserEmail = (&user).into();
 
         let user_email =
-            model::user_email::UserEmail::insert(&ue, &db_conn, &logger)
+            model::user_email::UserEmail::insert(&ue, &conn.db, &logger)
                 .unwrap_or_else(|| panic!("error: {}", ue.email));
 
         let now = Utc::now();
@@ -112,7 +112,7 @@ fn test_activate() {
                 &token,
                 &config.activation_token_issuer,
                 &config.activation_token_secret,
-                &db_conn,
+                &conn.db,
                 &logger,
             )
             .unwrap();
@@ -135,7 +135,7 @@ fn test_activate() {
             &token,
             &config.activation_token_issuer,
             &config.activation_token_secret,
-            &db_conn,
+            &conn.db,
             &logger
         )
         .is_none());

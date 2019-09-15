@@ -133,7 +133,8 @@ test:
     TEST_MAILER_SMTP_PORT: 587
     TEST_MAILER_SMTP_PASSWORD: "username"
     TEST_MAILER_SMTP_USERNAME: "password"
-    TEST_QUEUE_URL: "redis://redis:6379/0"
+    TEST_MESSAGE_QUEUE_URL: "redis://redis:6379/0"
+    TEST_SESSION_STORE_URL: "redis://redis:6379/2"
   before_script:
     - *postgresql
     - rustc --version

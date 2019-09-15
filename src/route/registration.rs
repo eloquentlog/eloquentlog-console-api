@@ -1,6 +1,7 @@
 use chrono::{Duration, Utc};
 use diesel::result::Error;
 use fourche::queue::Queue;
+use redis::{Commands, RedisError};
 use rocket::State;
 use rocket::http::Status;
 use rocket::response::Response as RawResponse;
@@ -17,6 +18,7 @@ use response::{Response, no_content_for};
 use request::user::UserSignUp as RequestData;
 use mq::MqConn;
 use validation::user::Validator;
+use ss::SsConn;
 use util::split_token;
 
 #[options("/register")]
@@ -29,6 +31,7 @@ pub fn register<'a>(
     data: Json<RequestData>,
     db_conn: DbConn,
     mut mq_conn: MqConn,
+    mut ss_conn: SsConn,
     logger: SyncLogger,
     config: State<Config>,
 ) -> Response<'a>
@@ -43,6 +46,13 @@ pub fn register<'a>(
             }))
         },
         Ok(_) => {
+            // TODO:
+            // impl service object handles token generation/activation.
+            // see also signin
+            let now = Utc::now();
+            let granted_at = now.timestamp();
+            let expires_at = (now + Duration::hours(1)).timestamp();
+
             let result: Result<(i64, String), Error> = db_conn
                 .build_transaction()
                 .serializable()
@@ -56,14 +66,10 @@ pub fn register<'a>(
                     let user_email =
                         UserEmail::insert(&ue, &db_conn, &logger).unwrap();
 
-                    // TODO:
-                    // impl service object handles token generation/activation.
-                    // see also signin
-                    let now = Utc::now();
                     let data = TokenData {
                         value: UserEmail::generate_token(),
-                        granted_at: now.timestamp(),
-                        expires_at: (now + Duration::hours(1)).timestamp(),
+                        granted_at,
+                        expires_at,
                     };
                     let token = ActivationClaims::encode(
                         data,
@@ -86,21 +92,35 @@ pub fn register<'a>(
                 });
 
             if let Ok((id, token)) = result {
-                // TODO:
-                // This enforces user to use same browser also on activation
-                // because of cookie. Consider another mechanims.
-                // Use raw activation token? (+ session token)
                 if let Some((payload, signature)) = split_token(token) {
-                    let job = Job::<String> {
-                        kind: JobKind::SendUserActivationEmail,
-                        args: vec![id.to_string(), payload],
-                    };
-                    // TODO: Consider about retrying
-                    let mut queue = Queue::new("default", &mut mq_conn);
-                    if let Err(err) = queue.enqueue::<Job<String>>(job) {
-                        error!(logger, "error: {}", err);
-                    } else {
-                        return res.cookies(vec![signature]);
+                    // Instead of saving the signature into a cookie,
+                    // putting it in session store.
+                    //
+                    // Because we need to make it available users to activate
+                    // the account also via another device than signed up, so
+                    // we can't rely on a cookie of http client (browser).
+                    let rawsig = signature.value();
+                    let sessid = UserEmail::generate_token();
+
+                    // TODO: Async with tokio? (consider about retrying)
+                    let result: Result<String, RedisError> = ss_conn
+                        .set_ex(&sessid, rawsig, expires_at as usize)
+                        .map_err(|e| {
+                            error!(logger, "error: {}", e);
+                            e
+                        });
+
+                    if result.is_ok() {
+                        let job = Job::<String> {
+                            kind: JobKind::SendUserActivationEmail,
+                            args: vec![id.to_string(), payload, sessid],
+                        };
+                        let mut queue = Queue::new("default", &mut mq_conn);
+                        if let Err(err) = queue.enqueue::<Job<String>>(job) {
+                            error!(logger, "error: {}", err);
+                        } else {
+                            return res;
+                        }
                     }
                 }
             }
