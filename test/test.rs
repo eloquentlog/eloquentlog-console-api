@@ -39,8 +39,15 @@ use rocket_slog::SlogFairing;
 use uuid::Uuid;
 
 use eloquentlog_backend_api::server;
-use eloquentlog_backend_api::db::{DbConn, DbPool, init_pool as init_db_pool};
-use eloquentlog_backend_api::mq::{MqConn, MqPool, init_pool as init_mq_pool};
+use eloquentlog_backend_api::db::{
+    DbConn, DbPoolHolder, init_pool_holder as init_db_pool_holder,
+};
+use eloquentlog_backend_api::mq::{
+    MqConn, MqPoolHolder, init_pool_holder as init_mq_pool_holder,
+};
+use eloquentlog_backend_api::ss::{
+    SsConn, SsPoolHolder, init_pool_holder as init_ss_pool_holder,
+};
 use eloquentlog_backend_api::config;
 use eloquentlog_backend_api::logger::{Logger, get_logger};
 use eloquentlog_backend_api::model::user;
@@ -60,10 +67,27 @@ lazy_static! {
         dotenv().ok();
         config::Config::from("testing").unwrap()
     };
-    static ref DB_POOL: DbPool =
-        { init_db_pool(&CONFIG.database_url, CONFIG.database_max_pool_size) };
-    static ref MQ_POOL: MqPool =
-        { init_mq_pool(&CONFIG.queue_url, CONFIG.queue_max_pool_size) };
+    static ref DB_POOL_HOLDER: DbPoolHolder = {
+        init_db_pool_holder(&CONFIG.database_url, CONFIG.database_max_pool_size)
+    };
+    static ref MQ_POOL_HOLDER: MqPoolHolder = {
+        init_mq_pool_holder(
+            &CONFIG.message_queue_url,
+            CONFIG.message_queue_max_pool_size,
+        )
+    };
+    static ref SS_POOL_HOLDER: SsPoolHolder = {
+        init_ss_pool_holder(
+            &CONFIG.session_store_url,
+            CONFIG.session_store_max_pool_size,
+        )
+    };
+}
+
+pub struct Connection<'a> {
+    db: &'a PgConnection,
+    mq: &'a mut redis::Connection,
+    ss: &'a mut redis::Connection,
 }
 
 /// Formats JSON text as one line
@@ -73,77 +97,84 @@ pub fn minify(s: String) -> String {
 
 /// A test runner for integration tests
 pub fn run_test<T>(test: T)
-where T: FnOnce(
-            Client,
-            &PgConnection,
-            &mut redis::Connection,
-            &config::Config,
-            &Logger,
-        ) -> ()
+where T: FnOnce(Client, &mut Connection, &config::Config, &Logger) -> ()
         + panic::UnwindSafe {
     let _lock = DB_LOCK.lock();
 
     // Use same connection pools across tests
-    let db_conn = get_db_conn(&DB_POOL);
-    let mut mq_conn = get_mq_conn(&MQ_POOL);
+    let db_conn = get_db_conn(&DB_POOL_HOLDER.clone());
+    let mut mq_conn = get_mq_conn(&MQ_POOL_HOLDER.clone());
+    let mut ss_conn = get_ss_conn(&SS_POOL_HOLDER.clone());
+
+    let mut conn = Connection {
+        db: &db_conn,
+        mq: &mut mq_conn,
+        ss: &mut ss_conn,
+    };
 
     let logger = get_logger(&CONFIG);
-    setup(&db_conn, &mut mq_conn);
+    setup(&mut conn);
 
     let result = panic::catch_unwind(AssertUnwindSafe(|| {
         let server = server()
             .attach(SlogFairing::new(logger.clone()))
-            .manage(DB_POOL.clone())
-            .manage(MQ_POOL.clone())
+            .manage(DB_POOL_HOLDER.clone())
+            .manage(MQ_POOL_HOLDER.clone())
+            .manage(SS_POOL_HOLDER.clone())
             .manage(CONFIG.clone());
         let client = Client::new(server).unwrap();
 
-        test(client, &db_conn, &mut mq_conn, &CONFIG, &logger)
+        test(client, &mut conn, &CONFIG, &logger)
     }));
     assert!(result.is_ok());
 
-    teardown(&db_conn, &mut mq_conn);
+    teardown(&mut conn);
 }
 
-fn setup(db_conn: &PgConnection, mq_conn: &mut redis::Connection) {
-    clean(db_conn, mq_conn);
+fn setup(conn_ref: &mut Connection) {
+    clean(conn_ref);
 }
 
-fn teardown(db_conn: &PgConnection, mq_conn: &mut redis::Connection) {
-    clean(db_conn, mq_conn);
+fn teardown(conn_ref: &mut Connection) {
+    clean(conn_ref);
 }
 
-fn clean(db_conn: &PgConnection, _: &mut redis::Connection) {
-    // TODO: clean up also queue
-    let _: std::result::Result<(), diesel::result::Error> = db_conn
-        .build_transaction()
-        .serializable()
-        .deferrable()
-        .read_write()
-        .run(|| {
-            let tables = ["users", "user_emails", "messages"].join(", ");
-            let q =
-                format!("TRUNCATE TABLE {} RESTART IDENTITY CASCADE;", tables);
-            let _ = diesel::sql_query(q)
-                .execute(db_conn)
-                .expect("Failed to delete");
+fn clean(conn_ref: &mut Connection) {
+    redis::cmd("FLUSHDB").execute(conn_ref.mq);
+    redis::cmd("FLUSHDB").execute(conn_ref.ss);
 
-            Ok(())
-        });
+    // Postgres >= 9.5
+    let q = r#"
+DO $func$
+BEGIN
+  EXECUTE (
+    SELECT
+      'TRUNCATE TABLE ' || string_agg(oid::regclass::text, ', ') || ' CASCADE'
+    FROM
+      pg_class
+    WHERE
+      relkind = 'r' AND
+      relnamespace = 'public'::regnamespace AND
+      oid::regclass::text != '__diesel_schema_migrations'
+  );
+END $func$;
+            "#;
+    let _ = diesel::sql_query(q)
+        .execute(conn_ref.db)
+        .expect("Failed to delete");
 }
 
-pub fn get_db_conn(connection_pool: &DbPool) -> DbConn {
-    match connection_pool.get() {
-        Ok(conn) => DbConn(conn),
-        Err(e) => panic!("err: {}", e),
-    }
+// TODO: move these function into {db,mq,ss}.rs.
+pub fn get_db_conn(holder: &DbPoolHolder) -> DbConn {
+    holder.get().map(DbConn).expect("databane connection")
 }
 
-pub fn get_mq_conn(connection_pool: &MqPool) -> MqConn {
-    match connection_pool.get() {
-        Ok(conn) => MqConn(conn),
-        Err(e) => panic!("err: {}", e),
-    }
+pub fn get_mq_conn(holder: &MqPoolHolder) -> MqConn {
+    holder.get().map(MqConn).expect("message queue connection")
+}
+
+pub fn get_ss_conn(holder: &SsPoolHolder) -> SsConn {
+    holder.get().map(SsConn).expect("session store connection")
 }
 
 // test data fixtures

@@ -63,7 +63,9 @@ where T: Clone + fmt::Debug + Into<String>
         // FIXME
         // any good way for T? (see also worker.rs)
         let id = args[0].clone().into().parse::<i64>().unwrap();
-        let token = args[1].clone().into();
+
+        let t = args[1].clone().into();
+        let s = args[2].clone().into();
 
         let _: Result<_, Error> = db_conn
             .build_transaction()
@@ -73,7 +75,6 @@ where T: Clone + fmt::Debug + Into<String>
                 Some(ref user_email) => {
                     let email = user_email.email.as_ref().unwrap();
                     info!(logger, "user_email.email: {}", email);
-                    info!(logger, "token: {}", token);
 
                     // TODO: replace it find_by_id (or where primary)
                     let user =
@@ -86,7 +87,7 @@ where T: Clone + fmt::Debug + Into<String>
                             .into_boxed_str(),
                     );
                     // TODO: check result (should be Result instead of bool?)
-                    mailer.to((email, name)).send_user_activation_email(token);
+                    mailer.to((email, name)).send_user_activation_email(&t, &s);
                     Ok(())
                 },
                 _ => {

@@ -26,7 +26,7 @@ pub mod test {
     use dotenv::dotenv;
 
     use config::Config;
-    use db::{DbConn, DbPool, init_pool};
+    use db::{DbPoolHolder, init_pool_holder};
     use logger::{Logger, get_logger};
 
     lazy_static! {
@@ -34,19 +34,19 @@ pub mod test {
             dotenv().ok();
             Config::from("testing").unwrap()
         };
-        static ref DB_POOL: DbPool =
-            { init_pool(&CONFIG.database_url, CONFIG.database_max_pool_size) };
+        static ref DB_POOL_HOLDER: DbPoolHolder = {
+            init_pool_holder(
+                &CONFIG.database_url,
+                CONFIG.database_max_pool_size,
+            )
+        };
     }
 
     /// A test runner
     pub fn run<T>(test: T)
     where T: FnOnce(&PgConnection, &Config, &Logger) -> () + panic::UnwindSafe
     {
-        let conn = match DB_POOL.get() {
-            Ok(conn) => DbConn(conn),
-            Err(e) => panic!(e),
-        };
-
+        let conn = DB_POOL_HOLDER.get().expect("database connection");
         let logger = get_logger(&CONFIG);
 
         let _: std::result::Result<(), diesel::result::Error> =

@@ -6,7 +6,7 @@ use run_test;
 
 #[test]
 fn test_signin() {
-    run_test(|client, db_conn, _, _, logger| {
+    run_test(|client, conn, _, logger| {
         let password = "pa$$w0rD";
         let mut u = user::NewUser {
             name: None,
@@ -17,7 +17,7 @@ fn test_signin() {
         };
         u.set_password(&password);
 
-        user::User::insert(&u, &db_conn, &logger)
+        user::User::insert(&u, &conn.db, &logger)
             .unwrap_or_else(|| panic!("Error inserting: {}", u));
 
         let req = client.post("/_api/signin").header(ContentType::JSON).body(

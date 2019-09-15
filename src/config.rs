@@ -19,8 +19,10 @@ pub struct Config {
     pub mailer_smtp_port: u16,
     pub mailer_smtp_username: String,
     pub mailer_smtp_password: String,
-    pub queue_url: String,
-    pub queue_max_pool_size: u32,
+    pub message_queue_url: String,
+    pub message_queue_max_pool_size: u32,
+    pub session_store_url: String,
+    pub session_store_max_pool_size: u32,
 }
 
 impl Default for Config {
@@ -63,8 +65,13 @@ impl Default for Config {
             mailer_smtp_password: env::var("MAILER_SMTP_PASSWORD")
                 .expect("MAILER_SMTP_PASSWORD is not set"),
 
-            queue_max_pool_size: 0,
-            queue_url: env::var("QUEUE_URL").expect("QUEUE_URL is not set"),
+            message_queue_max_pool_size: 0,
+            message_queue_url: env::var("MESSAGE_QUEUE_URL")
+                .expect("MESSAGE_QUEUE_URL is not set"),
+
+            session_store_max_pool_size: 0,
+            session_store_url: env::var("SESSION_STORE_URL")
+                .expect("SESSION_STORE_URL is not set"),
         }
     }
 }
@@ -86,21 +93,29 @@ impl Config {
                 Err(_) => 12,
             };
 
-        let queue_max_pool_size: u32 = match env::var("QUEUE_MAX_POOL_SIZE") {
-            Ok(v) => v.parse::<u32>().unwrap(),
-            Err(_) => 8,
-        };
-
         let mailer_smtp_port: u16 = match env::var("MAILER_SMTP_PORT") {
             Ok(v) => v.parse::<u16>().unwrap(),
             Err(_) => 587,
         };
 
+        let message_queue_max_pool_size: u32 =
+            match env::var("MESSAGE_QUEUE_MAX_POOL_SIZE") {
+                Ok(v) => v.parse::<u32>().unwrap(),
+                Err(_) => 8,
+            };
+
+        let session_store_max_pool_size: u32 =
+            match env::var("SESSION_STORE_MAX_POOL_SIZE") {
+                Ok(v) => v.parse::<u32>().unwrap(),
+                Err(_) => 8,
+            };
+
         Config {
             env_name: &"production",
             database_max_pool_size,
-            queue_max_pool_size,
             mailer_smtp_port,
+            message_queue_max_pool_size,
+            session_store_max_pool_size,
 
             ..Default::default()
         }
@@ -117,16 +132,22 @@ impl Config {
                 Err(_) => 2,
             };
 
-        let queue_max_pool_size: u32 =
-            match env::var("TEST_QUEUE_MAX_POOL_SIZE") {
-                Ok(v) => v.parse::<u32>().unwrap(),
-                Err(_) => 2,
-            };
-
         let mailer_smtp_port: u16 = match env::var("TEST_MAILER_SMTP_PORT") {
             Ok(v) => v.parse::<u16>().unwrap(),
             Err(_) => 587,
         };
+
+        let message_queue_max_pool_size: u32 =
+            match env::var("TEST_MESSAGE_QUEUE_MAX_POOL_SIZE") {
+                Ok(v) => v.parse::<u32>().unwrap(),
+                Err(_) => 2,
+            };
+
+        let session_store_max_pool_size: u32 =
+            match env::var("TEST_SESSION_STORE_MAX_POOL_SIZE") {
+                Ok(v) => v.parse::<u32>().unwrap(),
+                Err(_) => 2,
+            };
 
         Config {
             activation_token_issuer: env::var("TEST_ACTIVATION_TOKEN_ISSUER")
@@ -172,9 +193,13 @@ impl Config {
             mailer_smtp_password: env::var("TEST_MAILER_SMTP_PASSWORD")
                 .expect("TEST_MAILER_SMTP_PASSWORD is not set"),
 
-            queue_max_pool_size,
-            queue_url: env::var("TEST_QUEUE_URL")
-                .expect("TEST_QUEUE_URL is not set"),
+            message_queue_max_pool_size,
+            message_queue_url: env::var("TEST_MESSAGE_QUEUE_URL")
+                .expect("TEST_MESSAGE_QUEUE_URL is not set"),
+
+            session_store_max_pool_size,
+            session_store_url: env::var("TEST_SESSION_STORE_URL")
+                .expect("TEST_SESSION_STORE_URL is not set"),
         }
     }
 
@@ -185,22 +210,29 @@ impl Config {
                 Err(_) => 4,
             };
 
-        let queue_max_pool_size: u32 = match env::var("DATABASE_MAX_POOL_SIZE")
-        {
-            Ok(v) => v.parse::<u32>().unwrap(),
-            Err(_) => 4,
-        };
-
         let mailer_smtp_port: u16 = match env::var("MAILER_SMTP_PORT") {
             Ok(v) => v.parse::<u16>().unwrap(),
             Err(_) => 587,
         };
 
+        let message_queue_max_pool_size: u32 =
+            match env::var("MESSAGE_QUEUE_MAX_POOL_SIZE") {
+                Ok(v) => v.parse::<u32>().unwrap(),
+                Err(_) => 4,
+            };
+
+        let session_store_max_pool_size: u32 =
+            match env::var("SESSION_STORE_MAX_POOL_SIZE") {
+                Ok(v) => v.parse::<u32>().unwrap(),
+                Err(_) => 4,
+            };
+
         Config {
             env_name: &"development",
             database_max_pool_size,
-            queue_max_pool_size,
             mailer_smtp_port,
+            message_queue_max_pool_size,
+            session_store_max_pool_size,
 
             ..Default::default()
         }
@@ -239,7 +271,10 @@ mod test {
                 "MAILER_SMTP_HOST" => "server.tld",
                 "MAILER_SMTP_USERNAME" => "username",
                 "MAILER_SMTP_PASSWORD" => "password",
-                "QUEUE_URL" => "redis://u$er:pa$$w0rd@localhost:6379/queue",
+                "MESSAGE_QUEUE_URL" =>
+                    "redis://u$er:pa$$w0rd@localhost:6379/message",
+                "SESSION_STORE_URL" =>
+                    "redis://u$er:pa$$w0rd@localhost:6379/session",
 
                 "TEST_ACTIVATION_TOKEN_ISSUER" => "com.eloquentlog",
                 "TEST_ACTIVATION_TOKEN_KEY_ID" => "test-key_id-activation",
@@ -256,7 +291,10 @@ mod test {
                 "TEST_MAILER_SMTP_HOST" => "server.tld",
                 "TEST_MAILER_SMTP_USERNAME" => "username",
                 "TEST_MAILER_SMTP_PASSWORD" => "password",
-                "TEST_QUEUE_URL" => "redis://u$er:pa$$w0rd@localhost:6379/queue"
+                "TEST_MESSAGE_QUEUE_URL" =>
+                    "redis://u$er:pa$$w0rd@localhost:6379/message",
+                "TEST_SESSION_STORE_URL" =>
+                    "redis://u$er:pa$$w0rd@localhost:6379/session"
             };
         }
 
@@ -313,7 +351,8 @@ TEST_MAILER_FROM_ALIAS
 TEST_MAILER_SMTP_HOST
 TEST_MAILER_SMTP_PASSWORD
 TEST_MAILER_SMTP_USERNAME
-TEST_QUEUE_URL
+TEST_MESSAGE_QUEUE_URL
+TEST_SESSION_STORE_URL
 "#, || {
                 let result = panic::catch_unwind(|| {
                     let c = Config::from("production");
@@ -342,7 +381,8 @@ MAILER_FROM_ALIAS
 MAILER_SMTP_HOST
 MAILER_SMTP_PASSWORD
 MAILER_SMTP_USERNAME
-QUEUE_URL
+MESSAGE_QUEUE_URL
+SESSION_STORE_URL
 "#, || {
                 let result = panic::catch_unwind(|| {
                     let c = Config::from("testing");
@@ -371,7 +411,8 @@ TEST_MAILER_FROM_ALIAS
 TEST_MAILER_SMTP_HOST
 TEST_MAILER_SMTP_PASSWORD
 TEST_MAILER_SMTP_USERNAME
-TEST_QUEUE_URL
+TEST_MESSAGE_QUEUE_URL
+TEST_SESSION_STORE_URL
 "#, || {
                 let result = panic::catch_unwind(|| {
                     let c = Config::from("development");
@@ -400,12 +441,14 @@ MAILER_FROM_ALIAS
 MAILER_SMTP_HOST
 MAILER_SMTP_PASSWORD
 MAILER_SMTP_USERNAME
-QUEUE_URL
+MESSAGE_QUEUE_URL
+SESSION_STORE_URL
 "#, || {
                 let c = Config::from("production").unwrap();
                 assert_eq!(c.env_name, "production");
                 assert_eq!(c.database_max_pool_size, 12);
-                assert_eq!(c.queue_max_pool_size, 8);
+                assert_eq!(c.message_queue_max_pool_size, 8);
+                assert_eq!(c.session_store_max_pool_size, 8);
             });
         }
     }
@@ -428,12 +471,14 @@ TEST_MAILER_FROM_ALIAS
 TEST_MAILER_SMTP_HOST
 TEST_MAILER_SMTP_PASSWORD
 TEST_MAILER_SMTP_USERNAME
-TEST_QUEUE_URL
+TEST_MESSAGE_QUEUE_URL
+TEST_SESSION_STORE_URL
 "#, || {
                 let c = Config::from("testing").unwrap();
                 assert_eq!(c.env_name, "testing");
                 assert_eq!(c.database_max_pool_size, 2);
-                assert_eq!(c.queue_max_pool_size, 2);
+                assert_eq!(c.message_queue_max_pool_size, 2);
+                assert_eq!(c.session_store_max_pool_size, 2);
             });
         }
     }
@@ -456,12 +501,14 @@ MAILER_FROM_ALIAS
 MAILER_SMTP_HOST
 MAILER_SMTP_PASSWORD
 MAILER_SMTP_USERNAME
-QUEUE_URL
+MESSAGE_QUEUE_URL
+SESSION_STORE_URL
 "#, || {
                 let c = Config::from("development").unwrap();
                 assert_eq!(c.env_name, "development");
                 assert_eq!(c.database_max_pool_size, 4);
-                assert_eq!(c.queue_max_pool_size, 4);
+                assert_eq!(c.message_queue_max_pool_size, 4);
+                assert_eq!(c.session_store_max_pool_size, 4);
             });
         }
     }

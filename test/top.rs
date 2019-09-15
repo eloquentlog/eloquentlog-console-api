@@ -5,10 +5,10 @@ use {run_test, load_user, make_raw_password, USERS};
 
 #[test]
 fn test_index() {
-    run_test(|client, db_conn, _, _, _| {
+    run_test(|client, conn, _, _| {
         let u = USERS.get("oswald").unwrap().clone();
         let password = make_raw_password(&u);
-        let user = load_user(u, db_conn);
+        let user = load_user(u, &conn.db);
 
         let mut res = client
             .post("/_api/signin")
