@@ -118,13 +118,10 @@ test:
     POSTGRES_DB: eloquentlog_test
     POSTGRES_USER: eloquentlog
     POSTGRES_PASSWORD: eloquentlog
-    TEST_ACTIVATION_TOKEN_ISSUER: "test-activation-token-issuer"
-    TEST_ACTIVATION_TOKEN_KEY_ID: "test-activation-token-key_id"
-    TEST_ACTIVATION_TOKEN_SECRET: "test-activation-token-secret"
-    TEST_AUTHORIZATION_TOKEN_ISSUER: "test-authorization-token-issuer"
-    TEST_AUTHORIZATION_TOKEN_KEY_ID: "test-authorization-token-key_id"
-    TEST_AUTHORIZATION_TOKEN_SECRET: "test-authorization-token-secret"
     TEST_APPLICATION_URL: "http://127.0.0.1:3000"
+    TEST_AUTHENTICATION_TOKEN_ISSUER: "test-authentication-token-issuer"
+    TEST_AUTHENTICATION_TOKEN_KEY_ID: "test-authentication-token-key_id"
+    TEST_AUTHENTICATION_TOKEN_SECRET: "test-authentication-token-secret"
     TEST_DATABASE_URL: "postgresql://eloquentlog:eloquentlog@postgres:5432/eloquentlog_test"
     TEST_MAILER_DOMAIN: "example.com"
     TEST_MAILER_FROM_EMAIL: "no-reply@example.com"
@@ -135,6 +132,9 @@ test:
     TEST_MAILER_SMTP_USERNAME: "password"
     TEST_MESSAGE_QUEUE_URL: "redis://redis:6379/0"
     TEST_SESSION_STORE_URL: "redis://redis:6379/2"
+    TEST_VERIFICATION_TOKEN_ISSUER: "test-verification-token-issuer"
+    TEST_VERIFICATION_TOKEN_KEY_ID: "test-verification-token-key_id"
+    TEST_VERIFICATION_TOKEN_SECRET: "test-verification-token-secret"
   before_script:
     - *postgresql
     - rustc --version

@@ -1,7 +1,7 @@
-//! # A type UserEmailActivationState for UserEmail in user_email.rs
+//! # A type UserEmailVerificationState for UserEmail in user_email.rs
 //!
-//! EUserEmailActivationState represents SQL type value
-//! `e_user_email_activation_state` and UserEmailActivationState is an Enum
+//! EUserEmailVerificationState represents SQL type value
+//! `e_user_email_verification_state` and UserEmailVerificationState is an Enum
 //! holds all the values.
 use std::fmt;
 use std::io::Write;
@@ -13,19 +13,19 @@ use diesel::pg::Pg;
 use diesel::serialize::{self, IsNull, Output, ToSql};
 
 #[derive(QueryId, SqlType)]
-#[postgres(type_name = "e_user_email_activation_state")]
-pub struct EUserEmailActivationState;
+#[postgres(type_name = "e_user_email_verification_state")]
+pub struct EUserEmailVerificationState;
 
 #[derive(
     AsExpression, Clone, Debug, Deserialize, FromSqlRow, PartialEq, Serialize,
 )]
-#[sql_type = "EUserEmailActivationState"]
-pub enum UserEmailActivationState {
+#[sql_type = "EUserEmailVerificationState"]
+pub enum UserEmailVerificationState {
     Pending, // default
     Done,
 }
 
-impl fmt::Display for UserEmailActivationState {
+impl fmt::Display for UserEmailVerificationState {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
             Self::Pending => write!(f, "pending"),
@@ -34,7 +34,7 @@ impl fmt::Display for UserEmailActivationState {
     }
 }
 
-impl ToSql<EUserEmailActivationState, Pg> for UserEmailActivationState {
+impl ToSql<EUserEmailVerificationState, Pg> for UserEmailVerificationState {
     fn to_sql<W: Write>(&self, out: &mut Output<W, Pg>) -> serialize::Result {
         match *self {
             Self::Pending => out.write_all(b"pending")?,
@@ -44,7 +44,7 @@ impl ToSql<EUserEmailActivationState, Pg> for UserEmailActivationState {
     }
 }
 
-impl FromSql<EUserEmailActivationState, Pg> for UserEmailActivationState {
+impl FromSql<EUserEmailVerificationState, Pg> for UserEmailVerificationState {
     fn from_sql(bytes: Option<&[u8]>) -> deserialize::Result<Self> {
         match not_none!(bytes) {
             b"pending" => Ok(Self::Pending),
@@ -54,7 +54,7 @@ impl FromSql<EUserEmailActivationState, Pg> for UserEmailActivationState {
     }
 }
 
-impl From<String> for UserEmailActivationState {
+impl From<String> for UserEmailVerificationState {
     fn from(s: String) -> Self {
         match s.to_ascii_lowercase().as_ref() {
             "pending" => Self::Pending,
@@ -64,11 +64,11 @@ impl From<String> for UserEmailActivationState {
     }
 }
 
-impl UserEmailActivationState {
+impl UserEmailVerificationState {
     pub fn iter() -> Iter<'static, Self> {
-        static USER_STATES: [UserEmailActivationState; 2] = [
-            UserEmailActivationState::Pending,
-            UserEmailActivationState::Done,
+        static USER_STATES: [UserEmailVerificationState; 2] = [
+            UserEmailVerificationState::Pending,
+            UserEmailVerificationState::Done,
         ];
         USER_STATES.iter()
     }
@@ -86,35 +86,38 @@ mod test {
     #[test]
     fn test_from() {
         assert_eq!(
-            UserEmailActivationState::Pending,
-            UserEmailActivationState::from("pending".to_string())
+            UserEmailVerificationState::Pending,
+            UserEmailVerificationState::from("pending".to_string())
         );
         assert_eq!(
-            UserEmailActivationState::Done,
-            UserEmailActivationState::from("done".to_string())
+            UserEmailVerificationState::Done,
+            UserEmailVerificationState::from("done".to_string())
         );
 
         // default
         assert_eq!(
-            UserEmailActivationState::Pending,
-            UserEmailActivationState::from("unknown".to_string())
+            UserEmailVerificationState::Pending,
+            UserEmailVerificationState::from("unknown".to_string())
         );
     }
 
     #[test]
     fn test_fmt() {
-        assert_eq!("pending", format!("{}", UserEmailActivationState::Pending));
-        assert_eq!("done", format!("{}", UserEmailActivationState::Done));
+        assert_eq!(
+            "pending",
+            format!("{}", UserEmailVerificationState::Pending)
+        );
+        assert_eq!("done", format!("{}", UserEmailVerificationState::Done));
     }
 
     #[test]
     fn test_as_vec() {
         assert_eq!(
             vec![
-                UserEmailActivationState::Pending,
-                UserEmailActivationState::Done,
+                UserEmailVerificationState::Pending,
+                UserEmailVerificationState::Done,
             ],
-            UserEmailActivationState::as_vec()
+            UserEmailVerificationState::as_vec()
         )
     }
 }

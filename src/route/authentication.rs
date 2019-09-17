@@ -7,18 +7,18 @@ use rocket_slog::SyncLogger;
 use config::Config;
 use db::DbConn;
 use model::user::User;
-use model::token::{AuthorizationClaims, Claims, TokenData};
-use request::user::UserSignin as RequestData;
+use model::token::{AuthenticationClaims, Claims, TokenData};
+use request::user::authentication::UserAuthentication as RequestData;
 use response::{Response, no_content_for};
 use util::split_token;
 
-#[options("/signin")]
-pub fn signin_options<'a>() -> RawResponse<'a> {
+#[options("/login")]
+pub fn login_options<'a>() -> RawResponse<'a> {
     no_content_for("POST")
 }
 
-#[post("/signin", data = "<data>", format = "json")]
-pub fn signin<'a>(
+#[post("/login", data = "<data>", format = "json")]
+pub fn login<'a>(
     data: RequestData,
     conn: DbConn,
     logger: SyncLogger,
@@ -38,17 +38,17 @@ pub fn signin<'a>(
                 granted_at: Utc::now().timestamp(),
                 expires_at: 0,
             };
-            let authorization_token = AuthorizationClaims::encode(
+            let authentication_token = AuthenticationClaims::encode(
                 data,
-                &config.authorization_token_issuer,
-                &config.authorization_token_key_id,
-                &config.authorization_token_secret,
+                &config.authentication_token_issuer,
+                &config.authentication_token_key_id,
+                &config.authentication_token_secret,
             );
 
             // TODO:
             // * consider about implementation "Are you there?" modal
             // * consider about extension (re-set it again?)
-            let (token, signature) = match split_token(authorization_token) {
+            let (token, sign) = match split_token(authentication_token) {
                 Some(result) => result,
                 None => {
                     return res.status(Status::InternalServerError).format(
@@ -59,11 +59,10 @@ pub fn signin<'a>(
                 },
             };
 
-            res.cookies(vec![signature])
-                .format(json!({ "token": token }))
+            res.cookies(vec![sign]).format(json!({ "token": token }))
         },
         _ => {
-            warn!(logger, "signin failed: username {}", data.username);
+            warn!(logger, "login failed: username {}", data.username);
 
             res.status(Status::Unauthorized).format(json!({
                 "message": "The credentials you've entered are incorrect"

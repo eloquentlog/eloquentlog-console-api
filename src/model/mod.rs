@@ -5,7 +5,7 @@
 // sql types
 mod log_level;
 mod log_format;
-mod user_email_activation_state;
+mod user_email_verification_state;
 mod user_email_role;
 mod user_state;
 mod user_reset_password_state;

@@ -106,10 +106,8 @@ pub fn server() -> rocket::Rocket {
         .mount(
             "/_api",
             routes![
-                route::activation::activate,
-                route::activation::activate_options,
-                route::authentication::signin,
-                route::authentication::signin_options,
+                route::authentication::login,
+                route::authentication::login_options,
                 route::authentication::logout,
                 route::message::get_messages,
                 route::message::get_messages_options,
@@ -122,6 +120,8 @@ pub fn server() -> rocket::Rocket {
                 route::registration::register,
                 route::registration::register_options,
                 route::registration::deregister,
+                route::user::activation::activate,
+                route::user::activation::activate_options,
             ],
         )
         .register(catchers![

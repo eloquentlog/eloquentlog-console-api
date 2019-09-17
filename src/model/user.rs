@@ -10,14 +10,14 @@ use uuid::Uuid;
 
 pub use model::user_state::*;
 pub use model::user_reset_password_state::*;
-pub use model::token::{AuthorizationClaims, ActivationClaims, Claims};
+pub use model::token::{AuthenticationClaims, Claims, VerificationClaims};
 pub use schema::users;
 pub use schema::user_emails;
 
 use model::user_email::UserEmail;
-use model::user_email_activation_state::UserEmailActivationState;
+use model::user_email_verification_state::UserEmailVerificationState;
 use logger::Logger;
-use request::user::UserSignUp as RequestData;
+use request::user::registration::UserRegistration as RequestData;
 
 const BCRYPT_COST: u32 = 12;
 
@@ -77,12 +77,6 @@ impl<'a> From<&'a RequestData> for NewUser {
 }
 
 impl NewUser {
-    pub fn generate_access_token() -> String {
-        // TODO
-        // API access token for user
-        "".to_string()
-    }
-
     // NOTE:
     // run asynchronously? It (encrypt_password) may slow.
     pub fn set_password(&mut self, password: &str) {
@@ -100,8 +94,6 @@ pub struct User {
     pub email: String,
     pub password: Vec<u8>,
     pub state: UserState,
-    pub access_token: Option<String>,
-    pub access_token_granted_at: Option<NaiveDateTime>,
     pub reset_password_state: UserResetPasswordState,
     pub reset_password_token: Option<String>,
     pub reset_password_token_expires_at: Option<NaiveDateTime>,
@@ -213,18 +205,18 @@ impl User {
         }
     }
 
-    pub fn load_with_user_email_activation_token(
-        activation_token: &str,
+    pub fn load_with_user_email_verification_token(
+        verification_token: &str,
         conn: &PgConnection,
         logger: &Logger,
     ) -> Result<(User, UserEmail), &'static str>
     {
         let q = users::table
             .inner_join(user_emails::table)
-            .filter(user_emails::activation_token.eq(activation_token))
+            .filter(user_emails::verification_token.eq(verification_token))
             .filter(
-                user_emails::activation_state
-                    .eq(UserEmailActivationState::Pending),
+                user_emails::verification_state
+                    .eq(UserEmailVerificationState::Pending),
             )
             .limit(1);
 
@@ -246,13 +238,13 @@ impl User {
     {
         let t = T::decode(token, issuer, secret).expect("invalid value");
         let c = &t as &dyn Any;
-        if let Some(claims) = c.downcast_ref::<AuthorizationClaims>() {
+        if let Some(claims) = c.downcast_ref::<AuthenticationClaims>() {
             let uuid = claims.get_subject();
             return Self::find_by_uuid(&uuid, conn, logger);
-        } else if let Some(claims) = c.downcast_ref::<ActivationClaims>() {
-            let activation_token = claims.get_subject();
-            return Self::load_with_user_email_activation_token(
-                &activation_token,
+        } else if let Some(claims) = c.downcast_ref::<VerificationClaims>() {
+            let verification_token = claims.get_subject();
+            return Self::load_with_user_email_verification_token(
+                &verification_token,
                 conn,
                 logger,
             )
@@ -342,8 +334,6 @@ pub mod data {
                 email: "oswald@example.org".to_string(),
                 password: b"Pa$$w0rd".to_vec(),
                 state: UserState::Active,
-                access_token: None,
-                access_token_granted_at: None,
                 reset_password_state: UserResetPasswordState::Never,
                 reset_password_token: None,
                 reset_password_token_expires_at: None,
@@ -359,8 +349,6 @@ pub mod data {
                 email: "weenie@example.org".to_string(),
                 password: b"Pa$$w0rd".to_vec(),
                 state: UserState::Active,
-                access_token: None,
-                access_token_granted_at: None,
                 reset_password_state: UserResetPasswordState::Never,
                 reset_password_token: None,
                 reset_password_token_expires_at: None,
@@ -376,8 +364,6 @@ pub mod data {
                 email: "hennry@example.org".to_string(),
                 password: b"Pa$$w0rd".to_vec(),
                 state: UserState::Pending,
-                access_token: None,
-                access_token_granted_at: None,
                 reset_password_state: UserResetPasswordState::Never,
                 reset_password_token: None,
                 reset_password_token_expires_at: None,

@@ -11,7 +11,7 @@ fn test_index() {
         let user = load_user(u, &conn.db);
 
         let mut res = client
-            .post("/_api/signin")
+            .post("/_api/login")
             .header(ContentType::JSON)
             .body(format!(
                 r#"{{

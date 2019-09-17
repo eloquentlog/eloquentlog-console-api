@@ -3,7 +3,7 @@ use rocket_slog::SyncLogger;
 
 use config::Config;
 use db::DbConn;
-use model::token::{ActivationClaims, Claims};
+use model::token::{VerificationClaims, Claims};
 use model::user::User;
 
 pub struct UserActivator<'a> {
@@ -27,10 +27,10 @@ impl<'a> UserActivator<'a> {
     }
 
     fn decode_token(&self, token: &str) -> Result<String, &str> {
-        let claims = ActivationClaims::decode(
+        let claims = VerificationClaims::decode(
             token,
-            &self.config.activation_token_issuer,
-            &self.config.activation_token_secret,
+            &self.config.verification_token_issuer,
+            &self.config.verification_token_secret,
         )
         .map_err(|e| {
             warn!(self.logger, "decoding failed: {}", e);
@@ -39,12 +39,13 @@ impl<'a> UserActivator<'a> {
         Ok(claims.get_subject())
     }
 
-    /// activate finds user account by the activation token, and activates it.
+    /// This activate finds user account by primary address's verification
+    /// token, and activates the owner.
     pub fn activate(&self, token: &str) -> Result<(), &str> {
-        let activation_token = self.decode_token(token)?;
+        let verification_token = self.decode_token(token)?;
 
-        let (user, user_email) = User::load_with_user_email_activation_token(
-            &activation_token,
+        let (user, user_email) = User::load_with_user_email_verification_token(
+            &verification_token,
             self.conn,
             self.logger,
         )
@@ -53,7 +54,7 @@ impl<'a> UserActivator<'a> {
             "not found"
         })?;
 
-        let activation = self
+        let verification = self
             .conn
             .build_transaction()
             .serializable()
@@ -68,13 +69,13 @@ impl<'a> UserActivator<'a> {
                 }
                 Err(Error::RollbackTransaction)
             });
-        if activation.is_ok() {
+        if verification.is_ok() {
             info!(
                 self.logger,
                 "an user ({}) has been activated (granted: {})",
                 user,
                 user_email
-                    .activation_token_granted_at
+                    .verification_token_granted_at
                     .unwrap()
                     .format("%Y-%m-%d %H:%M:%S"),
             );

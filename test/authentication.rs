@@ -5,7 +5,7 @@ use eloquentlog_backend_api::model::user;
 use run_test;
 
 #[test]
-fn test_signin() {
+fn test_login() {
     run_test(|client, conn, _, logger| {
         let password = "pa$$w0rD";
         let mut u = user::NewUser {
@@ -20,13 +20,17 @@ fn test_signin() {
         user::User::insert(&u, &conn.db, &logger)
             .unwrap_or_else(|| panic!("Error inserting: {}", u));
 
-        let req = client.post("/_api/signin").header(ContentType::JSON).body(
-            format!(
-                "{{\"username\": \"{}\", \"password\": \"{}\"}}",
-                u.email, password
-            ),
-        );
-        let res = req.dispatch();
+        let res = client
+            .post("/_api/login")
+            .header(ContentType::JSON)
+            .body(format!(
+                r#"{{
+                  "username": "{}",
+                  "password": "{}"
+                }}"#,
+                u.email, password,
+            ))
+            .dispatch();
 
         assert_eq!(res.status(), Status::Ok);
     });

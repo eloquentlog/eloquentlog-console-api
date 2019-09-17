@@ -97,7 +97,7 @@ pub fn minify(s: String) -> String {
 
 /// A test runner for integration tests
 pub fn run_test<T>(test: T)
-where T: FnOnce(Client, &mut Connection, &config::Config, &Logger) -> ()
+where T: FnOnce(&Client, &mut Connection, &config::Config, &Logger) -> ()
         + panic::UnwindSafe {
     let _lock = DB_LOCK.lock();
 
@@ -124,24 +124,24 @@ where T: FnOnce(Client, &mut Connection, &config::Config, &Logger) -> ()
             .manage(CONFIG.clone());
         let client = Client::new(server).unwrap();
 
-        test(client, &mut conn, &CONFIG, &logger)
+        test(&client, &mut conn, &CONFIG, &logger)
     }));
     assert!(result.is_ok());
 
     teardown(&mut conn);
 }
 
-fn setup(conn_ref: &mut Connection) {
-    clean(conn_ref);
+fn setup(conn: &mut Connection) {
+    clean(conn);
 }
 
-fn teardown(conn_ref: &mut Connection) {
-    clean(conn_ref);
+fn teardown(conn: &mut Connection) {
+    clean(conn);
 }
 
-fn clean(conn_ref: &mut Connection) {
-    redis::cmd("FLUSHDB").execute(conn_ref.mq);
-    redis::cmd("FLUSHDB").execute(conn_ref.ss);
+fn clean(conn: &mut Connection) {
+    redis::cmd("FLUSHDB").execute(conn.mq);
+    redis::cmd("FLUSHDB").execute(conn.ss);
 
     // Postgres >= 9.5
     let q = r#"
@@ -160,7 +160,7 @@ BEGIN
 END $func$;
             "#;
     let _ = diesel::sql_query(q)
-        .execute(conn_ref.db)
+        .execute(conn.db)
         .expect("Failed to delete");
 }
 
@@ -191,8 +191,6 @@ lazy_static! {
             email: "oswald@example.org".to_string(),
             password: b"Pa$$w0rd".to_vec(),
             state: user::UserState::Active,
-            access_token: None,
-            access_token_granted_at: None,
             reset_password_state: user::UserResetPasswordState::Never,
             reset_password_token: None,
             reset_password_token_expires_at: None,

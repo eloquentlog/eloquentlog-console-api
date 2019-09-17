@@ -1,143 +1,130 @@
-use chrono::{Duration, Utc};
-use rocket::http::{ContentType, Status};
+use fourche::queue::Queue;
+use rocket::http::{ContentType, Header, Status};
 
-use eloquentlog_backend_api::model;
-use eloquentlog_backend_api::model::token::Claims;
+use eloquentlog_backend_api::model::user;
+use eloquentlog_backend_api::job::{Job, JobKind};
 
 use run_test;
 
 #[test]
 fn test_activate_with_invalid_token() {
-    run_test(|client, conn, config, logger| {
-        let mut u = model::user::NewUser {
-            name: None,
-            username: "johnny".to_string(),
-            email: "johnny@example.org".to_string(),
+    run_test(|client, conn, _, logger| {
+        let email = "hennry@example.org";
+        let res = client
+            .post("/_api/register")
+            .header(ContentType::JSON)
+            .body(format!(
+                r#"{{
+                  "email": "{}",
+                  "username": "hennry",
+                  "password": "pa$$w0rD"
+                }}"#,
+                &email,
+            ))
+            .dispatch();
 
-            ..Default::default()
-        };
-        u.set_password(&"pa$$w0rD");
+        assert_eq!(res.status(), Status::Ok);
 
-        let user = model::user::User::insert(&u, &conn.db, &logger)
-            .unwrap_or_else(|| panic!("error: {}", u));
+        let mut queue = Queue::new("default", conn.mq);
+        let job = queue.dequeue::<Job<String>>().ok().unwrap();
+        assert_eq!(job.kind, JobKind::SendUserActivationEmail);
+        assert!(!job.args.is_empty());
 
-        let ue: model::user_email::NewUserEmail = (&user).into();
-
-        let user_email =
-            model::user_email::UserEmail::insert(&ue, &conn.db, &logger)
-                .unwrap_or_else(|| panic!("error: {}", ue.email));
-
-        let now = Utc::now();
-        let data = model::token::TokenData {
-            value: model::user_email::UserEmail::generate_token(),
-            granted_at: now.timestamp(),
-            expires_at: (now + Duration::hours(1)).timestamp(),
-        };
-        let token = model::token::ActivationClaims::encode(
-            data,
-            &config.activation_token_issuer,
-            &config.activation_token_key_id,
-            &config.activation_token_secret,
-        );
-        let _ = user_email
-            .grant_token::<model::token::ActivationClaims>(
-                &token,
-                &config.activation_token_issuer,
-                &config.activation_token_secret,
-                &conn.db,
-                &logger,
-            )
-            .unwrap();
+        let token = "invalid-token";
+        let session_id = job.args[2].to_string();
 
         let res = client
-            .put("/_api/user/activate")
+            .post(format!("/_api/user/activate?s={}", session_id))
             .header(ContentType::JSON)
-            .body(
-                r#"{
-                    "token": "invalid-token"
-                }"#
-                .to_string(),
-            )
+            .header(Header::new("Authorization", format!("Bearer {}", token)))
+            .body("{}")
             .dispatch();
 
         assert_eq!(res.status(), Status::BadRequest);
-        assert!(model::user_email::UserEmail::find_by_token::<
-            model::token::ActivationClaims,
-        >(
-            &token,
-            &config.activation_token_issuer,
-            &config.activation_token_secret,
-            &conn.db,
-            &logger
-        )
-        .is_some());
+
+        let user = user::User::find_by_email(email, conn.db, logger).unwrap();
+        assert_eq!(user.state, user::UserState::Pending);
+    });
+}
+
+#[test]
+fn test_activate_with_invalid_session_id() {
+    run_test(|client, conn, _, logger| {
+        let email = "hennry@example.org";
+        let res = client
+            .post("/_api/register")
+            .header(ContentType::JSON)
+            .body(format!(
+                r#"{{
+                  "email": "{}",
+                  "username": "hennry",
+                  "password": "pa$$w0rD"
+                }}"#,
+                &email,
+            ))
+            .dispatch();
+
+        assert_eq!(res.status(), Status::Ok);
+
+        let mut queue = Queue::new("default", conn.mq);
+        let job = queue.dequeue::<Job<String>>().ok().unwrap();
+        assert_eq!(job.kind, JobKind::SendUserActivationEmail);
+        assert!(!job.args.is_empty());
+
+        let token = job.args[1].to_string();
+        let session_id = "invalid-session_id";
+
+        let res = client
+            .post(format!("/_api/user/activate?s={}", session_id))
+            .header(ContentType::JSON)
+            .header(Header::new("Authorization", format!("Bearer {}", token)))
+            .body("{}")
+            .dispatch();
+
+        assert_eq!(res.status(), Status::BadRequest);
+
+        let user = user::User::find_by_email(email, conn.db, logger).unwrap();
+        assert_eq!(user.state, user::UserState::Pending);
     });
 }
 
 #[test]
 fn test_activate() {
-    run_test(|client, conn, config, logger| {
-        let mut u = model::user::NewUser {
-            name: None,
-            username: "johnny".to_string(),
-            email: "johnny@example.org".to_string(),
-
-            ..Default::default()
-        };
-        u.set_password(&"pa$$w0rD");
-
-        let user = model::user::User::insert(&u, &conn.db, &logger)
-            .unwrap_or_else(|| panic!("error: {}", u));
-
-        let ue: model::user_email::NewUserEmail = (&user).into();
-
-        let user_email =
-            model::user_email::UserEmail::insert(&ue, &conn.db, &logger)
-                .unwrap_or_else(|| panic!("error: {}", ue.email));
-
-        let now = Utc::now();
-        let data = model::token::TokenData {
-            value: model::user_email::UserEmail::generate_token(),
-            granted_at: now.timestamp(),
-            expires_at: (now + Duration::hours(1)).timestamp(),
-        };
-        let token = model::token::ActivationClaims::encode(
-            data,
-            &config.activation_token_issuer,
-            &config.activation_token_key_id,
-            &config.activation_token_secret,
-        );
-        let _ = user_email
-            .grant_token::<model::token::ActivationClaims>(
-                &token,
-                &config.activation_token_issuer,
-                &config.activation_token_secret,
-                &conn.db,
-                &logger,
-            )
-            .unwrap();
-
+    run_test(|client, conn, _, logger| {
+        let email = "hennry@example.org";
         let res = client
-            .put("/_api/user/activate")
+            .post("/_api/register")
             .header(ContentType::JSON)
             .body(format!(
                 r#"{{
-          "token": "{}"
-        }}"#,
-                &token,
+                  "email": "{}",
+                  "username": "hennry",
+                  "password": "pa$$w0rD"
+                }}"#,
+                &email,
             ))
             .dispatch();
 
         assert_eq!(res.status(), Status::Ok);
-        assert!(model::user_email::UserEmail::find_by_token::<
-            model::token::ActivationClaims,
-        >(
-            &token,
-            &config.activation_token_issuer,
-            &config.activation_token_secret,
-            &conn.db,
-            &logger
-        )
-        .is_none());
+
+        let mut queue = Queue::new("default", conn.mq);
+        let job = queue.dequeue::<Job<String>>().ok().unwrap();
+        assert_eq!(job.kind, JobKind::SendUserActivationEmail);
+        assert!(!job.args.is_empty());
+
+        let token = job.args[1].to_string();
+        let session_id = job.args[2].to_string();
+
+        let res = client
+            .post(format!("/_api/user/activate?s={}", session_id))
+            .header(ContentType::JSON)
+            .header(Header::new("Authorization", format!("Bearer {}", token)))
+            .body("{}")
+            .dispatch();
+
+        assert_eq!(res.status(), Status::Ok);
+
+        let user = user::User::find_by_email(email, conn.db, logger).unwrap();
+        assert_eq!(user.state, user::UserState::Active);
     });
 }
