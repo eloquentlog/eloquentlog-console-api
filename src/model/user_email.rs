@@ -5,16 +5,16 @@ use diesel::{Associations, Identifiable, Queryable, debug_query, prelude::*};
 use diesel::pg::{Pg, PgConnection};
 
 pub use model::token::Claims;
-pub use model::user_email_activation_state::*;
 pub use model::user_email_role::*;
+pub use model::user_email_verification_state::*;
 pub use schema::user_emails;
 
 use logger::Logger;
 use model::user::User;
 use util::generate_random_hash;
 
-const ACTIVATION_HASH_LENGTH: i32 = 128;
-const ACTIVATION_HASH_SOURCE: &[u8] =
+const VERIFICATION_HASH_LENGTH: i32 = 128;
+const VERIFICATION_HASH_SOURCE: &[u8] =
     b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz01234567890";
 
 /// NewUserEmail
@@ -23,7 +23,7 @@ pub struct NewUserEmail {
     pub user_id: i64,
     pub email: String,
     pub role: UserEmailRole,
-    pub activation_state: UserEmailActivationState,
+    pub verification_state: UserEmailVerificationState,
 }
 
 impl Default for NewUserEmail {
@@ -32,8 +32,7 @@ impl Default for NewUserEmail {
             user_id: -1,           // validation error
             email: "".to_string(), // validation error
             role: UserEmailRole::General,
-
-            activation_state: UserEmailActivationState::Pending,
+            verification_state: UserEmailVerificationState::Pending,
         }
     }
 }
@@ -59,10 +58,10 @@ pub struct UserEmail {
     pub user_id: i64,
     pub email: Option<String>,
     pub role: UserEmailRole,
-    pub activation_state: UserEmailActivationState,
-    pub activation_token: Option<String>,
-    pub activation_token_expires_at: Option<NaiveDateTime>,
-    pub activation_token_granted_at: Option<NaiveDateTime>,
+    pub verification_state: UserEmailVerificationState,
+    pub verification_token: Option<String>,
+    pub verification_token_expires_at: Option<NaiveDateTime>,
+    pub verification_token_granted_at: Option<NaiveDateTime>,
     pub created_at: NaiveDateTime,
     pub updated_at: NaiveDateTime,
 }
@@ -79,8 +78,8 @@ impl Clone for UserEmail {
         UserEmail {
             role: UserEmailRole::from(role),
             email: self.email.clone(),
-            activation_state: self.activation_state.clone(),
-            activation_token: self.activation_token.clone(),
+            verification_state: self.verification_state.clone(),
+            verification_token: self.verification_token.clone(),
 
             ..*self
         }
@@ -108,7 +107,7 @@ impl UserEmail {
         }
     }
 
-    /// Finds only a non-activated (pending) UserEmail by activation token.
+    /// Finds only a non-verified (pending) UserEmail by verification token.
     pub fn find_by_token<T: Claims>(
         token: &str,
         issuer: &str,
@@ -129,10 +128,10 @@ impl UserEmail {
         }
 
         let q = user_emails::table
-            .filter(user_emails::activation_token.eq(value))
+            .filter(user_emails::verification_token.eq(value))
             .filter(
-                user_emails::activation_state
-                    .eq(UserEmailActivationState::Pending),
+                user_emails::verification_state
+                    .eq(UserEmailVerificationState::Pending),
             )
             .limit(1);
 
@@ -145,19 +144,19 @@ impl UserEmail {
     }
 
     pub fn generate_token() -> String {
-        generate_random_hash(ACTIVATION_HASH_SOURCE, ACTIVATION_HASH_LENGTH)
+        generate_random_hash(VERIFICATION_HASH_SOURCE, VERIFICATION_HASH_LENGTH)
     }
 
     /// Save a new user_email into user_emails.
     ///
     /// # Note
     ///
-    /// `activation_state` is assigned always as pending. And following
+    /// `verification_state` is assigned always as pending. And following
     /// columns keep still remaining as NULL until granting token later.
     ///
-    /// * activation_token
-    /// * activation_token_expires_at
-    /// * activation_token_granted_at
+    /// * verification_token
+    /// * verification_token_expires_at
+    /// * verification_token_granted_at
     pub fn insert(
         user_email: &NewUserEmail,
         conn: &PgConnection,
@@ -168,7 +167,8 @@ impl UserEmail {
             user_emails::user_id.eq(&user_email.user_id),
             Some(user_emails::email.eq(&user_email.email)),
             user_emails::role.eq(UserEmailRole::Primary),
-            user_emails::activation_state.eq(UserEmailActivationState::Pending),
+            user_emails::verification_state
+                .eq(UserEmailVerificationState::Pending),
         ));
 
         info!(logger, "{}", debug_query::<Pg, _>(&q).to_string());
@@ -188,12 +188,13 @@ impl UserEmail {
         logger: &Logger,
     ) -> Result<String, &'static str>
     {
-        let activation_token = self.activation_token.clone().unwrap();
+        let verification_token = self.verification_token.clone().unwrap();
 
-        // TODO: set activation_token to NULL
+        // TODO: set verification_token to NULL
         let q = diesel::update(self).set((
-            user_emails::activation_state.eq(UserEmailActivationState::Done),
-            user_emails::activation_token.eq(""),
+            user_emails::verification_state
+                .eq(UserEmailVerificationState::Done),
+            user_emails::verification_token.eq(""),
         ));
 
         info!(logger, "{}", debug_query::<Pg, _>(&q).to_string());
@@ -203,7 +204,7 @@ impl UserEmail {
                 error!(logger, "err: {}", e);
                 Err("failed to activate")
             },
-            Ok(_) => Ok(activation_token),
+            Ok(_) => Ok(verification_token),
         }
     }
 
@@ -219,13 +220,14 @@ impl UserEmail {
         // TODO: should we check duplication?
         let c = T::decode(token, issuer, secret).expect("Invalid value");
 
-        // activation
+        // verification
         let q = diesel::update(self).set((
-            user_emails::activation_state.eq(UserEmailActivationState::Pending),
-            user_emails::activation_token.eq(c.get_subject()),
-            user_emails::activation_token_expires_at
+            user_emails::verification_state
+                .eq(UserEmailVerificationState::Pending),
+            user_emails::verification_token.eq(c.get_subject()),
+            user_emails::verification_token_expires_at
                 .eq(c.get_expiration_time()),
-            user_emails::activation_token_granted_at.eq(c.get_issued_at()),
+            user_emails::verification_token_granted_at.eq(c.get_issued_at()),
         ));
 
         info!(logger, "{}", debug_query::<Pg, _>(&q).to_string());
@@ -235,7 +237,7 @@ impl UserEmail {
                 error!(logger, "err: {}", e);
                 Err("failed to grant token")
             },
-            Ok(user_email) => Ok(user_email.activation_token.unwrap()),
+            Ok(user_email) => Ok(user_email.verification_token.unwrap()),
         }
     }
 
@@ -263,10 +265,10 @@ mod data {
                 user_id: USERS.get("oswald").unwrap().id,
                 email: Some("oswald@example.org".to_string()),
                 role: UserEmailRole::Primary,
-                activation_state: UserEmailActivationState::Done,
-                activation_token: None,
-                activation_token_expires_at: None,
-                activation_token_granted_at: None,
+                verification_state: UserEmailVerificationState::Done,
+                verification_token: None,
+                verification_token_expires_at: None,
+                verification_token_granted_at: None,
                 created_at: Utc.ymd(2019, 7, 7).and_hms(7, 20, 15).naive_utc(),
                 updated_at: Utc.ymd(2019, 7, 7).and_hms(7, 20, 15).naive_utc(),
             },
@@ -275,10 +277,10 @@ mod data {
                 user_id: USERS.get("weenie").unwrap().id,
                 email: Some("weenie@example.org".to_string()),
                 role: UserEmailRole::Primary,
-                activation_state: UserEmailActivationState::Done,
-                activation_token: None,
-                activation_token_expires_at: None,
-                activation_token_granted_at: None,
+                verification_state: UserEmailVerificationState::Done,
+                verification_token: None,
+                verification_token_expires_at: None,
+                verification_token_granted_at: None,
                 created_at: Utc.ymd(2019, 7, 7).and_hms(7, 20, 15).naive_utc(),
                 updated_at: Utc.ymd(2019, 7, 7).and_hms(7, 20, 15).naive_utc(),
             },
@@ -287,10 +289,10 @@ mod data {
                 user_id: 3,
                 email: Some("hennry@example.org".to_string()),
                 role: UserEmailRole::Primary,
-                activation_state: UserEmailActivationState::Done,
-                activation_token: None,
-                activation_token_expires_at: None,
-                activation_token_granted_at: None,
+                verification_state: UserEmailVerificationState::Done,
+                verification_token: None,
+                verification_token_expires_at: None,
+                verification_token_granted_at: None,
                 created_at: Utc.ymd(2019, 7, 7).and_hms(7, 20, 15).naive_utc(),
                 updated_at: Utc.ymd(2019, 7, 7).and_hms(7, 20, 15).naive_utc(),
             }
@@ -305,7 +307,7 @@ mod test {
     use chrono::{Duration, Utc};
 
     use model::user::{User, users};
-    use model::token::{ActivationClaims, TokenData};
+    use model::token::{VerificationClaims, TokenData};
 
     use model::test::run;
     use model::user::data::USERS;
@@ -320,7 +322,7 @@ mod test {
         assert_eq!(ue.user_id, -1);
         assert_eq!(ue.email, "".to_string());
         assert_eq!(ue.role, UserEmailRole::General);
-        assert_eq!(ue.activation_state, UserEmailActivationState::Pending);
+        assert_eq!(ue.verification_state, UserEmailVerificationState::Pending);
     }
 
     #[test]
@@ -337,7 +339,10 @@ mod test {
             assert_eq!(ue.user_id, user.id);
             assert_eq!(ue.email, user.email);
             assert_eq!(ue.role, UserEmailRole::Primary);
-            assert_eq!(ue.activation_state, UserEmailActivationState::Pending);
+            assert_eq!(
+                ue.verification_state,
+                UserEmailVerificationState::Pending
+            );
         });
     }
 
@@ -402,35 +407,35 @@ mod test {
                 granted_at: now.timestamp(),
                 expires_at: (now + Duration::hours(1)).timestamp(),
             };
-            let token = ActivationClaims::encode(
+            let token = VerificationClaims::encode(
                 data,
-                &config.activation_token_issuer,
-                &config.activation_token_key_id,
-                &config.activation_token_secret,
+                &config.verification_token_issuer,
+                &config.verification_token_key_id,
+                &config.verification_token_secret,
             );
             let _ = user_email
-                .grant_token::<ActivationClaims>(
+                .grant_token::<VerificationClaims>(
                     &token,
-                    &config.activation_token_issuer,
-                    &config.activation_token_secret,
+                    &config.verification_token_issuer,
+                    &config.verification_token_secret,
                     conn,
                     logger,
                 )
-                .expect("failed to grant activation token");
+                .expect("failed to grant verification token");
 
             // set state as done
             diesel::update(&user_email)
                 .set(
-                    user_emails::activation_state
-                        .eq(UserEmailActivationState::Done),
+                    user_emails::verification_state
+                        .eq(UserEmailVerificationState::Done),
                 )
                 .execute(conn)
                 .unwrap_or_else(|e| panic!("Error updating: {}", e));
 
-            let result = UserEmail::find_by_token::<ActivationClaims>(
+            let result = UserEmail::find_by_token::<VerificationClaims>(
                 &token,
-                &config.activation_token_issuer,
-                &config.activation_token_secret,
+                &config.verification_token_issuer,
+                &config.verification_token_secret,
                 conn,
                 logger,
             );
@@ -464,26 +469,26 @@ mod test {
                 granted_at: now.timestamp(),
                 expires_at: (now + Duration::hours(1)).timestamp(),
             };
-            let token = ActivationClaims::encode(
+            let token = VerificationClaims::encode(
                 data,
-                &config.activation_token_issuer,
-                &config.activation_token_key_id,
-                &config.activation_token_secret,
+                &config.verification_token_issuer,
+                &config.verification_token_key_id,
+                &config.verification_token_secret,
             );
             let _ = user_email
-                .grant_token::<ActivationClaims>(
+                .grant_token::<VerificationClaims>(
                     &token,
-                    &config.activation_token_issuer,
-                    &config.activation_token_secret,
+                    &config.verification_token_issuer,
+                    &config.verification_token_secret,
                     conn,
                     logger,
                 )
-                .expect("failed to grant activation token");
+                .expect("failed to grant verification token");
 
-            let result = UserEmail::find_by_token::<ActivationClaims>(
+            let result = UserEmail::find_by_token::<VerificationClaims>(
                 &token,
-                &config.activation_token_issuer,
-                &config.activation_token_secret,
+                &config.verification_token_issuer,
+                &config.verification_token_secret,
                 conn,
                 logger,
             );
@@ -563,21 +568,21 @@ mod test {
                 granted_at: now.timestamp(),
                 expires_at: (now + Duration::hours(1)).timestamp(),
             };
-            let token = ActivationClaims::encode(
+            let token = VerificationClaims::encode(
                 data,
-                &config.activation_token_issuer,
-                &config.activation_token_key_id,
-                &config.activation_token_secret,
+                &config.verification_token_issuer,
+                &config.verification_token_key_id,
+                &config.verification_token_secret,
             );
             let _ = user_email
-                .grant_token::<ActivationClaims>(
+                .grant_token::<VerificationClaims>(
                     &token,
-                    &config.activation_token_issuer,
-                    &config.activation_token_secret,
+                    &config.verification_token_issuer,
+                    &config.verification_token_secret,
                     conn,
                     logger,
                 )
-                .expect("failed to grant activation token");
+                .expect("failed to grant verification token");
 
             let user_email = user_emails::table
                 .filter(user_emails::id.eq(user_email.id))
@@ -617,21 +622,21 @@ mod test {
                 granted_at: now.timestamp(),
                 expires_at: (now + Duration::hours(1)).timestamp(),
             };
-            let token = ActivationClaims::encode(
+            let token = VerificationClaims::encode(
                 data,
-                &config.activation_token_issuer,
-                &config.activation_token_key_id,
-                &config.activation_token_secret,
+                &config.verification_token_issuer,
+                &config.verification_token_key_id,
+                &config.verification_token_secret,
             );
-            let activation_token = user_email
-                .grant_token::<ActivationClaims>(
+            let verification_token = user_email
+                .grant_token::<VerificationClaims>(
                     &token,
-                    &config.activation_token_issuer,
-                    &config.activation_token_secret,
+                    &config.verification_token_issuer,
+                    &config.verification_token_secret,
                     conn,
                     logger,
                 )
-                .expect("failed to grant activation token");
+                .expect("failed to grant verification token");
 
             let rows_count: i64 = user_emails::table
                 .count()
@@ -645,7 +650,10 @@ mod test {
                 .first::<UserEmail>(conn)
                 .unwrap();
 
-            assert_eq!(activation_token, user_email.activation_token.unwrap());
+            assert_eq!(
+                verification_token,
+                user_email.verification_token.unwrap()
+            );
         });
     }
 }

@@ -64,8 +64,8 @@ where T: Clone + fmt::Debug + Into<String>
         // any good way for T? (see also worker.rs)
         let id = args[0].clone().into().parse::<i64>().unwrap();
 
-        let t = args[1].clone().into();
-        let s = args[2].clone().into();
+        let token = args[1].clone().into();
+        let session_id = args[2].clone().into();
 
         let _: Result<_, Error> = db_conn
             .build_transaction()
@@ -87,7 +87,9 @@ where T: Clone + fmt::Debug + Into<String>
                             .into_boxed_str(),
                     );
                     // TODO: check result (should be Result instead of bool?)
-                    mailer.to((email, name)).send_user_activation_email(&t, &s);
+                    mailer
+                        .to((email, name))
+                        .send_user_activation_email(&token, &session_id);
                     Ok(())
                 },
                 _ => {

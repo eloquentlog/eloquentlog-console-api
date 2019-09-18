@@ -11,11 +11,11 @@ use rocket_slog::SyncLogger;
 use config::Config;
 use db::DbConn;
 use job::{Job, JobKind};
-use model::token::{ActivationClaims, Claims, TokenData};
+use model::token::{VerificationClaims, Claims, TokenData};
 use model::user::{NewUser, User};
 use model::user_email::{NewUserEmail, UserEmail};
 use response::{Response, no_content_for};
-use request::user::UserSignUp as RequestData;
+use request::user::registration::UserRegistration as RequestData;
 use mq::MqConn;
 use validation::user::Validator;
 use ss::SsConn;
@@ -48,7 +48,7 @@ pub fn register<'a>(
         Ok(_) => {
             // TODO:
             // impl service object handles token generation/activation.
-            // see also signin
+            // see also login
             let now = Utc::now();
             let granted_at = now.timestamp();
             let expires_at = (now + Duration::hours(1)).timestamp();
@@ -71,40 +71,43 @@ pub fn register<'a>(
                         granted_at,
                         expires_at,
                     };
-                    let token = ActivationClaims::encode(
+                    let verification_token = VerificationClaims::encode(
                         data,
-                        &config.activation_token_issuer,
-                        &config.activation_token_key_id,
-                        &config.activation_token_secret,
+                        &config.verification_token_issuer,
+                        &config.verification_token_key_id,
+                        &config.verification_token_secret,
                     );
 
-                    if let Err(e) = user_email.grant_token::<ActivationClaims>(
-                        &token,
-                        &config.activation_token_issuer,
-                        &config.activation_token_secret,
-                        &db_conn,
-                        &logger,
-                    ) {
+                    if let Err(e) = user_email
+                        .grant_token::<VerificationClaims>(
+                            &verification_token,
+                            &config.verification_token_issuer,
+                            &config.verification_token_secret,
+                            &db_conn,
+                            &logger,
+                        )
+                    {
                         error!(logger, "error: {}", e);
                         return Err(Error::RollbackTransaction);
                     }
-                    Ok((user_email.id, token))
+                    Ok((user_email.id, verification_token))
                 });
 
-            if let Ok((id, token)) = result {
-                if let Some((payload, signature)) = split_token(token) {
+            if let Ok((id, verification_token)) = result {
+                if let Some((token, sign)) = split_token(verification_token) {
                     // Instead of saving the signature into a cookie,
                     // putting it in session store.
                     //
                     // Because we need to make it available users to activate
                     // the account also via another device than signed up, so
                     // we can't rely on a cookie of http client (browser).
-                    let rawsig = signature.value();
-                    let sessid = UserEmail::generate_token();
+                    let signature = sign.value();
+                    // TODO: use general value
+                    let session_id = UserEmail::generate_token();
 
                     // TODO: Async with tokio? (consider about retrying)
                     let result: Result<String, RedisError> = ss_conn
-                        .set_ex(&sessid, rawsig, expires_at as usize)
+                        .set_ex(&session_id, signature, expires_at as usize)
                         .map_err(|e| {
                             error!(logger, "error: {}", e);
                             e
@@ -113,7 +116,7 @@ pub fn register<'a>(
                     if result.is_ok() {
                         let job = Job::<String> {
                             kind: JobKind::SendUserActivationEmail,
-                            args: vec![id.to_string(), payload, sessid],
+                            args: vec![id.to_string(), token, session_id],
                         };
                         let mut queue = Queue::new("default", &mut mq_conn);
                         if let Err(err) = queue.enqueue::<Job<String>>(job) {

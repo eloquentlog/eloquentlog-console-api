@@ -1,5 +1,5 @@
--- (AS SUPERUSER)
--- CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+-- (REQUIRE SUPERUSER)
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 CREATE TYPE e_user_state AS ENUM (
   'pending',
@@ -29,8 +29,6 @@ CREATE TABLE users (
   email CHARACTER VARYING(128) NOT NULL,
   password BYTEA NOT NULL,
   state e_user_state NOT NULL DEFAULT 'pending',
-  access_token CHARACTER VARYING(256) NULL,
-  access_token_granted_at TIMESTAMP WITHOUT TIME ZONE NULL,
   reset_password_state e_user_reset_password_state NOT NULL DEFAULT 'never',
   reset_password_token CHARACTER VARYING(256) NULL,
   reset_password_token_expires_at TIMESTAMP WITHOUT TIME ZONE NULL,
@@ -43,7 +41,6 @@ CREATE TABLE users (
 
 ALTER SEQUENCE users_id_seq OWNED BY users.id;
 
-CREATE UNIQUE INDEX users_access_token_idx ON users(access_token);
 CREATE UNIQUE INDEX users_email_idx ON users(email);
 CREATE UNIQUE INDEX users_reset_password_token_idx ON users(
   reset_password_token);

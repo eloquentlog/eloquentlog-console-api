@@ -159,6 +159,7 @@ schema\:migration\:status:  ## List migrations
 		export $$(cut -d= -f1 $$(pwd)/.env | grep -vE "^(#|$$)"); \
 	fi; \
 	export DATABASE_URL="$(VAR_DATABASE_URL)"; \
+	diesel setup --migration-dir $(MIGRATION_DIRECTORY) && \
 	diesel migration list --migration-dir $(MIGRATION_DIRECTORY)
 .PHONY: schema\:migration\:status
 
@@ -168,6 +169,7 @@ schema\:migration\:commit:  ## Run all migrations
 		export $$(cut -d= -f1 $$(pwd)/.env | grep -vE "^(#|$$)"); \
 	fi; \
 	export DATABASE_URL="$(VAR_DATABASE_URL)"; \
+	diesel setup --migration-dir $(MIGRATION_DIRECTORY) && \
 	diesel migration run --migration-dir $(MIGRATION_DIRECTORY)
 .PHONY: schema\:migration\:commit
 
@@ -177,6 +179,7 @@ schema\:migration\:revert:  ## Rollback a latest migration
 		export $$(cut -d= -f1 $$(pwd)/.env | grep -vE "^(#|$$)"); \
 	fi; \
 	export DATABASE_URL="$(VAR_DATABASE_URL)"; \
+	diesel setup --migration-dir $(MIGRATION_DIRECTORY) && \
 	diesel migration revert --migration-dir $(MIGRATION_DIRECTORY)
 .PHONY: schema\:migration\:revert
 # }}}

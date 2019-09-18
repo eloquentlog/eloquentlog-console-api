@@ -41,9 +41,9 @@ impl From<&User> for TokenData {
 impl From<&UserEmail> for TokenData {
     fn from(item: &UserEmail) -> Self {
         Self {
-            value: item.activation_token.as_ref().unwrap().to_string(),
-            granted_at: item.activation_token_granted_at.unwrap().timestamp(),
-            expires_at: item.activation_token_expires_at.unwrap().timestamp(),
+            value: item.verification_token.as_ref().unwrap().to_string(),
+            granted_at: item.verification_token_granted_at.unwrap().timestamp(),
+            expires_at: item.verification_token_expires_at.unwrap().timestamp(),
         }
     }
 }
@@ -72,9 +72,9 @@ where Self: std::marker::Sized
     fn get_expiration_time(&self) -> NaiveDateTime;
 }
 
-/// ActivationClaims
+/// VerificationClaims
 #[derive(Debug, Deserialize, Serialize)]
-pub struct ActivationClaims {
+pub struct VerificationClaims {
     pub sub: String,
     pub iat: usize,
     pub iss: String,
@@ -82,7 +82,7 @@ pub struct ActivationClaims {
     pub nbf: usize,
 }
 
-impl Claims for ActivationClaims {
+impl Claims for VerificationClaims {
     const ALGORITHM: Algorithm = Algorithm::HS512;
     const LEEWAY: i64 = 36; // seconds
 
@@ -155,9 +155,9 @@ impl Claims for ActivationClaims {
     }
 }
 
-/// AuthorizationClaims
+/// AuthenticationClaims
 #[derive(Debug, Deserialize, Serialize)]
-pub struct AuthorizationClaims {
+pub struct AuthenticationClaims {
     pub sub: String,
     pub iat: usize,
     pub iss: String,
@@ -165,7 +165,7 @@ pub struct AuthorizationClaims {
     pub nbf: usize,
 }
 
-impl Claims for AuthorizationClaims {
+impl Claims for AuthenticationClaims {
     const ALGORITHM: Algorithm = Algorithm::HS256;
     const LEEWAY: i64 = 36; // seconds
 
@@ -262,7 +262,7 @@ mod test {
     }
 
     #[test]
-    fn test_activation_claims_encode() {
+    fn test_verification_claims_encode() {
         let now = Utc.ymd(2019, 6, 11).and_hms(23, 19, 32);
         let data = TokenData {
             value: "dummy".to_string(),
@@ -270,7 +270,7 @@ mod test {
             expires_at: (now + Duration::hours(24)).timestamp(),
         };
 
-        let token = ActivationClaims::encode(
+        let token = VerificationClaims::encode(
             data.clone(),
             "issuer",
             "key_id",
@@ -296,7 +296,7 @@ mod test {
         let body = &decode(s[1]).unwrap()[..]; // base64
         let json = String::from_utf8_lossy(body).to_string();
 
-        let claims: ActivationClaims =
+        let claims: VerificationClaims =
             serde_json::from_str(&json).ok().unwrap();
         assert_eq!(claims.sub, data.value);
         assert_eq!(claims.iss, "issuer");
@@ -306,34 +306,34 @@ mod test {
     }
 
     #[test]
-    fn test_activation_claims_decode_failure() {
+    fn test_verification_claims_decode_failure() {
         run(|_, config, _| {
             let tests: [(&str, &str, &str, DateTime<Utc>); 4] = [
                 (
                     // expires
                     "dummy",
-                    &config.activation_token_issuer,
-                    &config.activation_token_secret,
+                    &config.verification_token_issuer,
+                    &config.verification_token_secret,
                     Utc.ymd(2001, 1, 1).and_hms(10, 0, 0),
                 ),
                 (
                     // not before
                     "dummy",
-                    &config.activation_token_issuer,
-                    &config.activation_token_secret,
+                    &config.verification_token_issuer,
+                    &config.verification_token_secret,
                     Utc::now() + Duration::hours(3),
                 ),
                 (
                     // wrong issuer
                     "dummy",
                     "unknown",
-                    &config.activation_token_secret,
+                    &config.verification_token_secret,
                     Utc::now(),
                 ),
                 (
                     // invalid secret
                     "dummy",
-                    &config.activation_token_issuer,
+                    &config.verification_token_issuer,
                     "invalid",
                     Utc::now(),
                 ),
@@ -346,21 +346,21 @@ mod test {
                     granted_at: granted_at.timestamp(),
                     expires_at: (*granted_at + Duration::hours(24)).timestamp(),
                 };
-                let token = ActivationClaims::encode(
+                let token = VerificationClaims::encode(
                     data,
-                    &config.activation_token_issuer,
-                    &config.activation_token_key_id,
-                    &config.activation_token_secret,
+                    &config.verification_token_issuer,
+                    &config.verification_token_key_id,
+                    &config.verification_token_secret,
                 );
                 assert!(
-                    ActivationClaims::decode(&token, issuer, secret).is_err()
+                    VerificationClaims::decode(&token, issuer, secret).is_err()
                 );
             }
         });
     }
 
     #[test]
-    fn test_activation_claims_decode() {
+    fn test_verification_claims_decode() {
         let granted_at = Utc::now();
         let data = TokenData {
             value: "dummy".to_string(),
@@ -368,14 +368,14 @@ mod test {
             expires_at: (granted_at + Duration::hours(24)).timestamp(),
         };
 
-        let token = ActivationClaims::encode(
+        let token = VerificationClaims::encode(
             data.clone(),
             "issuer",
             "key_id",
             "secret",
         );
 
-        let claims = ActivationClaims::decode(&token, "issuer", "secret")
+        let claims = VerificationClaims::decode(&token, "issuer", "secret")
             .ok()
             .unwrap();
 
