@@ -3,7 +3,7 @@ use chrono::{Utc, TimeZone};
 use rocket::http::{ContentType, Header, Status};
 use serde_json::Value;
 
-use eloquentlog_backend_api::model::message;
+use eloquentlog_backend_api::model;
 
 use {minify, run_test, load_user, make_raw_password, USERS};
 
@@ -65,12 +65,12 @@ fn test_get_recent_messages() {
 
         // 2019-08-07T06:05:04.333
         let dt = Utc.ymd(2019, 8, 7).and_hms_milli(6, 5, 4, 333);
-        let m = message::Message {
+        let m = model::message::Message {
             id: 1,
             code: None,
             lang: "en".to_string(),
-            level: message::LogLevel::Information,
-            format: message::LogFormat::TOML,
+            level: model::message::LogLevel::Information,
+            format: model::message::LogFormat::TOML,
             title: "title".to_string(),
             content: None,
             created_at: dt.naive_utc(),
@@ -78,9 +78,9 @@ fn test_get_recent_messages() {
             user_id: user.id,
         };
 
-        let id = diesel::insert_into(message::messages::table)
+        let id = diesel::insert_into(model::message::messages::table)
             .values(&m)
-            .returning(message::messages::id)
+            .returning(model::message::messages::id)
             .get_result::<i64>(conn.db)
             .unwrap_or_else(|_| panic!("Error inserting: {}", m));
 
@@ -220,19 +220,19 @@ fn test_put() {
         let result: Value = serde_json::from_str(&body).unwrap();
         let token = result["token"].as_str().unwrap();
 
-        let m = message::NewMessage {
+        let m = model::message::NewMessage {
             code: None,
             lang: "en".to_string(),
-            level: message::LogLevel::Information,
-            format: message::LogFormat::TOML,
+            level: model::message::LogLevel::Information,
+            format: model::message::LogFormat::TOML,
             title: Some("title".to_string()),
             content: None,
             user_id: user.id,
         };
 
-        let id = diesel::insert_into(message::messages::table)
+        let id = diesel::insert_into(model::message::messages::table)
             .values(&m)
-            .returning(message::messages::id)
+            .returning(model::message::messages::id)
             .get_result::<i64>(conn.db)
             .unwrap_or_else(|_| panic!("Error inserting: {}", m));
 
@@ -250,9 +250,9 @@ fn test_put() {
             ))
             .dispatch();
 
-        let result = message::messages::table
+        let result = model::message::messages::table
             .find(id)
-            .first::<message::Message>(conn.db)
+            .first::<model::message::Message>(conn.db)
             .unwrap();
         assert_eq!("Updated message", result.title);
         assert_eq!("Hello, world!", result.content.unwrap());

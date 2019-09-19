@@ -1,10 +1,10 @@
 use fourche::queue::Queue;
 use rocket::http::{ContentType, Header, Status};
 
-use eloquentlog_backend_api::model::user;
-use eloquentlog_backend_api::job::{Job, JobKind};
+use eloquentlog_backend_api::model;
+use eloquentlog_backend_api::job;
 
-use run_test;
+use super::super::run_test;
 
 #[test]
 fn test_activate_with_invalid_token() {
@@ -26,8 +26,8 @@ fn test_activate_with_invalid_token() {
         assert_eq!(res.status(), Status::Ok);
 
         let mut queue = Queue::new("default", conn.mq);
-        let job = queue.dequeue::<Job<String>>().ok().unwrap();
-        assert_eq!(job.kind, JobKind::SendUserActivationEmail);
+        let job = queue.dequeue::<job::Job<String>>().ok().unwrap();
+        assert_eq!(job.kind, job::JobKind::SendUserActivationEmail);
         assert!(!job.args.is_empty());
 
         let token = "invalid-token";
@@ -42,8 +42,9 @@ fn test_activate_with_invalid_token() {
 
         assert_eq!(res.status(), Status::BadRequest);
 
-        let user = user::User::find_by_email(email, conn.db, logger).unwrap();
-        assert_eq!(user.state, user::UserState::Pending);
+        let user =
+            model::user::User::find_by_email(email, conn.db, logger).unwrap();
+        assert_eq!(user.state, model::user::UserState::Pending);
     });
 }
 
@@ -67,8 +68,8 @@ fn test_activate_with_invalid_session_id() {
         assert_eq!(res.status(), Status::Ok);
 
         let mut queue = Queue::new("default", conn.mq);
-        let job = queue.dequeue::<Job<String>>().ok().unwrap();
-        assert_eq!(job.kind, JobKind::SendUserActivationEmail);
+        let job = queue.dequeue::<job::Job<String>>().ok().unwrap();
+        assert_eq!(job.kind, job::JobKind::SendUserActivationEmail);
         assert!(!job.args.is_empty());
 
         let token = job.args[1].to_string();
@@ -83,8 +84,9 @@ fn test_activate_with_invalid_session_id() {
 
         assert_eq!(res.status(), Status::BadRequest);
 
-        let user = user::User::find_by_email(email, conn.db, logger).unwrap();
-        assert_eq!(user.state, user::UserState::Pending);
+        let user =
+            model::user::User::find_by_email(email, conn.db, logger).unwrap();
+        assert_eq!(user.state, model::user::UserState::Pending);
     });
 }
 
@@ -108,8 +110,8 @@ fn test_activate() {
         assert_eq!(res.status(), Status::Ok);
 
         let mut queue = Queue::new("default", conn.mq);
-        let job = queue.dequeue::<Job<String>>().ok().unwrap();
-        assert_eq!(job.kind, JobKind::SendUserActivationEmail);
+        let job = queue.dequeue::<job::Job<String>>().ok().unwrap();
+        assert_eq!(job.kind, job::JobKind::SendUserActivationEmail);
         assert!(!job.args.is_empty());
 
         let token = job.args[1].to_string();
@@ -124,7 +126,8 @@ fn test_activate() {
 
         assert_eq!(res.status(), Status::Ok);
 
-        let user = user::User::find_by_email(email, conn.db, logger).unwrap();
-        assert_eq!(user.state, user::UserState::Active);
+        let user =
+            model::user::User::find_by_email(email, conn.db, logger).unwrap();
+        assert_eq!(user.state, model::user::UserState::Active);
     });
 }
