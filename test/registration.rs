@@ -2,8 +2,8 @@ use fourche::queue::Queue;
 use rocket::http::{ContentType, Status};
 use redis::{Commands, RedisError};
 
-use eloquentlog_backend_api::model::user;
-use eloquentlog_backend_api::job::{Job, JobKind};
+use eloquentlog_backend_api::model;
+use eloquentlog_backend_api::job;
 
 use run_test;
 
@@ -25,7 +25,8 @@ fn test_register_with_validation_error() {
             .dispatch();
 
         assert_eq!(res.status(), Status::UnprocessableEntity);
-        assert!(user::User::find_by_email(&email, conn.db, &logger).is_none());
+        assert!(model::user::User::find_by_email(&email, conn.db, &logger)
+            .is_none());
     });
 }
 
@@ -48,14 +49,15 @@ fn test_register() {
 
         assert_eq!(res.status(), Status::Ok);
 
-        let u = user::User::find_by_email(&email, conn.db, &logger).unwrap();
-        assert_eq!(u.state, user::UserState::Pending);
+        let u =
+            model::user::User::find_by_email(&email, conn.db, &logger).unwrap();
+        assert_eq!(u.state, model::user::UserState::Pending);
         assert_eq!(u.email, email);
 
         // TODO: check sent email
         let mut queue = Queue::new("default", conn.mq);
-        let job = queue.dequeue::<Job<String>>().ok().unwrap();
-        assert_eq!(job.kind, JobKind::SendUserActivationEmail);
+        let job = queue.dequeue::<job::Job<String>>().ok().unwrap();
+        assert_eq!(job.kind, job::JobKind::SendUserActivationEmail);
         assert!(!job.args.is_empty());
 
         let session_id = job.args[2].to_string();
