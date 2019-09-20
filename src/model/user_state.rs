@@ -11,7 +11,7 @@ use diesel::deserialize::{self, FromSql};
 use diesel::pg::Pg;
 use diesel::serialize::{self, IsNull, Output, ToSql};
 
-#[derive(SqlType)]
+#[derive(SqlType, QueryId)]
 #[postgres(type_name = "e_user_state")]
 pub struct EUserState;
 

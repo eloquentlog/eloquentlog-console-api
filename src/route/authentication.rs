@@ -27,7 +27,7 @@ pub fn login<'a>(
 {
     let res: Response = Default::default();
 
-    match User::find_by_email_or_uuid(&data.username, &conn, &logger) {
+    match User::find_by_email(&data.username, &conn, &logger) {
         Some(ref user) if user.verify_password(&data.password) => {
             // TODO:
             // set valid expires_at and impl review mechanism (check also

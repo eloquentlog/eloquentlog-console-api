@@ -157,7 +157,10 @@ impl User {
             return None;
         }
 
-        let q = users::table.filter(users::email.eq(s)).limit(1);
+        let q = users::table
+            .filter(users::email.eq(s))
+            .filter(users::state.eq(UserState::Active))
+            .limit(1);
 
         info!(logger, "{}", debug_query::<Pg, _>(&q).to_string());
 
@@ -178,53 +181,16 @@ impl User {
         }
 
         let u = Uuid::parse_str(s).unwrap();
-        let q = users::table.filter(users::uuid.eq(u)).limit(1);
+        let q = users::table
+            .filter(users::uuid.eq(u))
+            .filter(users::state.eq(UserState::Active))
+            .limit(1);
 
         info!(logger, "{}", debug_query::<Pg, _>(&q).to_string());
 
         match q.first::<User>(conn) {
             Ok(v) => Some(v),
             _ => None,
-        }
-    }
-
-    pub fn find_by_email_or_uuid(
-        s: &str,
-        conn: &PgConnection,
-        logger: &Logger,
-    ) -> Option<Self>
-    {
-        // TODO
-        // refactor find_by_xxx
-        if s.contains('@') {
-            User::find_by_email(s, conn, logger)
-        } else if s.contains('-') {
-            User::find_by_uuid(s, conn, logger)
-        } else {
-            None
-        }
-    }
-
-    pub fn load_with_user_email_verification_token(
-        verification_token: &str,
-        conn: &PgConnection,
-        logger: &Logger,
-    ) -> Result<(User, UserEmail), &'static str>
-    {
-        let q = users::table
-            .inner_join(user_emails::table)
-            .filter(user_emails::verification_token.eq(verification_token))
-            .filter(
-                user_emails::verification_state
-                    .eq(UserEmailVerificationState::Pending),
-            )
-            .limit(1);
-
-        info!(logger, "{}", debug_query::<Pg, _>(&q).to_string());
-
-        match q.load::<(User, UserEmail)>(conn) {
-            Ok(ref mut v) if v.len() == 1 => v.pop().ok_or("unexpected :'("),
-            _ => Err("not found"),
         }
     }
 
@@ -252,6 +218,29 @@ impl User {
             .ok();
         }
         None
+    }
+
+    pub fn load_with_user_email_verification_token(
+        verification_token: &str,
+        conn: &PgConnection,
+        logger: &Logger,
+    ) -> Result<(User, UserEmail), &'static str>
+    {
+        let q = users::table
+            .inner_join(user_emails::table)
+            .filter(user_emails::verification_token.eq(verification_token))
+            .filter(
+                user_emails::verification_state
+                    .eq(UserEmailVerificationState::Pending),
+            )
+            .limit(1);
+
+        info!(logger, "{}", debug_query::<Pg, _>(&q).to_string());
+
+        match q.load::<(User, UserEmail)>(conn) {
+            Ok(ref mut v) if v.len() == 1 => v.pop().ok_or("unexpected :'("),
+            _ => Err("not found"),
+        }
     }
 
     /// Save a new user into users.
@@ -471,6 +460,24 @@ mod test {
     #[test]
     fn test_find_by_email() {
         run(|conn, _, logger| {
+            let result =
+                User::find_by_email("unknown@example.org", conn, logger);
+            assert!(result.is_none());
+        });
+
+        run(|conn, _, logger| {
+            let u = USERS.get("hennry").unwrap();
+            let email = diesel::insert_into(users::table)
+                .values(u)
+                .returning(users::email)
+                .get_result::<String>(conn)
+                .unwrap_or_else(|e| panic!("Error at inserting: {}", e));
+
+            let result = User::find_by_email(&email, conn, logger);
+            assert!(result.is_none());
+        });
+
+        run(|conn, _, logger| {
             let u = USERS.get("oswald").unwrap();
             let email = diesel::insert_into(users::table)
                 .values(u)
@@ -483,15 +490,29 @@ mod test {
 
             let user = result.unwrap();
             assert_eq!(user.email, email);
-
-            let result =
-                User::find_by_email("unknown@example.org", conn, logger);
-            assert!(result.is_none());
         });
     }
 
     #[test]
     fn test_find_by_uuid() {
+        run(|conn, _, logger| {
+            let result =
+                User::find_by_uuid(&Uuid::nil().to_string(), conn, logger);
+            assert!(result.is_none());
+        });
+
+        run(|conn, _, logger| {
+            let u = USERS.get("hennry").unwrap();
+            let uuid = diesel::insert_into(users::table)
+                .values(u)
+                .returning(users::uuid)
+                .get_result::<Uuid>(conn)
+                .unwrap_or_else(|e| panic!("Error at inserting: {}", e));
+
+            let result = User::find_by_uuid(&uuid.to_string(), conn, logger);
+            assert!(result.is_none());
+        });
+
         run(|conn, _, logger| {
             let u = USERS.get("weenie").unwrap();
             let uuid = diesel::insert_into(users::table)
@@ -505,10 +526,6 @@ mod test {
 
             let user = result.unwrap();
             assert_eq!(user.uuid, uuid);
-
-            let result =
-                User::find_by_uuid(&Uuid::nil().to_string(), conn, logger);
-            assert!(result.is_none());
         });
     }
 

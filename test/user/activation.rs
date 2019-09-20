@@ -42,9 +42,8 @@ fn test_activate_with_invalid_token() {
 
         assert_eq!(res.status(), Status::BadRequest);
 
-        let user =
-            model::user::User::find_by_email(email, conn.db, logger).unwrap();
-        assert_eq!(user.state, model::user::UserState::Pending);
+        let result = model::user::User::find_by_email(email, conn.db, logger);
+        assert!(result.is_none());
     });
 }
 
@@ -84,9 +83,8 @@ fn test_activate_with_invalid_session_id() {
 
         assert_eq!(res.status(), Status::BadRequest);
 
-        let user =
-            model::user::User::find_by_email(email, conn.db, logger).unwrap();
-        assert_eq!(user.state, model::user::UserState::Pending);
+        let result = model::user::User::find_by_email(email, conn.db, logger);
+        assert!(result.is_none());
     });
 }
 
@@ -126,8 +124,10 @@ fn test_activate() {
 
         assert_eq!(res.status(), Status::Ok);
 
-        let user =
-            model::user::User::find_by_email(email, conn.db, logger).unwrap();
+        let result = model::user::User::find_by_email(email, conn.db, logger);
+        assert!(result.is_some());
+
+        let user = result.unwrap();
         assert_eq!(user.state, model::user::UserState::Active);
     });
 }
