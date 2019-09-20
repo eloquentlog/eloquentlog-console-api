@@ -49,10 +49,8 @@ fn test_register() {
 
         assert_eq!(res.status(), Status::Ok);
 
-        let u =
-            model::user::User::find_by_email(&email, conn.db, &logger).unwrap();
-        assert_eq!(u.state, model::user::UserState::Pending);
-        assert_eq!(u.email, email);
+        let result = model::user::User::find_by_email(email, conn.db, logger);
+        assert!(result.is_none());
 
         // TODO: check sent email
         let mut queue = Queue::new("default", conn.mq);
