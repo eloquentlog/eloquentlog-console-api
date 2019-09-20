@@ -40,21 +40,27 @@ impl<'a, 'r> FromRequest<'a, 'r> for VerificationToken {
     fn from_request(
         req: &'a Request<'r>,
     ) -> request::Outcome<Self, Self::Error> {
-        let headers: Vec<_> = req.headers().get("Authorization").collect();
         let logger = req.guard::<State<SyncLogger>>().unwrap();
+        let failure = request::Outcome::Failure((
+            Status::BadRequest,
+            VerificationTokenError::Invalid,
+        ));
+
+        let with = req.headers().get_one("X-Requested-With");
+        if with != Some("XMLHttpRequest") {
+            error!(logger, "request: {}", req);
+            return failure;
+        }
+
+        let headers: Vec<_> = req.headers().get("Authorization").collect();
         match headers.len() {
             1 => {
-                let failure = request::Outcome::Failure((
-                    Status::BadRequest,
-                    VerificationTokenError::Invalid,
-                ));
                 let h = &headers[0];
                 if !h.starts_with(AUTHORIZATION_HEADER_PREFIX) {
                     return failure;
                 }
 
                 // TODO:
-                // * check X-Requested-With header
                 // * check Origin and Referer header
                 // * validate token format
 

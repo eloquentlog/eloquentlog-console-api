@@ -11,10 +11,10 @@ use service::activator::UserActivator;
 
 #[options("/user/activate")]
 pub fn activate_options<'a>() -> RawResponse<'a> {
-    no_content_for("POST")
+    no_content_for("PATCH")
 }
 
-#[post("/user/activate", format = "json")]
+#[patch("/user/activate", format = "json")]
 pub fn activate(
     verification_token: VerificationToken,
     db_conn: DbConn,
