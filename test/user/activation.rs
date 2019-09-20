@@ -7,7 +7,7 @@ use eloquentlog_backend_api::job;
 use super::super::run_test;
 
 #[test]
-fn test_activate_with_invalid_token() {
+fn test_user_activate_with_invalid_token() {
     run_test(|client, conn, _, logger| {
         let email = "hennry@example.org";
         let res = client
@@ -34,7 +34,7 @@ fn test_activate_with_invalid_token() {
         let session_id = job.args[2].to_string();
 
         let res = client
-            .post(format!("/_api/user/activate?s={}", session_id))
+            .patch(format!("/_api/user/activate?s={}", session_id))
             .header(ContentType::JSON)
             .header(Header::new("Authorization", format!("Bearer {}", token)))
             .body("{}")
@@ -48,7 +48,7 @@ fn test_activate_with_invalid_token() {
 }
 
 #[test]
-fn test_activate_with_invalid_session_id() {
+fn test_user_activate_with_invalid_session_id() {
     run_test(|client, conn, _, logger| {
         let email = "hennry@example.org";
         let res = client
@@ -75,7 +75,7 @@ fn test_activate_with_invalid_session_id() {
         let session_id = "invalid-session_id";
 
         let res = client
-            .post(format!("/_api/user/activate?s={}", session_id))
+            .patch(format!("/_api/user/activate?s={}", session_id))
             .header(ContentType::JSON)
             .header(Header::new("Authorization", format!("Bearer {}", token)))
             .body("{}")
@@ -89,7 +89,7 @@ fn test_activate_with_invalid_session_id() {
 }
 
 #[test]
-fn test_activate() {
+fn test_user_activate() {
     run_test(|client, conn, _, logger| {
         let email = "hennry@example.org";
         let res = client
@@ -116,7 +116,7 @@ fn test_activate() {
         let session_id = job.args[2].to_string();
 
         let res = client
-            .post(format!("/_api/user/activate?s={}", session_id))
+            .patch(format!("/_api/user/activate?s={}", session_id))
             .header(ContentType::JSON)
             .header(Header::new("Authorization", format!("Bearer {}", token)))
             .body("{}")
