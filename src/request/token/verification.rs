@@ -5,7 +5,7 @@
 use std::ops::Deref;
 
 use redis::{Commands, RedisError};
-use rocket::{Request, State, request};
+use rocket::{Request, State, request, request::Outcome};
 use rocket::http::{Status, RawStr};
 use rocket::request::FromRequest;
 use rocket_slog::SyncLogger;
@@ -27,9 +27,29 @@ impl Deref for VerificationToken {
 
 #[derive(Debug)]
 pub enum VerificationTokenError {
-    BadCount,
+    Expired,
     Invalid,
     Missing,
+    Unknown,
+}
+
+fn respond_as_expired() -> Outcome<VerificationToken, VerificationTokenError> {
+    Outcome::Failure((
+        Status::UnprocessableEntity,
+        VerificationTokenError::Expired,
+    ))
+}
+
+fn respond_as_invalid() -> Outcome<VerificationToken, VerificationTokenError> {
+    Outcome::Failure((Status::BadRequest, VerificationTokenError::Invalid))
+}
+
+fn respond_as_missing() -> Outcome<VerificationToken, VerificationTokenError> {
+    Outcome::Failure((Status::BadRequest, VerificationTokenError::Missing))
+}
+
+fn respond_as_unknown() -> Outcome<VerificationToken, VerificationTokenError> {
+    Outcome::Failure((Status::NotFound, VerificationTokenError::Unknown))
 }
 
 // Extract and verify verification token given through HTTP Authorization
@@ -41,15 +61,11 @@ impl<'a, 'r> FromRequest<'a, 'r> for VerificationToken {
         req: &'a Request<'r>,
     ) -> request::Outcome<Self, Self::Error> {
         let logger = req.guard::<State<SyncLogger>>().unwrap();
-        let failure = request::Outcome::Failure((
-            Status::BadRequest,
-            VerificationTokenError::Invalid,
-        ));
 
         let with = req.headers().get_one("X-Requested-With");
         if with != Some("XMLHttpRequest") {
             error!(logger, "request: {}", req);
-            return failure;
+            return respond_as_invalid();
         }
 
         let headers: Vec<_> = req.headers().get("Authorization").collect();
@@ -57,7 +73,7 @@ impl<'a, 'r> FromRequest<'a, 'r> for VerificationToken {
             1 => {
                 let h = &headers[0];
                 if !h.starts_with(AUTHORIZATION_HEADER_PREFIX) {
-                    return failure;
+                    return respond_as_invalid();
                 }
 
                 // TODO:
@@ -66,7 +82,7 @@ impl<'a, 'r> FromRequest<'a, 'r> for VerificationToken {
 
                 let token = h[AUTHORIZATION_HEADER_PREFIX.len()..].to_string();
                 if !token.contains('.') {
-                    return failure;
+                    return respond_as_invalid();
                 }
                 // NOTE:
                 // append signature taken by session id to the parts extracted
@@ -78,7 +94,7 @@ impl<'a, 'r> FromRequest<'a, 'r> for VerificationToken {
                     .unwrap_or_else(|| "".into());
 
                 if session_id.is_empty() {
-                    return failure;
+                    return respond_as_invalid();
                 }
 
                 let result: Result<String, RedisError> =
@@ -87,7 +103,7 @@ impl<'a, 'r> FromRequest<'a, 'r> for VerificationToken {
                         e
                     });
                 if result.is_err() {
-                    return failure;
+                    return respond_as_unknown();
                 }
 
                 let verification_token = token + "." + &result.unwrap();
@@ -98,21 +114,14 @@ impl<'a, 'r> FromRequest<'a, 'r> for VerificationToken {
                     &config.verification_token_secret,
                 ) {
                     Ok(t) => request::Outcome::Success(VerificationToken(t)),
-                    _ => failure,
+                    Err(e) => {
+                        error!(logger, "error: {}", e);
+                        respond_as_expired()
+                    },
                 }
             },
-            0 => {
-                request::Outcome::Failure((
-                    Status::BadRequest,
-                    VerificationTokenError::Missing,
-                ))
-            },
-            _ => {
-                request::Outcome::Failure((
-                    Status::BadRequest,
-                    VerificationTokenError::BadCount,
-                ))
-            },
+            0 => respond_as_missing(),
+            _ => respond_as_invalid(),
         }
     }
 }

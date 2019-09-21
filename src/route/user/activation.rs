@@ -14,7 +14,7 @@ pub fn activate_options<'a>() -> RawResponse<'a> {
     no_content_for("PATCH")
 }
 
-#[patch("/user/activate", format = "json")]
+#[patch("/user/activate")]
 pub fn activate(
     verification_token: VerificationToken,
     db_conn: DbConn,
