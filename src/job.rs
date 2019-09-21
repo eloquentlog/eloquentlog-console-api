@@ -76,9 +76,10 @@ where T: Clone + fmt::Debug + Into<String>
                     let email = user_email.email.as_ref().unwrap();
                     info!(logger, "user_email.email: {}", email);
 
-                    // TODO: replace it find_by_id (or where primary)
-                    let user =
-                        User::find_by_email(email, db_conn, logger).unwrap();
+                    let user = User::find_by_primary_email_in_pending(
+                        email, db_conn, logger,
+                    )
+                    .unwrap();
 
                     let mut mailer = UserMailer::new(config, logger);
                     let name = Box::leak(

@@ -14,8 +14,7 @@ pub use model::token::{AuthenticationClaims, Claims, VerificationClaims};
 pub use schema::users;
 pub use schema::user_emails;
 
-use model::user_email::UserEmail;
-use model::user_email_verification_state::UserEmailVerificationState;
+use model::user_email::{UserEmail, UserEmailRole, UserEmailVerificationState};
 use logger::Logger;
 use request::user::registration::UserRegistration as RequestData;
 
@@ -166,6 +165,36 @@ impl User {
 
         match q.first::<User>(conn) {
             Ok(v) => Some(v),
+            _ => None,
+        }
+    }
+
+    pub fn find_by_primary_email_in_pending(
+        s: &str,
+        conn: &PgConnection,
+        logger: &Logger,
+    ) -> Option<Self>
+    {
+        if s.is_empty() {
+            return None;
+        }
+
+        let q = users::table
+            .inner_join(user_emails::table)
+            .filter(user_emails::role.eq(UserEmailRole::Primary))
+            .filter(
+                user_emails::verification_state
+                    .eq(UserEmailVerificationState::Pending),
+            )
+            .filter(users::state.eq(UserState::Pending))
+            .limit(1);
+
+        info!(logger, "{}", debug_query::<Pg, _>(&q).to_string());
+
+        match q.load::<(User, UserEmail)>(conn) {
+            Ok(ref mut v) if v.len() == 1 => {
+                v.pop().map(|t| Some(t.0)).unwrap_or_else(|| None)
+            },
             _ => None,
         }
     }
@@ -458,15 +487,159 @@ mod test {
     }
 
     #[test]
-    fn test_find_by_email() {
+    fn test_find_by_primary_email_in_pending_unknown() {
+        run(|conn, _, logger| {
+            let result = User::find_by_primary_email_in_pending(
+                "unknown@example.org",
+                conn,
+                logger,
+            );
+            assert!(result.is_none());
+        });
+    }
+
+    #[test]
+    fn test_find_by_primary_email_in_pending_user_email_role_is_general() {
+        run(|conn, _, logger| {
+            let u = USERS.get("hennry").unwrap();
+            assert_eq!(u.state, UserState::Pending);
+
+            let user = diesel::insert_into(users::table)
+                .values(u)
+                .get_result::<User>(conn)
+                .unwrap_or_else(|e| panic!("Error at inserting: {}", e));
+
+            let user_email = diesel::insert_into(user_emails::table)
+                .values((
+                    user_emails::user_id.eq(&user.id),
+                    Some(user_emails::email.eq(&user.email)),
+                    user_emails::role.eq(UserEmailRole::General),
+                    user_emails::verification_state
+                        .eq(UserEmailVerificationState::Pending),
+                ))
+                .get_result::<UserEmail>(conn)
+                .unwrap_or_else(|e| panic!("Error at inserting: {}", e));
+
+            let result = User::find_by_primary_email_in_pending(
+                &user_email.email.unwrap(),
+                conn,
+                logger,
+            );
+            assert!(result.is_none());
+        });
+    }
+
+    #[test]
+    fn test_find_by_primary_email_in_pending_user_email_verification_state_is_done(
+    ) {
+        run(|conn, _, logger| {
+            let u = USERS.get("hennry").unwrap();
+            assert_eq!(u.state, UserState::Pending);
+
+            let user = diesel::insert_into(users::table)
+                .values(u)
+                .get_result::<User>(conn)
+                .unwrap_or_else(|e| panic!("Error at inserting: {}", e));
+
+            let user_email = diesel::insert_into(user_emails::table)
+                .values((
+                    user_emails::user_id.eq(&user.id),
+                    Some(user_emails::email.eq(&user.email)),
+                    user_emails::role.eq(UserEmailRole::Primary),
+                    user_emails::verification_state
+                        .eq(UserEmailVerificationState::Done),
+                ))
+                .get_result::<UserEmail>(conn)
+                .unwrap_or_else(|e| panic!("Error at inserting: {}", e));
+
+            let result = User::find_by_primary_email_in_pending(
+                &user_email.email.unwrap(),
+                conn,
+                logger,
+            );
+            assert!(result.is_none());
+        });
+    }
+
+    #[test]
+    fn test_find_by_primary_email_in_pending_user_state_is_active() {
+        run(|conn, _, logger| {
+            let u = USERS.get("oswald").unwrap();
+            assert_eq!(u.state, UserState::Active);
+
+            let user = diesel::insert_into(users::table)
+                .values(u)
+                .get_result::<User>(conn)
+                .unwrap_or_else(|e| panic!("Error at inserting: {}", e));
+
+            let user_email = diesel::insert_into(user_emails::table)
+                .values((
+                    user_emails::user_id.eq(&user.id),
+                    Some(user_emails::email.eq(&user.email)),
+                    user_emails::role.eq(UserEmailRole::Primary),
+                    user_emails::verification_state
+                        .eq(UserEmailVerificationState::Pending),
+                ))
+                .get_result::<UserEmail>(conn)
+                .unwrap_or_else(|e| panic!("Error at inserting: {}", e));
+
+            let result = User::find_by_primary_email_in_pending(
+                &user_email.email.unwrap(),
+                conn,
+                logger,
+            );
+            assert!(result.is_none());
+        });
+    }
+
+    #[test]
+    fn test_find_by_primary_email_in_pending() {
+        run(|conn, _, logger| {
+            let u = USERS.get("hennry").unwrap();
+            assert_eq!(u.state, UserState::Pending);
+
+            let user = diesel::insert_into(users::table)
+                .values(u)
+                .get_result::<User>(conn)
+                .unwrap_or_else(|e| panic!("Error at inserting: {}", e));
+
+            let user_email = diesel::insert_into(user_emails::table)
+                .values((
+                    user_emails::user_id.eq(&user.id),
+                    Some(user_emails::email.eq(&user.email)),
+                    user_emails::role.eq(UserEmailRole::Primary),
+                    user_emails::verification_state
+                        .eq(UserEmailVerificationState::Pending),
+                ))
+                .get_result::<UserEmail>(conn)
+                .unwrap_or_else(|e| panic!("Error at inserting: {}", e));
+
+            let result = User::find_by_primary_email_in_pending(
+                &user_email.email.unwrap(),
+                conn,
+                logger,
+            );
+            assert!(result.is_some());
+
+            assert_eq!(result.unwrap().id, user.id);
+        });
+    }
+
+    #[test]
+    fn test_find_by_email_unknown() {
         run(|conn, _, logger| {
             let result =
                 User::find_by_email("unknown@example.org", conn, logger);
             assert!(result.is_none());
         });
+    }
 
+    #[test]
+    fn test_find_by_email_user_state_is_pending() {
         run(|conn, _, logger| {
             let u = USERS.get("hennry").unwrap();
+            assert_eq!(u.state, UserState::Pending);
+
             let email = diesel::insert_into(users::table)
                 .values(u)
                 .returning(users::email)
@@ -476,16 +649,21 @@ mod test {
             let result = User::find_by_email(&email, conn, logger);
             assert!(result.is_none());
         });
+    }
 
+    #[test]
+    fn test_find_by_email() {
         run(|conn, _, logger| {
             let u = USERS.get("oswald").unwrap();
+            assert_eq!(u.state, UserState::Active);
+
             let email = diesel::insert_into(users::table)
                 .values(u)
                 .returning(users::email)
                 .get_result::<String>(conn)
                 .unwrap_or_else(|e| panic!("Error at inserting: {}", e));
 
-            let result = User::find_by_email(&u.email, conn, logger);
+            let result = User::find_by_email(&email, conn, logger);
             assert!(result.is_some());
 
             let user = result.unwrap();
