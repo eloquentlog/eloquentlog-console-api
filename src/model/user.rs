@@ -3,9 +3,10 @@ use std::fmt;
 use std::str;
 
 use bcrypt::{hash, verify};
-use chrono::NaiveDateTime;
+use chrono::{Duration, NaiveDateTime, Utc};
 use diesel::{Identifiable, Queryable, debug_query, prelude::*};
 use diesel::pg::{Pg, PgConnection};
+use diesel::result::Error;
 use uuid::Uuid;
 
 pub use model::user_state::*;
@@ -14,11 +15,16 @@ pub use model::token::{AuthenticationClaims, Claims, VerificationClaims};
 pub use schema::users;
 pub use schema::user_emails;
 
-use model::user_email::{UserEmail, UserEmailRole, UserEmailVerificationState};
+use model::{Activatable, Authenticatable, Verifiable};
+use model::user_email::{UserEmail, UserEmailRole, UserEmailIdentificationState};
 use logger::Logger;
 use request::user::registration::UserRegistration as RequestData;
+use util::generate_random_hash;
 
 const BCRYPT_COST: u32 = 12;
+const RESET_PASSWORD_HASH_LENGTH: i32 = 128;
+const RESET_PASSWORD_HASH_SOURCE: &[u8] =
+    b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz01234567890";
 
 /// Returns encrypted password hash as bytes using bcrypt.
 fn encrypt_password(password: &str) -> Option<Vec<u8>> {
@@ -169,6 +175,60 @@ impl User {
         }
     }
 
+    pub fn find_by_email_only_in_available_to_reset(
+        s: &str,
+        conn: &PgConnection,
+        logger: &Logger,
+    ) -> Option<Self>
+    {
+        if s.is_empty() {
+            return None;
+        }
+
+        let in_3_minutes = Utc::now().naive_utc() - Duration::minutes(3);
+        let q =
+            users::table
+                .inner_join(user_emails::table)
+                .filter(user_emails::role.eq(UserEmailRole::Primary))
+                .filter(
+                    user_emails::identification_state
+                        .eq(UserEmailIdentificationState::Done),
+                )
+                .filter(users::email.eq(s))
+                .filter(users::state.eq(UserState::Active))
+                .filter(users::reset_password_token_granted_at.is_null().or(
+                    users::reset_password_token_granted_at.lt(in_3_minutes),
+                ))
+                .limit(1);
+
+        info!(logger, "{}", debug_query::<Pg, _>(&q).to_string());
+
+        match q.first::<(User, UserEmail)>(conn) {
+            Ok(v) => Some(v.0),
+            _ => None,
+        }
+    }
+
+    pub fn find_by_id(
+        id: i64,
+        conn: &PgConnection,
+        logger: &Logger,
+    ) -> Option<Self>
+    {
+        if id < 1 {
+            return None;
+        }
+
+        let q = users::table.filter(users::id.eq(id)).limit(1);
+
+        info!(logger, "{}", debug_query::<Pg, _>(&q).to_string());
+
+        match q.first::<User>(conn) {
+            Ok(v) => Some(v),
+            _ => None,
+        }
+    }
+
     pub fn find_by_primary_email_in_pending(
         s: &str,
         conn: &PgConnection,
@@ -183,8 +243,8 @@ impl User {
             .inner_join(user_emails::table)
             .filter(user_emails::role.eq(UserEmailRole::Primary))
             .filter(
-                user_emails::verification_state
-                    .eq(UserEmailVerificationState::Pending),
+                user_emails::identification_state
+                    .eq(UserEmailIdentificationState::Pending),
             )
             .filter(users::state.eq(UserState::Pending))
             .limit(1);
@@ -237,39 +297,11 @@ impl User {
             let uuid = claims.get_subject();
             return Self::find_by_uuid(&uuid, conn, logger);
         } else if let Some(claims) = c.downcast_ref::<VerificationClaims>() {
-            let verification_token = claims.get_subject();
-            return Self::load_with_user_email_verification_token(
-                &verification_token,
-                conn,
-                logger,
-            )
-            .map(|(user, _)| user)
-            .ok();
+            let concrete_token = claims.get_subject();
+            return Self::load_by_concrete_token(&concrete_token, conn, logger)
+                .ok();
         }
         None
-    }
-
-    pub fn load_with_user_email_verification_token(
-        verification_token: &str,
-        conn: &PgConnection,
-        logger: &Logger,
-    ) -> Result<(User, UserEmail), &'static str>
-    {
-        let q = users::table
-            .inner_join(user_emails::table)
-            .filter(user_emails::verification_token.eq(verification_token))
-            .filter(
-                user_emails::verification_state
-                    .eq(UserEmailVerificationState::Pending),
-            )
-            .limit(1);
-
-        info!(logger, "{}", debug_query::<Pg, _>(&q).to_string());
-
-        match q.load::<(User, UserEmail)>(conn) {
-            Ok(ref mut v) if v.len() == 1 => v.pop().ok_or("unexpected :'("),
-            _ => Err("not found"),
-        }
     }
 
     /// Save a new user into users.
@@ -300,33 +332,171 @@ impl User {
         }
     }
 
-    pub fn activate(
-        &self,
-        conn: &PgConnection,
-        logger: &Logger,
-    ) -> Result<String, &'static str>
-    {
-        let q = diesel::update(self).set(users::state.eq(UserState::Active));
-
-        info!(logger, "{}", debug_query::<Pg, _>(&q).to_string());
-
-        match q.get_result::<Self>(conn) {
-            Err(e) => {
-                error!(logger, "err: {}", e);
-                Err("failed to activate")
-            },
-            Ok(_) => Ok(self.uuid.to_urn().to_string()),
-        }
+    pub fn generate_password_reset_token() -> String {
+        generate_random_hash(
+            RESET_PASSWORD_HASH_SOURCE,
+            RESET_PASSWORD_HASH_LENGTH,
+        )
     }
 
     pub fn change_password(&mut self, password: &str) {
         self.password = encrypt_password(password).unwrap();
     }
 
+    pub fn grant_token<T: Claims>(
+        &self,
+        token: &str,
+        issuer: &str,
+        secret: &str,
+        conn: &PgConnection,
+        logger: &Logger,
+    ) -> Result<String, &'static str>
+    {
+        // TODO: should we check duplication?
+        let c = T::decode(token, issuer, secret).expect("Invalid value");
+
+        // reset password
+        let q = diesel::update(self).set((
+            users::reset_password_state.eq(UserResetPasswordState::Pending),
+            users::reset_password_token.eq(c.get_subject()),
+            users::reset_password_token_expires_at.eq(c.get_expiration_time()),
+            users::reset_password_token_granted_at.eq(c.get_issued_at()),
+        ));
+
+        info!(logger, "{}", debug_query::<Pg, _>(&q).to_string());
+
+        match q.get_result::<Self>(conn) {
+            Err(e) => {
+                error!(logger, "err: {}", e);
+                Err("failed to grant token")
+            },
+            Ok(user) => Ok(user.reset_password_token.unwrap()),
+        }
+    }
+}
+
+impl Activatable for User {
+    fn activate(
+        &self,
+        conn: &PgConnection,
+        logger: &Logger,
+    ) -> Result<(), &'static str>
+    {
+        conn.build_transaction()
+            .serializable()
+            .deferrable()
+            .read_write()
+            .run::<_, diesel::result::Error, _>(|| {
+                let q = users::table
+                    .inner_join(user_emails::table)
+                    .filter(user_emails::user_id.eq(self.id))
+                    .filter(user_emails::role.eq(UserEmailRole::Primary))
+                    .filter(
+                        user_emails::identification_state
+                            .eq(UserEmailIdentificationState::Pending),
+                    )
+                    .limit(1);
+                info!(logger, "{}", debug_query::<Pg, _>(&q).to_string());
+
+                let dependency = q
+                    .load::<(Self, UserEmail)>(conn)
+                    .map(|mut v| v.pop().unwrap().1)
+                    .or_else(|e| {
+                        error!(logger, "error: {}", e);
+                        Err(e)
+                    });
+
+                if let Ok(user_email) = dependency {
+                    if user_email.activate(conn, logger).is_err() {
+                        return Err(Error::RollbackTransaction);
+                    }
+
+                    let q = diesel::update(self)
+                        .set(users::state.eq(UserState::Active));
+                    info!(logger, "{}", debug_query::<Pg, _>(&q).to_string());
+
+                    return match q.get_result::<Self>(conn) {
+                        Err(e) => {
+                            error!(logger, "err: {}", e);
+                            Err(Error::RollbackTransaction)
+                        },
+                        Ok(_) => Ok(()),
+                    };
+                }
+                Err(Error::RollbackTransaction)
+            })
+            .map_err(|_| "activation failed")
+    }
+}
+
+impl Authenticatable for User {
+    fn update_password(
+        &mut self,
+        password: &str,
+        conn: &PgConnection,
+        logger: &Logger,
+    ) -> Result<(), &'static str>
+    {
+        self.change_password(password);
+
+        let q = diesel::update(users::table.filter(users::id.eq(self.id)))
+            .set(users::password.eq(&self.password));
+        info!(logger, "{}", debug_query::<Pg, _>(&q).to_string());
+
+        match q.get_result::<Self>(conn) {
+            Err(e) => {
+                error!(logger, "err: {}", e);
+                Err("failed to change password")
+            },
+            Ok(_) => Ok(()),
+        }
+    }
+
     /// Checks whether the password given as an argument is valid or not.
     /// This takes a bit long til returning the result.
-    pub fn verify_password(&self, password: &str) -> bool {
+    fn verify_password(&self, password: &str) -> bool {
         verify(password, &str::from_utf8(&self.password).unwrap()).unwrap()
+    }
+}
+
+impl Verifiable<User> for User {
+    type TokenClaims = VerificationClaims;
+
+    fn extract_concrete_token(
+        token: &str,
+        issuer: &str,
+        secret: &str,
+    ) -> Result<String, &'static str>
+    {
+        let claims = Self::TokenClaims::decode(token, issuer, secret)
+            .map_err(|_| "invalid token")?;
+        Ok(claims.get_subject())
+    }
+
+    fn load_by_concrete_token(
+        concrete_token: &str,
+        conn: &PgConnection,
+        logger: &Logger,
+    ) -> Result<User, &'static str>
+    {
+        let q = users::table
+            .inner_join(user_emails::table)
+            .filter(user_emails::identification_token.eq(concrete_token))
+            .filter(user_emails::role.eq(UserEmailRole::Primary))
+            .filter(
+                user_emails::identification_state
+                    .eq(UserEmailIdentificationState::Pending),
+            )
+            .limit(1);
+
+        info!(logger, "{}", debug_query::<Pg, _>(&q).to_string());
+
+        match q.load::<(Self, UserEmail)>(conn) {
+            Ok(ref mut v) if v.len() == 1 => {
+                v.pop().map(|t| t.0).ok_or("unexpected :'(")
+            },
+            _ => Err("not found"),
+        }
     }
 }
 
@@ -514,8 +684,8 @@ mod test {
                     user_emails::user_id.eq(&user.id),
                     Some(user_emails::email.eq(&user.email)),
                     user_emails::role.eq(UserEmailRole::General),
-                    user_emails::verification_state
-                        .eq(UserEmailVerificationState::Pending),
+                    user_emails::identification_state
+                        .eq(UserEmailIdentificationState::Pending),
                 ))
                 .get_result::<UserEmail>(conn)
                 .unwrap_or_else(|e| panic!("Error at inserting: {}", e));
@@ -530,8 +700,7 @@ mod test {
     }
 
     #[test]
-    fn test_find_by_primary_email_in_pending_user_email_verification_state_is_done(
-    ) {
+    fn test_find_by_primary_email_in_pending_returns_id_state_is_done() {
         run(|conn, _, logger| {
             let u = USERS.get("hennry").unwrap();
             assert_eq!(u.state, UserState::Pending);
@@ -546,8 +715,8 @@ mod test {
                     user_emails::user_id.eq(&user.id),
                     Some(user_emails::email.eq(&user.email)),
                     user_emails::role.eq(UserEmailRole::Primary),
-                    user_emails::verification_state
-                        .eq(UserEmailVerificationState::Done),
+                    user_emails::identification_state
+                        .eq(UserEmailIdentificationState::Done),
                 ))
                 .get_result::<UserEmail>(conn)
                 .unwrap_or_else(|e| panic!("Error at inserting: {}", e));
@@ -577,8 +746,8 @@ mod test {
                     user_emails::user_id.eq(&user.id),
                     Some(user_emails::email.eq(&user.email)),
                     user_emails::role.eq(UserEmailRole::Primary),
-                    user_emails::verification_state
-                        .eq(UserEmailVerificationState::Pending),
+                    user_emails::identification_state
+                        .eq(UserEmailIdentificationState::Pending),
                 ))
                 .get_result::<UserEmail>(conn)
                 .unwrap_or_else(|e| panic!("Error at inserting: {}", e));
@@ -608,8 +777,8 @@ mod test {
                     user_emails::user_id.eq(&user.id),
                     Some(user_emails::email.eq(&user.email)),
                     user_emails::role.eq(UserEmailRole::Primary),
-                    user_emails::verification_state
-                        .eq(UserEmailVerificationState::Pending),
+                    user_emails::identification_state
+                        .eq(UserEmailIdentificationState::Pending),
                 ))
                 .get_result::<UserEmail>(conn)
                 .unwrap_or_else(|e| panic!("Error at inserting: {}", e));

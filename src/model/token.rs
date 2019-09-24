@@ -41,9 +41,15 @@ impl From<&User> for TokenData {
 impl From<&UserEmail> for TokenData {
     fn from(item: &UserEmail) -> Self {
         Self {
-            value: item.verification_token.as_ref().unwrap().to_string(),
-            granted_at: item.verification_token_granted_at.unwrap().timestamp(),
-            expires_at: item.verification_token_expires_at.unwrap().timestamp(),
+            value: item.identification_token.as_ref().unwrap().to_string(),
+            granted_at: item
+                .identification_token_granted_at
+                .unwrap()
+                .timestamp(),
+            expires_at: item
+                .identification_token_expires_at
+                .unwrap()
+                .timestamp(),
         }
     }
 }

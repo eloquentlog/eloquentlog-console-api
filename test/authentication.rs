@@ -36,7 +36,7 @@ fn test_login_with_wrong_username() {
         let session_id = job.args[2].to_string();
 
         let res = client
-            .patch(format!("/_api/user/activate?s={}", session_id))
+            .patch(format!("/_api/user/activate/{}", session_id))
             .header(ContentType::JSON)
             .header(Header::new("Authorization", format!("Bearer {}", token)))
             .header(Header::new("X-Requested-With", "XMLHttpRequest"))
@@ -92,7 +92,7 @@ fn test_login_with_wrong_password() {
         let session_id = job.args[2].to_string();
 
         let res = client
-            .patch(format!("/_api/user/activate?s={}", session_id))
+            .patch(format!("/_api/user/activate/{}", session_id))
             .header(ContentType::JSON)
             .header(Header::new("Authorization", format!("Bearer {}", token)))
             .header(Header::new("X-Requested-With", "XMLHttpRequest"))
@@ -148,7 +148,7 @@ fn test_login() {
         let session_id = job.args[2].to_string();
 
         let res = client
-            .patch(format!("/_api/user/activate?s={}", session_id))
+            .patch(format!("/_api/user/activate/{}", session_id))
             .header(ContentType::JSON)
             .header(Header::new("Authorization", format!("Bearer {}", token)))
             .header(Header::new("X-Requested-With", "XMLHttpRequest"))

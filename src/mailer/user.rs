@@ -37,15 +37,15 @@ use mailer::{Client, Header, Mailer};
 /// let config = Config::from("testing").unwrap();
 /// let logger = logger::get_logger(&config);
 ///
-/// let t = "...";
 /// let s = "...";
+/// let t = "...";
 ///
 /// // you need to initialize it as mut
 /// let mut mailer = UserMailer::new(&config, &logger);
 /// # mailer.inject(Some(Box::new(transport)));
 /// let result = mailer
 ///     .to(("postmaster@eloquentlog.com", "Name"))
-///     .send_user_activation_email(t, s);
+///     .send_user_activation_email(s, t);
 /// assert!(result);
 /// #
 /// # }
@@ -87,10 +87,10 @@ impl<'a> UserMailer<'a> {
     }
 
     /// Builds an user activation message and send it via actual mailer.
-    pub fn send_user_activation_email(&mut self, t: &str, s: &str) -> bool {
+    pub fn send_user_activation_email(&mut self, s: &str, t: &str) -> bool {
         let url = self.config.application_url.to_string();
         // TODO: build it with rocket::http::uri::Origin?
-        let activation_url = format!("{}/user/activate?t={}&s={}", url, t, s);
+        let activation_url = format!("{}/user/activate?s={}&t={}", url, t, s);
 
         let subject = "Activate your account";
         // TODO: use template file
@@ -110,6 +110,43 @@ Eloquentlog
 {}
 "#,
             activation_url, url,
+        );
+        let email = Email::builder()
+            .to(self.header.to)
+            .from(self.header.from)
+            .subject(subject)
+            .text(message)
+            .build()
+            .unwrap();
+        self.mailer.send(email.into())
+    }
+
+    /// Builds a password reset message and send it via actual mailer.
+    pub fn send_password_reset_email(&mut self, s: &str, t: &str) -> bool {
+        let url = self.config.application_url.to_string();
+        // TODO: build it with rocket::http::uri::Origin?
+        let reset_url = format!("{}/password/reset?s={}&t={}", url, s, t);
+
+        let subject = "Reset your password";
+        // TODO: use template file
+        let message = format!(
+            r#"
+Hi,
+
+Someone (hopefully you) has requested to reset password for your Eloquentlog account.
+To set a new password, just follow the link below
+
+{}
+
+If you do not wish to reset your password, disregard this email and no action will be taken.
+
+Happy logging !-)
+
+--
+Eloquentlog
+{}
+"#,
+            reset_url, url,
         );
         let email = Email::builder()
             .to(self.header.to)

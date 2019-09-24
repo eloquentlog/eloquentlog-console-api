@@ -1,4 +1,6 @@
 pub mod message;
+pub mod password_reset;
+pub mod password_reset_request;
 pub mod user;
 
 use accord::{Invalid, ValidatorResult};
@@ -15,6 +17,12 @@ const CHARS_UPPER: &[char] = &[
     'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z',
 ];
 const DIGITS: &[char] = &['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'];
+
+#[derive(Debug, Clone, Serialize)]
+pub struct ValidationError {
+    pub field: String,
+    pub messages: Vec<String>,
+}
 
 fn contain_only_alphanumeric_or_underscore(
 ) -> Box<dyn Fn(&String) -> ValidatorResult> {

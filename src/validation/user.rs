@@ -9,12 +9,6 @@ use model::user::{NewUser, User};
 use request::user::registration::UserRegistration as RequestData;
 use validation::*;
 
-#[derive(Debug, Clone, Serialize)]
-pub struct ValidationError {
-    pub field: String,
-    pub messages: Vec<String>,
-}
-
 pub struct Validator<'a> {
     conn: &'a PgConnection,
     data: &'a Json<RequestData>,

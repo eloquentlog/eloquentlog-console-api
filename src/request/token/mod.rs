@@ -7,6 +7,7 @@ pub mod verification;
 
 const AUTHORIZATION_HEADER_PREFIX: &str = "Bearer ";
 
+// NOTE: this function does not check value in database.
 fn verify_token<T>(
     value: &str,
     issuer: &str,
