@@ -140,7 +140,23 @@ pub fn preflight<'a>(
 ) -> RawResponse<'a>
 {
     info!(logger, "session_id: {}", session_id);
-    no_content_for("PATCH")
+    no_content_for("GET,PATCH")
+}
+
+// TODO:
+// Can't generate multiple verbs for a same route for now
+// https://github.com/SergioBenitez/Rocket/issues/2
+#[get("/password/reset/<session_id>")]
+pub fn verify<'a>(
+    session_id: String,
+    token: VerificationToken,
+    logger: SyncLogger,
+) -> Response<'a>
+{
+    info!(logger, "session_id: {}", session_id);
+    info!(logger, "token: {}", &token.0);
+    let res: Response = Default::default();
+    res
 }
 
 #[patch("/password/reset/<session_id>", data = "<payload>", format = "json")]
