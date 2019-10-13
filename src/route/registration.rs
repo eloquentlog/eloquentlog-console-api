@@ -14,9 +14,9 @@ use job::{Job, JobKind};
 use model::token::{VerificationClaims, Claims, TokenData};
 use model::user::{NewUser, User};
 use model::user_email::{NewUserEmail, UserEmail};
-use response::{Response, no_content_for};
-use request::user::registration::UserRegistration as RequestData;
 use mq::MqConn;
+use response::{Response, no_content_for};
+use request::user::registration::UserRegistration;
 use validation::user::Validator;
 use ss::SsConn;
 use util::split_token;
@@ -26,9 +26,9 @@ pub fn register_options<'a>() -> RawResponse<'a> {
     no_content_for("POST")
 }
 
-#[post("/register", format = "json", data = "<data>")]
+#[post("/register", data = "<data>", format = "json")]
 pub fn register<'a>(
-    data: Json<RequestData>,
+    data: Json<UserRegistration>,
     db_conn: DbConn,
     mut mq_conn: MqConn,
     mut ss_conn: SsConn,
@@ -36,6 +36,7 @@ pub fn register<'a>(
     config: State<Config>,
 ) -> Response<'a>
 {
+    // FIXME: create `account_registrar` service
     let res: Response = Default::default();
 
     let v = Validator::new(&db_conn, &data, &logger);
@@ -71,7 +72,7 @@ pub fn register<'a>(
                         granted_at,
                         expires_at,
                     };
-                    let verification_token = VerificationClaims::encode(
+                    let raw_token = VerificationClaims::encode(
                         data,
                         &config.verification_token_issuer,
                         &config.verification_token_key_id,
@@ -80,7 +81,7 @@ pub fn register<'a>(
 
                     if let Err(e) = user_email
                         .grant_token::<VerificationClaims>(
-                            &verification_token,
+                            &raw_token,
                             &config.verification_token_issuer,
                             &config.verification_token_secret,
                             &db_conn,
@@ -90,11 +91,11 @@ pub fn register<'a>(
                         error!(logger, "error: {}", e);
                         return Err(Error::RollbackTransaction);
                     }
-                    Ok((user_email.id, verification_token))
+                    Ok((user_email.id, raw_token))
                 });
 
-            if let Ok((id, verification_token)) = result {
-                if let Some((token, sign)) = split_token(verification_token) {
+            if let Ok((id, raw_token)) = result {
+                if let Some((token, sign)) = split_token(raw_token) {
                     // Instead of saving the signature into a cookie,
                     // putting it in session store.
                     //
@@ -116,7 +117,7 @@ pub fn register<'a>(
                     if result.is_ok() {
                         let job = Job::<String> {
                             kind: JobKind::SendUserActivationEmail,
-                            args: vec![id.to_string(), token, session_id],
+                            args: vec![id.to_string(), session_id, token],
                         };
                         let mut queue = Queue::new("default", &mut mq_conn);
                         if let Err(err) = queue.enqueue::<Job<String>>(job) {

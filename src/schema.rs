@@ -40,17 +40,17 @@ table! {
 
 table! {
     use diesel::sql_types::*;
-    use model::user_email::{EUserEmailVerificationState, EUserEmailRole};
+    use model::user_email::{EUserEmailIdentificationState, EUserEmailRole};
 
     user_emails (id) {
         id -> Int8,
         user_id -> Int8,
         email -> Nullable<Varchar>,
         role -> EUserEmailRole,
-        verification_state -> EUserEmailVerificationState,
-        verification_token -> Nullable<Varchar>,
-        verification_token_expires_at -> Nullable<Timestamp>,
-        verification_token_granted_at -> Nullable<Timestamp>,
+        identification_state -> EUserEmailIdentificationState,
+        identification_token -> Nullable<Varchar>,
+        identification_token_expires_at -> Nullable<Timestamp>,
+        identification_token_granted_at -> Nullable<Timestamp>,
         created_at -> Timestamp,
         updated_at -> Timestamp,
     }

@@ -1,6 +1,9 @@
 [global]
 keep_alive = 0
 
+[global.limits]
+json = 5242880 # 5 MB
+
 [development]
 address = "127.0.0.1"
 port = 8000

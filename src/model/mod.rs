@@ -2,10 +2,13 @@
 //!
 //! SQL types are imported publicly in each model entities.
 
+use diesel::pg::PgConnection;
+use logger::Logger;
+
 // sql types
 mod log_level;
 mod log_format;
-mod user_email_verification_state;
+mod user_email_identification_state;
 mod user_email_role;
 mod user_state;
 mod user_reset_password_state;
@@ -17,6 +20,54 @@ pub mod token;
 pub mod message;
 pub mod user;
 pub mod user_email;
+
+// Note
+//
+// traits:
+// - Authenticatable (User)
+// - Activatable (User, UserEmail)
+// - Verifiable (UserEmail)
+//
+// claims
+// - AuthenticationClaims
+// - VerificationClaims
+//
+// Authentication [authentication_token_{issuer|key_id|secret}]
+// * signin ... access_token (volatile)
+//
+// Registration [verification_token_{issuer|key_id|secret}]
+// * signup ... identification_token (initial primary user email)
+//
+// Verification [verefication_token_{issuer|key_id|secret}]
+// * password reset ... reset_password_token (user)
+// * identify       ... identification_token (new general user email)
+pub trait Activatable {
+    fn activate(&self, &PgConnection, &Logger) -> Result<(), &'static str>;
+}
+
+pub trait Authenticatable {
+    fn update_password(
+        &mut self,
+        &str,
+        &PgConnection,
+        &Logger,
+    ) -> Result<(), &'static str>;
+
+    fn verify_password(&self, &str) -> bool;
+}
+
+pub trait Verifiable<T: Sized> {
+    type TokenClaims: token::Claims;
+
+    fn extract_concrete_token(&str, &str, &str)
+        -> Result<String, &'static str>;
+
+    fn load_by_concrete_token(
+        &str,
+        &PgConnection,
+        &Logger,
+    ) -> Result<T, &'static str>;
+}
 
 #[cfg(test)]
 pub mod test {

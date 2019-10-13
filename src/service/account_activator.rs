@@ -1,0 +1,73 @@
+use std::fmt;
+
+use rocket_slog::SyncLogger;
+
+use config::Config;
+use db::DbConn;
+use model::{Activatable, Verifiable};
+
+pub struct AccountActivator<'a, T>
+where T: Activatable + Clone + Verifiable<T> + fmt::Display
+{
+    db_conn: &'a DbConn,
+    config: &'a Config,
+    logger: &'a SyncLogger,
+    pub target: Option<T>,
+}
+
+impl<'a, T> AccountActivator<'a, T>
+where T: Activatable + Clone + Verifiable<T> + fmt::Display
+{
+    pub fn new(
+        db_conn: &'a DbConn,
+        config: &'a Config,
+        logger: &'a SyncLogger,
+    ) -> Self
+    {
+        Self {
+            db_conn,
+            config,
+            logger,
+            target: None,
+        }
+    }
+
+    fn load_target(&self, token: &'a str) -> Result<T, &'a str> {
+        let concrete_token = T::extract_concrete_token(
+            token,
+            &self.config.verification_token_issuer,
+            &self.config.verification_token_secret,
+        )?;
+        T::load_by_concrete_token(&concrete_token, self.db_conn, self.logger)
+            .map_err(|e| {
+                warn!(self.logger, "err: {}", e);
+                "not found"
+            })
+    }
+
+    pub fn load(mut self, token: &'a str) -> Result<Self, &'a str> {
+        self.target = self.load_target(token).ok();
+        Ok(self)
+    }
+
+    pub fn activate(&self) -> Result<(), &str> {
+        if let Some(target) = self.target.clone() {
+            return target
+                .activate(&self.db_conn, &self.logger)
+                .map(|_| {
+                    info!(
+                        self.logger,
+                        "the user ({}) has been activated", &target
+                    );
+                })
+                .or_else(|e| {
+                    warn!(
+                        self.logger,
+                        "the user ({}) couldn't be activated", &target
+                    );
+                    Err(e)
+                });
+        }
+        Err("not found")
+    }
+}

@@ -6,10 +6,11 @@ use diesel::pg::{Pg, PgConnection};
 
 pub use model::token::Claims;
 pub use model::user_email_role::*;
-pub use model::user_email_verification_state::*;
+pub use model::user_email_identification_state::*;
 pub use schema::user_emails;
 
 use logger::Logger;
+use model::Activatable;
 use model::user::User;
 use util::generate_random_hash;
 
@@ -23,7 +24,7 @@ pub struct NewUserEmail {
     pub user_id: i64,
     pub email: String,
     pub role: UserEmailRole,
-    pub verification_state: UserEmailVerificationState,
+    pub identification_state: UserEmailIdentificationState,
 }
 
 impl Default for NewUserEmail {
@@ -32,7 +33,7 @@ impl Default for NewUserEmail {
             user_id: -1,           // validation error
             email: "".to_string(), // validation error
             role: UserEmailRole::General,
-            verification_state: UserEmailVerificationState::Pending,
+            identification_state: UserEmailIdentificationState::Pending,
         }
     }
 }
@@ -58,10 +59,10 @@ pub struct UserEmail {
     pub user_id: i64,
     pub email: Option<String>,
     pub role: UserEmailRole,
-    pub verification_state: UserEmailVerificationState,
-    pub verification_token: Option<String>,
-    pub verification_token_expires_at: Option<NaiveDateTime>,
-    pub verification_token_granted_at: Option<NaiveDateTime>,
+    pub identification_state: UserEmailIdentificationState,
+    pub identification_token: Option<String>,
+    pub identification_token_expires_at: Option<NaiveDateTime>,
+    pub identification_token_granted_at: Option<NaiveDateTime>,
     pub created_at: NaiveDateTime,
     pub updated_at: NaiveDateTime,
 }
@@ -78,8 +79,8 @@ impl Clone for UserEmail {
         UserEmail {
             role: UserEmailRole::from(role),
             email: self.email.clone(),
-            verification_state: self.verification_state.clone(),
-            verification_token: self.verification_token.clone(),
+            identification_state: self.identification_state.clone(),
+            identification_token: self.identification_token.clone(),
 
             ..*self
         }
@@ -107,7 +108,7 @@ impl UserEmail {
         }
     }
 
-    /// Finds only a non-verified (pending) UserEmail by verification token.
+    /// Finds only a non-verified (pending) UserEmail by identification token.
     pub fn find_by_token<T: Claims>(
         token: &str,
         issuer: &str,
@@ -128,10 +129,10 @@ impl UserEmail {
         }
 
         let q = user_emails::table
-            .filter(user_emails::verification_token.eq(value))
+            .filter(user_emails::identification_token.eq(value))
             .filter(
-                user_emails::verification_state
-                    .eq(UserEmailVerificationState::Pending),
+                user_emails::identification_state
+                    .eq(UserEmailIdentificationState::Pending),
             )
             .limit(1);
 
@@ -151,12 +152,12 @@ impl UserEmail {
     ///
     /// # Note
     ///
-    /// `verification_state` is assigned always as pending. And following
+    /// `identification_state` is assigned always as pending. And following
     /// columns keep still remaining as NULL until granting token later.
     ///
-    /// * verification_token
-    /// * verification_token_expires_at
-    /// * verification_token_granted_at
+    /// * identification_token
+    /// * identification_token_expires_at
+    /// * identification_token_granted_at
     pub fn insert(
         user_email: &NewUserEmail,
         conn: &PgConnection,
@@ -167,8 +168,8 @@ impl UserEmail {
             user_emails::user_id.eq(&user_email.user_id),
             Some(user_emails::email.eq(&user_email.email)),
             user_emails::role.eq(UserEmailRole::Primary),
-            user_emails::verification_state
-                .eq(UserEmailVerificationState::Pending),
+            user_emails::identification_state
+                .eq(UserEmailIdentificationState::Pending),
         ));
 
         info!(logger, "{}", debug_query::<Pg, _>(&q).to_string());
@@ -179,32 +180,6 @@ impl UserEmail {
                 None
             },
             Ok(u) => Some(u),
-        }
-    }
-
-    pub fn activate(
-        &self,
-        conn: &PgConnection,
-        logger: &Logger,
-    ) -> Result<String, &'static str>
-    {
-        let verification_token = self.verification_token.clone().unwrap();
-
-        // TODO: set verification_token to NULL
-        let q = diesel::update(self).set((
-            user_emails::verification_state
-                .eq(UserEmailVerificationState::Done),
-            user_emails::verification_token.eq(""),
-        ));
-
-        info!(logger, "{}", debug_query::<Pg, _>(&q).to_string());
-
-        match q.get_result::<Self>(conn) {
-            Err(e) => {
-                error!(logger, "err: {}", e);
-                Err("failed to activate")
-            },
-            Ok(_) => Ok(verification_token),
         }
     }
 
@@ -220,14 +195,14 @@ impl UserEmail {
         // TODO: should we check duplication?
         let c = T::decode(token, issuer, secret).expect("Invalid value");
 
-        // verification
+        // for identification
         let q = diesel::update(self).set((
-            user_emails::verification_state
-                .eq(UserEmailVerificationState::Pending),
-            user_emails::verification_token.eq(c.get_subject()),
-            user_emails::verification_token_expires_at
+            user_emails::identification_state
+                .eq(UserEmailIdentificationState::Pending),
+            user_emails::identification_token.eq(c.get_subject()),
+            user_emails::identification_token_expires_at
                 .eq(c.get_expiration_time()),
-            user_emails::verification_token_granted_at.eq(c.get_issued_at()),
+            user_emails::identification_token_granted_at.eq(c.get_issued_at()),
         ));
 
         info!(logger, "{}", debug_query::<Pg, _>(&q).to_string());
@@ -235,14 +210,40 @@ impl UserEmail {
         match q.get_result::<Self>(conn) {
             Err(e) => {
                 error!(logger, "err: {}", e);
-                Err("failed to grant token")
+                Err("failed to grant an identification token")
             },
-            Ok(user_email) => Ok(user_email.verification_token.unwrap()),
+            Ok(user_email) => Ok(user_email.identification_token.unwrap()),
         }
     }
 
     pub fn is_primary(&self) -> bool {
         self.role == UserEmailRole::Primary
+    }
+}
+
+impl Activatable for UserEmail {
+    fn activate(
+        &self,
+        conn: &PgConnection,
+        logger: &Logger,
+    ) -> Result<(), &'static str>
+    {
+        // TODO: set identification_token to NULL
+        let q = diesel::update(self).set((
+            user_emails::identification_state
+                .eq(UserEmailIdentificationState::Done),
+            user_emails::identification_token.eq(""),
+        ));
+
+        info!(logger, "{}", debug_query::<Pg, _>(&q).to_string());
+
+        match q.get_result::<Self>(conn) {
+            Err(e) => {
+                error!(logger, "err: {}", e);
+                Err("failed to activate")
+            },
+            Ok(_) => Ok(()),
+        }
     }
 }
 
@@ -265,10 +266,10 @@ mod data {
                 user_id: USERS.get("oswald").unwrap().id,
                 email: Some("oswald@example.org".to_string()),
                 role: UserEmailRole::Primary,
-                verification_state: UserEmailVerificationState::Done,
-                verification_token: None,
-                verification_token_expires_at: None,
-                verification_token_granted_at: None,
+                identification_state: UserEmailIdentificationState::Done,
+                identification_token: None,
+                identification_token_expires_at: None,
+                identification_token_granted_at: None,
                 created_at: Utc.ymd(2019, 7, 7).and_hms(7, 20, 15).naive_utc(),
                 updated_at: Utc.ymd(2019, 7, 7).and_hms(7, 20, 15).naive_utc(),
             },
@@ -277,10 +278,10 @@ mod data {
                 user_id: USERS.get("weenie").unwrap().id,
                 email: Some("weenie@example.org".to_string()),
                 role: UserEmailRole::Primary,
-                verification_state: UserEmailVerificationState::Done,
-                verification_token: None,
-                verification_token_expires_at: None,
-                verification_token_granted_at: None,
+                identification_state: UserEmailIdentificationState::Done,
+                identification_token: None,
+                identification_token_expires_at: None,
+                identification_token_granted_at: None,
                 created_at: Utc.ymd(2019, 7, 7).and_hms(7, 20, 15).naive_utc(),
                 updated_at: Utc.ymd(2019, 7, 7).and_hms(7, 20, 15).naive_utc(),
             },
@@ -289,10 +290,10 @@ mod data {
                 user_id: 3,
                 email: Some("hennry@example.org".to_string()),
                 role: UserEmailRole::Primary,
-                verification_state: UserEmailVerificationState::Done,
-                verification_token: None,
-                verification_token_expires_at: None,
-                verification_token_granted_at: None,
+                identification_state: UserEmailIdentificationState::Done,
+                identification_token: None,
+                identification_token_expires_at: None,
+                identification_token_granted_at: None,
                 created_at: Utc.ymd(2019, 7, 7).and_hms(7, 20, 15).naive_utc(),
                 updated_at: Utc.ymd(2019, 7, 7).and_hms(7, 20, 15).naive_utc(),
             }
@@ -322,7 +323,10 @@ mod test {
         assert_eq!(ue.user_id, -1);
         assert_eq!(ue.email, "".to_string());
         assert_eq!(ue.role, UserEmailRole::General);
-        assert_eq!(ue.verification_state, UserEmailVerificationState::Pending);
+        assert_eq!(
+            ue.identification_state,
+            UserEmailIdentificationState::Pending,
+        );
     }
 
     #[test]
@@ -340,8 +344,8 @@ mod test {
             assert_eq!(ue.email, user.email);
             assert_eq!(ue.role, UserEmailRole::Primary);
             assert_eq!(
-                ue.verification_state,
-                UserEmailVerificationState::Pending
+                ue.identification_state,
+                UserEmailIdentificationState::Pending
             );
         });
     }
@@ -421,13 +425,13 @@ mod test {
                     conn,
                     logger,
                 )
-                .expect("failed to grant verification token");
+                .expect("failed to grant an identification token");
 
             // set state as done
             diesel::update(&user_email)
                 .set(
-                    user_emails::verification_state
-                        .eq(UserEmailVerificationState::Done),
+                    user_emails::identification_state
+                        .eq(UserEmailIdentificationState::Done),
                 )
                 .execute(conn)
                 .unwrap_or_else(|e| panic!("Error updating: {}", e));
@@ -483,7 +487,7 @@ mod test {
                     conn,
                     logger,
                 )
-                .expect("failed to grant verification token");
+                .expect("failed to grant an identification token");
 
             let result = UserEmail::find_by_token::<VerificationClaims>(
                 &token,
@@ -582,7 +586,7 @@ mod test {
                     conn,
                     logger,
                 )
-                .expect("failed to grant verification token");
+                .expect("failed to grant an identification token");
 
             let user_email = user_emails::table
                 .filter(user_emails::id.eq(user_email.id))
@@ -628,7 +632,7 @@ mod test {
                 &config.verification_token_key_id,
                 &config.verification_token_secret,
             );
-            let verification_token = user_email
+            let identification_token = user_email
                 .grant_token::<VerificationClaims>(
                     &token,
                     &config.verification_token_issuer,
@@ -636,7 +640,7 @@ mod test {
                     conn,
                     logger,
                 )
-                .expect("failed to grant verification token");
+                .expect("failed to grant an identification token");
 
             let rows_count: i64 = user_emails::table
                 .count()
@@ -651,8 +655,8 @@ mod test {
                 .unwrap();
 
             assert_eq!(
-                verification_token,
-                user_email.verification_token.unwrap()
+                identification_token,
+                user_email.identification_token.unwrap()
             );
         });
     }

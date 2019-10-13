@@ -1,5 +1,6 @@
 pub mod message;
-pub mod user;
+pub mod password_reset;
 pub mod token;
+pub mod user;
 
 type ID = usize;

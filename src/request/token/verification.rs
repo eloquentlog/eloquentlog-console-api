@@ -62,8 +62,7 @@ impl<'a, 'r> FromRequest<'a, 'r> for VerificationToken {
     ) -> request::Outcome<Self, Self::Error> {
         let logger = req.guard::<State<SyncLogger>>().unwrap();
 
-        let with = req.headers().get_one("X-Requested-With");
-        if with != Some("XMLHttpRequest") {
+        if req.headers().get_one("X-Requested-With") != Some("XMLHttpRequest") {
             error!(logger, "request: {}", req);
             return respond_as_invalid();
         }
@@ -88,8 +87,9 @@ impl<'a, 'r> FromRequest<'a, 'r> for VerificationToken {
                 // append signature taken by session id to the parts extracted
                 // from authorization header.
                 let mut ss_conn = req.guard::<SsConn>().unwrap();
+                // /_api/password/reset/<...> and /_api/user/activate/<...>
                 let session_id: &'a RawStr = req
-                    .get_query_value("s")
+                    .get_param(2)
                     .and_then(|r| r.ok())
                     .unwrap_or_else(|| "".into());
 
@@ -120,7 +120,10 @@ impl<'a, 'r> FromRequest<'a, 'r> for VerificationToken {
                     },
                 }
             },
-            0 => respond_as_missing(),
+            0 => {
+                error!(logger, "error: Authorization header is missing");
+                respond_as_missing()
+            },
             _ => respond_as_invalid(),
         }
     }

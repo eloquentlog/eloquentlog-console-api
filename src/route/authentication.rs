@@ -7,6 +7,7 @@ use rocket_slog::SyncLogger;
 use config::Config;
 use db::DbConn;
 use model::user::User;
+use model::Authenticatable;
 use model::token::{AuthenticationClaims, Claims, TokenData};
 use request::user::authentication::UserAuthentication as RequestData;
 use response::{Response, no_content_for};
