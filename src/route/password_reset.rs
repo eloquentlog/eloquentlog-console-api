@@ -136,7 +136,6 @@ pub fn request<'a>(
 #[options("/password/reset/<session_id>")]
 pub fn preflight<'a>(
     session_id: String,
-    _token: VerificationToken,
     logger: SyncLogger,
 ) -> RawResponse<'a>
 {
