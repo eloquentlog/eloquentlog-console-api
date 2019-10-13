@@ -14,7 +14,7 @@ use response::{Response, no_content_for};
 use util::split_token;
 
 #[options("/login")]
-pub fn login_options<'a>() -> RawResponse<'a> {
+pub fn login_preflight<'a>() -> RawResponse<'a> {
     no_content_for("POST")
 }
 

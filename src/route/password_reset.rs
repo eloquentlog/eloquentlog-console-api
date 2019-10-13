@@ -27,7 +27,7 @@ use ss::SsConn;
 use util::split_token;
 
 #[options("/password/reset")]
-pub fn request_options<'a>() -> RawResponse<'a> {
+pub fn request_preflight<'a>() -> RawResponse<'a> {
     no_content_for("PUT")
 }
 
@@ -134,7 +134,7 @@ pub fn request<'a>(
 }
 
 #[options("/password/reset/<session_id>")]
-pub fn update_options<'a>(
+pub fn preflight<'a>(
     session_id: String,
     _token: VerificationToken,
     logger: SyncLogger,

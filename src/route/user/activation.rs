@@ -11,7 +11,7 @@ use response::{Response, no_content_for};
 use service::account_activator::AccountActivator;
 
 #[options("/user/activate/<session_id>")]
-pub fn activate_options<'a>(
+pub fn activate_preflight<'a>(
     session_id: String,
     logger: SyncLogger,
 ) -> RawResponse<'a>
