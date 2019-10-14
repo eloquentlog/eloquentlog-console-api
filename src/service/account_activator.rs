@@ -6,17 +6,21 @@ use config::Config;
 use db::DbConn;
 use model::{Activatable, Verifiable};
 
-pub struct AccountActivator<'a, T>
-where T: Activatable + Clone + Verifiable<T> + fmt::Display
+pub struct AccountActivator<'a, T, U>
+where
+    T: Activatable + Clone + Verifiable<(T, U)> + fmt::Display,
+    U: Activatable + Clone + fmt::Display,
 {
     db_conn: &'a DbConn,
     config: &'a Config,
     logger: &'a SyncLogger,
-    pub target: Option<T>,
+    pub target: Option<(T, U)>,
 }
 
-impl<'a, T> AccountActivator<'a, T>
-where T: Activatable + Clone + Verifiable<T> + fmt::Display
+impl<'a, T, U> AccountActivator<'a, T, U>
+where
+    T: Activatable + Clone + Verifiable<(T, U)> + fmt::Display,
+    U: Activatable + Clone + fmt::Display,
 {
     pub fn new(
         db_conn: &'a DbConn,
@@ -32,7 +36,7 @@ where T: Activatable + Clone + Verifiable<T> + fmt::Display
         }
     }
 
-    fn load_target(&self, token: &'a str) -> Result<T, &'a str> {
+    fn load_target(&self, token: &'a str) -> Result<(T, U), &'a str> {
         let concrete_token = T::extract_concrete_token(
             token,
             &self.config.verification_token_issuer,
@@ -51,19 +55,19 @@ where T: Activatable + Clone + Verifiable<T> + fmt::Display
     }
 
     pub fn activate(&self) -> Result<(), &str> {
-        if let Some(target) = self.target.clone() {
-            return target
+        if let Some(user) = self.target.as_ref().map(|v| v.0.clone()) {
+            return user
                 .activate(&self.db_conn, &self.logger)
                 .map(|_| {
                     info!(
                         self.logger,
-                        "the user ({}) has been activated", &target
+                        "the user ({}) has been activated", &user
                     );
                 })
                 .or_else(|e| {
                     warn!(
                         self.logger,
-                        "the user ({}) couldn't be activated", &target
+                        "the user ({}) couldn't be activated", &user
                     );
                     Err(e)
                 });

@@ -146,7 +146,7 @@ pub fn preflight<'a>(
 // TODO:
 // Can't generate multiple verbs for a same route for now
 // https://github.com/SergioBenitez/Rocket/issues/2
-#[get("/password/reset/<session_id>")]
+#[get("/password/reset/<session_id>", format = "json")]
 pub fn verify<'a>(
     session_id: String,
     token: VerificationToken,
@@ -165,6 +165,7 @@ pub fn update<'a>(
     token: VerificationToken,
     payload: Json<PasswordResetUpdate>,
     db_conn: DbConn,
+    mut ss_conn: SsConn,
     logger: SyncLogger,
     config: State<Config>,
 ) -> Response<'a>
@@ -178,18 +179,18 @@ pub fn update<'a>(
         .build_transaction()
         .serializable()
         .deferrable()
-        .run::<(), Error, _>(|| {
+        .run::<String, Error, _>(|| {
             match PasswordUpdater::<User>::new(&db_conn, &config, &logger)
                 .load(&token)
             {
                 Err(_) => Err(Error::RollbackTransaction),
                 Ok(u) => {
-                    let password = payload.0.password;
+                    let new_password = payload.0.new_password;
                     // FIXME: can we omit this clone?
                     let user = u.target.clone().unwrap();
                     let data = Json(PasswordReset {
                         username: user.username,
-                        password: password.to_string(),
+                        password: new_password.to_string(),
                     });
                     match PasswordResetValidator::new(&db_conn, &data, &logger)
                         .validate()
@@ -198,7 +199,13 @@ pub fn update<'a>(
                             errors = validation_errors;
                             Err(Error::RollbackTransaction)
                         },
-                        Ok(_) if u.update(&password).is_ok() => Ok(()),
+                        Ok(_) if u.update(&new_password).is_ok() => {
+                            // clear session
+                            ss_conn.del(&session_id).map_err(|e| {
+                                error!(logger, "error: {}", e);
+                                Error::RollbackTransaction
+                            })
+                        },
                         _ => Err(Error::RollbackTransaction),
                     }
                 },

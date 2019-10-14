@@ -6,6 +6,7 @@ use rocket_slog::SyncLogger;
 use config::Config;
 use db::DbConn;
 use model::user::User;
+use model::user_email::UserEmail;
 use request::token::verification::VerificationToken;
 use response::{Response, no_content_for};
 use service::account_activator::AccountActivator;
@@ -33,12 +34,13 @@ pub fn activate(
 
     let res: Response = Default::default();
 
-    let activation = AccountActivator::<User>::new(&db_conn, &config, &logger)
-        .load(&token)
-        .and_then(|a| {
-            let _ = a.activate();
-            Ok(a)
-        });
+    let activation =
+        AccountActivator::<User, UserEmail>::new(&db_conn, &config, &logger)
+            .load(&token)
+            .and_then(|a| {
+                let _ = a.activate();
+                Ok(a)
+            });
     if activation.is_ok() {
         return res.status(Status::Ok);
     }

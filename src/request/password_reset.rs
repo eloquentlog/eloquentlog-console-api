@@ -15,13 +15,13 @@ impl Default for PasswordResetRequest {
 /// PasswordResetUpdate
 #[derive(Clone, Deserialize)]
 pub struct PasswordResetUpdate {
-    pub password: String,
+    pub new_password: String,
 }
 
 impl Default for PasswordResetUpdate {
     fn default() -> Self {
         Self {
-            password: "".to_string(),
+            new_password: "".to_string(),
         }
     }
 }

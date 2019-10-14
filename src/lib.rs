@@ -116,6 +116,7 @@ pub fn server() -> rocket::Rocket {
                 route::message::messages_preflight,
                 route::password_reset::request,
                 route::password_reset::request_preflight,
+                route::password_reset::verify,
                 route::password_reset::update,
                 route::password_reset::preflight,
                 route::registration::register,
