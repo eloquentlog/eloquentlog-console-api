@@ -1,3 +1,4 @@
+#![allow(clippy::needless_doctest_main)]
 //! UserMailer
 
 use lettre_email::Email;
