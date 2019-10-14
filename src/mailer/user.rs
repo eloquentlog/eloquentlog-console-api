@@ -91,7 +91,7 @@ impl<'a> UserMailer<'a> {
     pub fn send_user_activation_email(&mut self, s: &str, t: &str) -> bool {
         let url = self.config.application_url.to_string();
         // TODO: build it with rocket::http::uri::Origin?
-        let activation_url = format!("{}/user/activate?s={}&t={}", url, t, s);
+        let activation_url = format!("{}/user/activate?s={}&t={}", url, s, t);
 
         let subject = "Activate your account";
         // TODO: use template file
