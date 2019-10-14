@@ -109,7 +109,7 @@ mod test {
         run(|_, _, logger| {
             let data = &Json(RequestData {
                 username: "username".to_string(),
-                password: "L0ng".repeat(257).to_string(),
+                password: "L0ng".repeat(257),
             });
             let v = Validator { data, logger };
 

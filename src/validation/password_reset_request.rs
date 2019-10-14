@@ -161,7 +161,7 @@ mod test {
     fn test_validate_email_is_too_long() {
         run(|_, _, logger| {
             let data = &Json(RequestData {
-                email: "long@example.org".repeat(9).to_string(),
+                email: "long@example.org".repeat(9),
             });
             let v = Validator { data, logger };
 
@@ -185,7 +185,7 @@ mod test {
     fn test_validate_email_is_invalid_and_too_long() {
         run(|_, _, logger| {
             let data = &Json(RequestData {
-                email: "long".repeat(33).to_string(),
+                email: "long".repeat(33),
             });
             let v = Validator { data, logger };
 

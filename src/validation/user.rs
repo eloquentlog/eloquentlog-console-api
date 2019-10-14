@@ -226,7 +226,7 @@ mod test {
     fn test_validate_email_is_too_long() {
         run(|conn, _, logger| {
             let data = &Json(RequestData {
-                email: "long@example.org".repeat(9).to_string(),
+                email: "long@example.org".repeat(9),
                 username: "username".to_string(),
                 password: "Passw0rd".to_string(),
 
@@ -254,7 +254,7 @@ mod test {
     fn test_validate_email_is_invalid_and_too_long() {
         run(|conn, _, logger| {
             let data = &Json(RequestData {
-                email: "long".repeat(33).to_string(),
+                email: "long".repeat(33),
                 username: "username".to_string(),
                 password: "Passw0rd".to_string(),
 
@@ -304,7 +304,7 @@ mod test {
         run(|conn, _, logger| {
             let data = &Json(RequestData {
                 email: "postmaster@example.org".to_string(),
-                name: Some("long".repeat(26).to_string()),
+                name: Some("long".repeat(26)),
                 username: "username".to_string(),
                 password: "Passw0rd".to_string(),
             });
@@ -391,7 +391,7 @@ mod test {
         run(|conn, _, logger| {
             let data = &Json(RequestData {
                 email: "postmaster@example.org".to_string(),
-                username: "username".repeat(5).to_string(),
+                username: "username".repeat(5),
                 password: "Passw0rd".to_string(),
 
                 ..Default::default()
@@ -633,7 +633,7 @@ mod test {
             let data = &Json(RequestData {
                 email: "postmaster@example.org".to_string(),
                 username: "username".to_string(),
-                password: "L0ng".repeat(257).to_string(),
+                password: "L0ng".repeat(257),
 
                 ..Default::default()
             });
@@ -796,7 +796,7 @@ mod test {
                 .unwrap_or_else(|| panic!("Error inserting: {}", u));
 
             let data = &Json(RequestData {
-                email: u.email.to_string(),
+                email: u.email,
                 username: "newusername".to_string(),
                 password: "newPassw0rd".to_string(),
 

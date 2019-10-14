@@ -110,7 +110,7 @@ mod test {
     fn test_validate_code_is_too_long() {
         run(|logger| {
             let data = Json(RequestData {
-                code: Some("long".repeat(9).to_string()),
+                code: Some("long".repeat(9)),
                 title: Some("title".to_string()),
 
                 ..Default::default()
@@ -328,7 +328,7 @@ mod test {
     fn test_validate_title_is_too_long() {
         run(|logger| {
             let data = Json(RequestData {
-                title: Some("title".repeat(52).to_string()),
+                title: Some("title".repeat(52)),
 
                 ..Default::default()
             });
@@ -354,7 +354,7 @@ mod test {
     fn test_validate_title() {
         run(|logger| {
             let data = Json(RequestData {
-                title: Some("title".repeat(51).to_string()),
+                title: Some("title".repeat(51)),
 
                 ..Default::default()
             });
@@ -369,7 +369,7 @@ mod test {
     fn test_validate_content_is_too_long() {
         run(|logger| {
             let data = Json(RequestData {
-                content: Some("text".repeat(2001).to_string()),
+                content: Some("text".repeat(2001)),
                 title: Some("title".to_string()),
 
                 ..Default::default()
@@ -412,7 +412,7 @@ mod test {
     fn test_validate_content() {
         run(|logger| {
             let data = Json(RequestData {
-                content: Some("text".repeat(2000).to_string()),
+                content: Some("text".repeat(2000)),
                 title: Some("title".to_string()),
 
                 ..Default::default()
