@@ -209,10 +209,13 @@ pub fn update<'a>(
                         },
                         Ok(_) if u.update(&new_password).is_ok() => {
                             // clear session
-                            ss_conn.del(&session_id).map_err(|e| {
-                                error!(logger, "error: {}", e);
-                                Error::RollbackTransaction
-                            })
+                            ss_conn
+                                .del(&session_id)
+                                .map(|r: i64| r.to_string())
+                                .map_err(|e| {
+                                    error!(logger, "error: {}", e);
+                                    Error::RollbackTransaction
+                                })
                         },
                         _ => Err(Error::RollbackTransaction),
                     }
@@ -221,12 +224,12 @@ pub fn update<'a>(
         });
 
     match result {
+        Ok(_) => res.status(Status::Ok),
         Err(_) if !errors.is_empty() => {
             res.status(Status::UnprocessableEntity).format(json!({
                 "errors": errors,
             }))
         },
-        Ok(_) => res.status(Status::Ok),
         _ => res.status(Status::NotFound),
     }
 }
