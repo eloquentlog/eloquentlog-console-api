@@ -13,8 +13,8 @@ use validation::message::Validator;
 const MESSAGES_PER_REQUEST: i64 = 100;
 
 #[options("/messages")]
-pub fn get_messages_options<'a>() -> RawResponse<'a> {
-    no_content_for("GET")
+pub fn messages_preflight<'a>() -> RawResponse<'a> {
+    no_content_for("GET,POST")
 }
 
 #[get("/messages")]
@@ -43,7 +43,7 @@ pub fn get_messages(user: &User, conn: DbConn, logger: SyncLogger) -> Response {
 // }
 // ```
 #[post("/messages", format = "json", data = "<data>")]
-pub fn post(
+pub fn post_message(
     user: &User,
     data: Json<RequestData>,
     conn: DbConn,
@@ -73,8 +73,14 @@ pub fn post(
     }
 }
 
+#[options("/messages/<id>")]
+pub fn message_preflight<'a>(id: usize, logger: SyncLogger) -> RawResponse<'a> {
+    info!(logger, "id: {}", id);
+    no_content_for("GET,PUT")
+}
+
 #[put("/messages/<id>", format = "json", data = "<data>")]
-pub fn put(
+pub fn put_message(
     user: &User,
     id: usize,
     data: Json<RequestData>,

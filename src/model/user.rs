@@ -432,15 +432,23 @@ impl Activatable for User {
 impl Authenticatable for User {
     fn update_password(
         &mut self,
-        password: &str,
+        new_password: &str,
         conn: &PgConnection,
         logger: &Logger,
     ) -> Result<(), &'static str>
     {
-        self.change_password(password);
+        self.change_password(new_password);
 
-        let q = diesel::update(users::table.filter(users::id.eq(self.id)))
-            .set(users::password.eq(&self.password));
+        let q = diesel::update(
+            users::table
+                .filter(users::id.eq(self.id))
+                .filter(users::state.eq(UserState::Active))
+                .filter(
+                    users::reset_password_state
+                        .eq(UserResetPasswordState::Pending),
+                ),
+        )
+        .set(users::password.eq(&self.password));
         info!(logger, "{}", debug_query::<Pg, _>(&q).to_string());
 
         match q.get_result::<Self>(conn) {
@@ -459,6 +467,48 @@ impl Authenticatable for User {
     }
 }
 
+/// Verifiable with a pair (User, UserEmail). It's for an user activation
+impl Verifiable<(Self, UserEmail)> for User {
+    type TokenClaims = VerificationClaims;
+
+    fn extract_concrete_token(
+        token: &str,
+        issuer: &str,
+        secret: &str,
+    ) -> Result<String, &'static str>
+    {
+        let claims = Self::TokenClaims::decode(token, issuer, secret)
+            .map_err(|_| "invalid token")?;
+        Ok(claims.get_subject())
+    }
+
+    fn load_by_concrete_token(
+        concrete_token: &str,
+        conn: &PgConnection,
+        logger: &Logger,
+    ) -> Result<(Self, UserEmail), &'static str>
+    {
+        let q = users::table
+            .filter(users::state.eq(UserState::Pending))
+            .inner_join(user_emails::table)
+            .filter(user_emails::identification_token.eq(concrete_token))
+            .filter(
+                user_emails::identification_state
+                    .eq(UserEmailIdentificationState::Pending),
+            )
+            .filter(user_emails::role.eq(UserEmailRole::Primary))
+            .limit(1);
+
+        info!(logger, "{}", debug_query::<Pg, _>(&q).to_string());
+
+        match q.load::<(Self, UserEmail)>(conn) {
+            Ok(ref mut v) if v.len() == 1 => v.pop().ok_or("unexpected :'("),
+            _ => Err("not found"),
+        }
+    }
+}
+
+/// Verifiable with User. It's for a password update action
 impl Verifiable<User> for User {
     type TokenClaims = VerificationClaims;
 
@@ -477,16 +527,17 @@ impl Verifiable<User> for User {
         concrete_token: &str,
         conn: &PgConnection,
         logger: &Logger,
-    ) -> Result<User, &'static str>
+    ) -> Result<Self, &'static str>
     {
         let q = users::table
+            .filter(users::state.eq(UserState::Active))
+            .filter(users::reset_password_token.eq(concrete_token))
             .inner_join(user_emails::table)
-            .filter(user_emails::identification_token.eq(concrete_token))
-            .filter(user_emails::role.eq(UserEmailRole::Primary))
             .filter(
                 user_emails::identification_state
-                    .eq(UserEmailIdentificationState::Pending),
+                    .eq(UserEmailIdentificationState::Done),
             )
+            .filter(user_emails::role.eq(UserEmailRole::Primary))
             .limit(1);
 
         info!(logger, "{}", debug_query::<Pg, _>(&q).to_string());

@@ -51,19 +51,19 @@ where T: Authenticatable + Clone + Verifiable<T> + fmt::Display
     }
 
     pub fn update(&self, new_password: &str) -> Result<(), &str> {
-        if let Some(mut target) = self.target.clone() {
-            return target
+        if let Some(mut user) = self.target.clone() {
+            return user
                 .update_password(new_password, self.db_conn, self.logger)
                 .map(|_| {
                     info!(
                         self.logger,
-                        "the password of an user ({}) has been re-set", &target
+                        "the password of an user ({}) has been re-set", &user
                     );
                 })
                 .or_else(|e| {
                     warn!(
                         self.logger,
-                        "the password of an user ({}) couldn't be set", &target
+                        "the password of an user ({}) couldn't be set", &user
                     );
                     Err(e)
                 });

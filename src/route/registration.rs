@@ -22,7 +22,7 @@ use ss::SsConn;
 use util::split_token;
 
 #[options("/register")]
-pub fn register_options<'a>() -> RawResponse<'a> {
+pub fn register_preflight<'a>() -> RawResponse<'a> {
     no_content_for("POST")
 }
 
@@ -133,6 +133,11 @@ pub fn register<'a>(
             }))
         },
     }
+}
+
+#[options("/deregister")]
+pub fn deregister_preflight<'a>() -> RawResponse<'a> {
+    no_content_for("POST")
 }
 
 #[post("/deregister", format = "json")]

@@ -27,7 +27,7 @@ use ss::SsConn;
 use util::split_token;
 
 #[options("/password/reset")]
-pub fn request_options<'a>() -> RawResponse<'a> {
+pub fn request_preflight<'a>() -> RawResponse<'a> {
     no_content_for("PUT")
 }
 
@@ -134,14 +134,29 @@ pub fn request<'a>(
 }
 
 #[options("/password/reset/<session_id>")]
-pub fn update_options<'a>(
+pub fn preflight<'a>(
     session_id: String,
-    _token: VerificationToken,
     logger: SyncLogger,
 ) -> RawResponse<'a>
 {
     info!(logger, "session_id: {}", session_id);
-    no_content_for("PATCH")
+    no_content_for("GET,PATCH")
+}
+
+// TODO:
+// Can't generate multiple verbs for a same route for now
+// https://github.com/SergioBenitez/Rocket/issues/2
+#[get("/password/reset/<session_id>", format = "json")]
+pub fn verify<'a>(
+    session_id: String,
+    token: VerificationToken,
+    logger: SyncLogger,
+) -> Response<'a>
+{
+    info!(logger, "session_id: {}", session_id);
+    info!(logger, "token: {}", &token.0);
+    let res: Response = Default::default();
+    res
 }
 
 #[patch("/password/reset/<session_id>", data = "<payload>", format = "json")]
@@ -150,6 +165,7 @@ pub fn update<'a>(
     token: VerificationToken,
     payload: Json<PasswordResetUpdate>,
     db_conn: DbConn,
+    mut ss_conn: SsConn,
     logger: SyncLogger,
     config: State<Config>,
 ) -> Response<'a>
@@ -163,18 +179,18 @@ pub fn update<'a>(
         .build_transaction()
         .serializable()
         .deferrable()
-        .run::<(), Error, _>(|| {
+        .run::<String, Error, _>(|| {
             match PasswordUpdater::<User>::new(&db_conn, &config, &logger)
                 .load(&token)
             {
                 Err(_) => Err(Error::RollbackTransaction),
                 Ok(u) => {
-                    let password = payload.0.password;
+                    let new_password = payload.0.new_password;
                     // FIXME: can we omit this clone?
                     let user = u.target.clone().unwrap();
                     let data = Json(PasswordReset {
                         username: user.username,
-                        password: password.to_string(),
+                        password: new_password.to_string(),
                     });
                     match PasswordResetValidator::new(&db_conn, &data, &logger)
                         .validate()
@@ -183,7 +199,13 @@ pub fn update<'a>(
                             errors = validation_errors;
                             Err(Error::RollbackTransaction)
                         },
-                        Ok(_) if u.update(&password).is_ok() => Ok(()),
+                        Ok(_) if u.update(&new_password).is_ok() => {
+                            // clear session
+                            ss_conn.del(&session_id).map_err(|e| {
+                                error!(logger, "error: {}", e);
+                                Error::RollbackTransaction
+                            })
+                        },
                         _ => Err(Error::RollbackTransaction),
                     }
                 },
