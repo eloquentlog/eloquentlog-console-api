@@ -196,7 +196,15 @@ pub fn update<'a>(
                         .validate()
                     {
                         Err(validation_errors) => {
-                            errors = validation_errors;
+                            // password -> new_password
+                            errors = validation_errors
+                                .into_iter()
+                                .filter(|v| v.field == "password")
+                                .map(|mut v| {
+                                    v.field = "new_password".to_string();
+                                    v
+                                })
+                                .collect();
                             Err(Error::RollbackTransaction)
                         },
                         Ok(_) if u.update(&new_password).is_ok() => {
