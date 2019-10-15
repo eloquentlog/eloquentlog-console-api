@@ -619,7 +619,9 @@ mod test {
     use super::*;
 
     use model::test::run;
+    use model::token::{AuthenticationClaims, Claims, TokenData};
     use model::user::data::USERS;
+    use model::user_email::data::USER_EMAILS;
 
     #[test]
     fn test_new_user_format() {
@@ -704,6 +706,29 @@ mod test {
 
             assert!(!User::check_username_uniqueness(&username, conn, logger));
             assert!(User::check_username_uniqueness("another", conn, logger));
+        });
+    }
+
+    #[test]
+    fn test_find_by_id_not_found() {
+        run(|conn, _, logger| {
+            let result = User::find_by_id(0, conn, logger);
+            assert!(result.is_none());
+        });
+    }
+
+    #[test]
+    fn test_find_by_id() {
+        run(|conn, _, logger| {
+            let u = USERS.get("oswald").unwrap();
+            let id = diesel::insert_into(users::table)
+                .values(u)
+                .returning(users::id)
+                .get_result::<i64>(conn)
+                .unwrap_or_else(|e| panic!("Error at inserting: {}", e));
+
+            let result = User::find_by_id(id, conn, logger);
+            assert!(result.is_some());
         });
     }
 
@@ -888,6 +913,93 @@ mod test {
 
             let user = result.unwrap();
             assert_eq!(user.email, email);
+        });
+    }
+
+    #[test]
+    fn test_find_by_token_with_authentication_claims() {
+        run(|conn, config, logger| {
+            let u = USERS.get("oswald").unwrap();
+            assert_eq!(u.state, UserState::Active);
+
+            let uuid = diesel::insert_into(users::table)
+                .values(u)
+                .returning(users::uuid)
+                .get_result::<Uuid>(conn)
+                .unwrap_or_else(|e| panic!("Error at inserting: {}", e));
+
+            let data = TokenData {
+                value: uuid.to_urn().to_string(),
+                granted_at: Utc::now().timestamp(),
+                expires_at: 0,
+            };
+            let authentication_token = AuthenticationClaims::encode(
+                data,
+                &config.authentication_token_issuer,
+                &config.authentication_token_key_id,
+                &config.authentication_token_secret,
+            );
+
+            let result = User::find_by_token::<AuthenticationClaims>(
+                &authentication_token,
+                &config.authentication_token_issuer,
+                &config.authentication_token_secret,
+                conn,
+                logger,
+            );
+            assert!(result.is_some());
+
+            let user = result.unwrap();
+            assert_eq!(user.uuid, uuid);
+        });
+    }
+
+    #[test]
+    fn test_find_by_token_with_verification_claims() {
+        run(|conn, config, logger| {
+            let mut u = USERS.get("oswald").unwrap().clone();
+            assert_eq!(u.state, UserState::Active);
+
+            let granted_at = Utc::now();
+            let raw_token = User::generate_password_reset_token();
+            u.reset_password_token = Some(raw_token.clone());
+            u.reset_password_token_granted_at = Some(granted_at.naive_utc());
+
+            let reset_password_token = diesel::insert_into(users::table)
+                .values(u)
+                .returning(users::reset_password_token)
+                .get_result::<Option<String>>(conn)
+                .unwrap_or_else(|e| panic!("Error at inserting: {}", e));
+
+            let ue = USER_EMAILS.get("oswald's primary address").unwrap();
+            let _ = diesel::insert_into(user_emails::table)
+                .values(ue)
+                .get_result::<UserEmail>(conn)
+                .unwrap_or_else(|e| panic!("Error at inserting: {}", e));
+
+            let data = TokenData {
+                value: raw_token,
+                granted_at: granted_at.timestamp(),
+                expires_at: (granted_at + Duration::hours(1)).timestamp(),
+            };
+            let verification_token = VerificationClaims::encode(
+                data,
+                &config.verification_token_issuer,
+                &config.verification_token_key_id,
+                &config.verification_token_secret,
+            );
+
+            let result = User::find_by_token::<VerificationClaims>(
+                &verification_token,
+                &config.verification_token_issuer,
+                &config.verification_token_secret,
+                conn,
+                logger,
+            );
+            assert!(result.is_some());
+
+            let user = result.unwrap();
+            assert_eq!(user.reset_password_token, reset_password_token);
         });
     }
 
