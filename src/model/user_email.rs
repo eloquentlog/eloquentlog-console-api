@@ -248,7 +248,7 @@ impl Activatable for UserEmail {
 }
 
 #[cfg(test)]
-mod data {
+pub mod data {
     use super::*;
 
     use chrono::{Utc, TimeZone};
