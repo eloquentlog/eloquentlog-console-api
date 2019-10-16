@@ -30,8 +30,8 @@ fn test_user_activate_with_invalid_token() {
         assert_eq!(job.kind, job::JobKind::SendUserActivationEmail);
         assert!(!job.args.is_empty());
 
+        let session_id = job.args[1].to_string();
         let token = "invalid-token";
-        let session_id = job.args[2].to_string();
 
         let res = client
             .patch(format!("/_api/user/activate/{}", session_id))
@@ -72,8 +72,8 @@ fn test_user_activate_with_invalid_session_id() {
         assert_eq!(job.kind, job::JobKind::SendUserActivationEmail);
         assert!(!job.args.is_empty());
 
-        let token = job.args[1].to_string();
         let session_id = "invalid-session_id";
+        let token = job.args[2].to_string();
 
         let res = client
             .patch(format!("/_api/user/activate/{}", session_id))
@@ -114,8 +114,7 @@ fn test_user_activate_without_authorization_header() {
         assert_eq!(job.kind, job::JobKind::SendUserActivationEmail);
         assert!(!job.args.is_empty());
 
-        let _ = job.args[1].to_string();
-        let session_id = job.args[2].to_string();
+        let session_id = job.args[1].to_string();
 
         let res = client
             .patch(format!("/_api/user/activate/{}", session_id))
@@ -155,8 +154,8 @@ fn test_user_activate_without_x_requested_with_header() {
         assert_eq!(job.kind, job::JobKind::SendUserActivationEmail);
         assert!(!job.args.is_empty());
 
-        let token = job.args[1].to_string();
-        let session_id = job.args[2].to_string();
+        let session_id = job.args[1].to_string();
+        let token = job.args[2].to_string();
 
         let res = client
             .patch(format!("/_api/user/activate/{}", session_id))
@@ -196,8 +195,8 @@ fn test_user_activate() {
         assert_eq!(job.kind, job::JobKind::SendUserActivationEmail);
         assert!(!job.args.is_empty());
 
-        let token = job.args[1].to_string();
-        let session_id = job.args[2].to_string();
+        let session_id = job.args[1].to_string();
+        let token = job.args[2].to_string();
 
         let res = client
             .patch(format!("/_api/user/activate/{}", session_id))
