@@ -32,8 +32,8 @@ fn test_login_with_wrong_username() {
         assert_eq!(job.kind, job::JobKind::SendUserActivationEmail);
         assert!(!job.args.is_empty());
 
-        let token = job.args[1].to_string();
-        let session_id = job.args[2].to_string();
+        let session_id = job.args[1].to_string();
+        let token = job.args[2].to_string();
 
         let res = client
             .patch(format!("/_api/user/activate/{}", session_id))
@@ -88,8 +88,8 @@ fn test_login_with_wrong_password() {
         assert_eq!(job.kind, job::JobKind::SendUserActivationEmail);
         assert!(!job.args.is_empty());
 
-        let token = job.args[1].to_string();
-        let session_id = job.args[2].to_string();
+        let session_id = job.args[1].to_string();
+        let token = job.args[2].to_string();
 
         let res = client
             .patch(format!("/_api/user/activate/{}", session_id))
@@ -144,8 +144,8 @@ fn test_login() {
         assert_eq!(job.kind, job::JobKind::SendUserActivationEmail);
         assert!(!job.args.is_empty());
 
-        let token = job.args[1].to_string();
-        let session_id = job.args[2].to_string();
+        let session_id = job.args[1].to_string();
+        let token = job.args[2].to_string();
 
         let res = client
             .patch(format!("/_api/user/activate/{}", session_id))

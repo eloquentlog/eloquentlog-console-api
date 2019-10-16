@@ -58,7 +58,7 @@ fn test_register() {
         assert_eq!(job.kind, job::JobKind::SendUserActivationEmail);
         assert!(!job.args.is_empty());
 
-        let session_id = job.args[2].to_string();
+        let session_id = job.args[1].to_string();
         let result: Result<String, RedisError> = conn.ss.get(session_id);
         assert!(result.is_ok());
     });
