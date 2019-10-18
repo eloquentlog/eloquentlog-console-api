@@ -24,12 +24,13 @@ mod error;
 mod registration;
 mod top;
 mod user;
+mod password_reset_request;
 
 use std::panic::{self, AssertUnwindSafe};
 use regex::Regex;
 
-use diesel::prelude::*;
 use diesel::PgConnection;
+use diesel::prelude::*;
 use dotenv::dotenv;
 use chrono::{Utc, TimeZone};
 use fnv::FnvHashMap;
@@ -213,10 +214,31 @@ fn load_user(
 {
     user.change_password(&make_raw_password(&user));
 
-    diesel::insert_into(model::user::users::table)
-        .values(user)
-        .get_result::<model::user::User>(db_conn)
-        .unwrap_or_else(|e| panic!("Error at inserting: {}", e))
+    let result: Result<model::user::User, diesel::result::Error> = db_conn
+        .build_transaction()
+        .run::<model::user::User, diesel::result::Error, _>(|| {
+            let q = diesel::insert_into(model::user::users::table).values(user);
+            user = q
+                .get_result::<model::user::User>(db_conn)
+                .unwrap_or_else(|e| panic!("e: {}", e));
+
+            let q = diesel::insert_into(model::user_email::user_emails::table)
+                .values((
+                    model::user_email::user_emails::user_id.eq(&user.id),
+                    Some(model::user_email::user_emails::email.eq(&user.email)),
+                    model::user_email::user_emails::role
+                        .eq(model::user_email::UserEmailRole::Primary),
+                    model::user_email::user_emails::identification_state.eq(
+                        model::user_email::UserEmailIdentificationState::Done,
+                    ),
+                ));
+            let _ = q
+                .get_result::<model::user_email::UserEmail>(db_conn)
+                .unwrap_or_else(|e| panic!("e: {}", e));
+
+            Ok(user)
+        });
+    result.unwrap()
 }
 
 /// Creates raw password string.
