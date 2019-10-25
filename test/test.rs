@@ -24,6 +24,7 @@ mod error;
 mod registration;
 mod top;
 mod user;
+mod password_reset;
 mod password_reset_request;
 
 use std::panic::{self, AssertUnwindSafe};
