@@ -153,16 +153,6 @@ watch\:test: | watch\:test\:all
 # }}}
 
 # schema -- {{{
-schema\:migration\:status:  ## List migrations
-	@if [ -f "$$(pwd)/.env" ]; then \
-	  source $$(pwd)/.env && \
-		export $$(cut -d= -f1 $$(pwd)/.env | grep -vE "^(#|$$)"); \
-	fi; \
-	export DATABASE_URL="$(VAR_DATABASE_URL)"; \
-	diesel setup --migration-dir $(MIGRATION_DIRECTORY) && \
-	diesel migration list --migration-dir $(MIGRATION_DIRECTORY)
-.PHONY: schema\:migration\:status
-
 schema\:migration\:commit:  ## Run all migrations
 	@if [ -f "$$(pwd)/.env" ]; then \
 	  source $$(pwd)/.env && \
@@ -179,9 +169,17 @@ schema\:migration\:revert:  ## Rollback a latest migration
 		export $$(cut -d= -f1 $$(pwd)/.env | grep -vE "^(#|$$)"); \
 	fi; \
 	export DATABASE_URL="$(VAR_DATABASE_URL)"; \
-	diesel setup --migration-dir $(MIGRATION_DIRECTORY) && \
 	diesel migration revert --migration-dir $(MIGRATION_DIRECTORY)
 .PHONY: schema\:migration\:revert
+
+schema\:migration\:status:  ## List migrations
+	@if [ -f "$$(pwd)/.env" ]; then \
+	  source $$(pwd)/.env && \
+		export $$(cut -d= -f1 $$(pwd)/.env | grep -vE "^(#|$$)"); \
+	fi; \
+	export DATABASE_URL="$(VAR_DATABASE_URL)"; \
+	diesel migration list --migration-dir $(MIGRATION_DIRECTORY)
+.PHONY: schema\:migration\:status
 # }}}
 
 # other utilities -- {{{
