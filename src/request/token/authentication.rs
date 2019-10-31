@@ -1,13 +1,15 @@
 /// The token for user authentication.
 use std::ops::Deref;
 
-use rocket::{Request, State, request};
-use rocket::http::Status;
-use rocket::request::FromRequest;
+use rocket::{Request, State};
+use rocket::request::{FromRequest, Outcome};
+use rocket_slog::SyncLogger;
 
 use config::Config;
 use model::token::AuthenticationClaims;
 use request::token::{AUTHORIZATION_HEADER_PREFIX, verify_token};
+
+use {bad_request_by, unprocessable_entity_by};
 
 pub struct AuthenticationToken(pub String);
 
@@ -32,18 +34,20 @@ pub enum AuthenticationTokenError {
 impl<'a, 'r> FromRequest<'a, 'r> for AuthenticationToken {
     type Error = AuthenticationTokenError;
 
-    fn from_request(
-        req: &'a Request<'r>,
-    ) -> request::Outcome<Self, Self::Error> {
+    fn from_request(req: &'a Request<'r>) -> Outcome<Self, Self::Error> {
+        let logger = req.guard::<State<SyncLogger>>().unwrap();
+
+        if req.headers().get_one("X-Requested-With") != Some("XMLHttpRequest") {
+            error!(logger, "request: {}", req);
+            return bad_request_by!(AuthenticationTokenError::Invalid);
+        }
+
         let headers: Vec<_> = req.headers().get("Authorization").collect();
         match headers.len() {
             1 => {
                 let h = &headers[0];
                 if !h.starts_with(AUTHORIZATION_HEADER_PREFIX) {
-                    return request::Outcome::Failure((
-                        Status::BadRequest,
-                        AuthenticationTokenError::Invalid,
-                    ));
+                    return bad_request_by!(AuthenticationTokenError::Invalid);
                 }
 
                 // TODO:
@@ -54,10 +58,7 @@ impl<'a, 'r> FromRequest<'a, 'r> for AuthenticationToken {
                 let mut token =
                     h[AUTHORIZATION_HEADER_PREFIX.len()..].to_string();
                 if !token.contains('.') {
-                    return request::Outcome::Failure((
-                        Status::BadRequest,
-                        AuthenticationTokenError::Invalid,
-                    ));
+                    return bad_request_by!(AuthenticationTokenError::Invalid);
                 }
                 // NOTE:
                 // append signature read from cookie to the parts sent as
@@ -69,33 +70,25 @@ impl<'a, 'r> FromRequest<'a, 'r> for AuthenticationToken {
                     .or_else(|| Some("".to_string()))
                     .unwrap();
 
+                // TODO: handle empty (unexpected) token
+
                 let config = req.guard::<State<Config>>().unwrap();
                 match verify_token::<AuthenticationClaims>(
                     &token,
                     &config.authentication_token_issuer,
                     &config.authentication_token_secret,
                 ) {
-                    Ok(t) => request::Outcome::Success(AuthenticationToken(t)),
-                    _ => {
-                        request::Outcome::Failure((
-                            Status::BadRequest,
-                            AuthenticationTokenError::Invalid,
-                        ))
+                    Ok(t) => Outcome::Success(AuthenticationToken(t)),
+                    Err(e) => {
+                        error!(logger, "error: {}", e);
+                        unprocessable_entity_by!(
+                            AuthenticationTokenError::Invalid
+                        )
                     },
                 }
             },
-            0 => {
-                request::Outcome::Failure((
-                    Status::BadRequest,
-                    AuthenticationTokenError::Missing,
-                ))
-            },
-            _ => {
-                request::Outcome::Failure((
-                    Status::BadRequest,
-                    AuthenticationTokenError::BadCount,
-                ))
-            },
+            0 => bad_request_by!(AuthenticationTokenError::Missing),
+            _ => bad_request_by!(AuthenticationTokenError::BadCount),
         }
     }
 }
