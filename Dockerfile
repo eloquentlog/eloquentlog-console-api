@@ -40,4 +40,11 @@ RUN set -eux; \
 
 COPY --from=builder /build/target/release/${BINARY} .
 
+# TODO:
+# - only for server (run in shell script or not?)
+# - require make, diesel-cli and psql
+# RUN psql $DATABASE_URL -c "CREATE EXTENSION IF NOT EXISTS \"uuid-ossp\""
+# RUN make schema:migration:commit
+# RUN make schema:migration:status
+
 CMD /app/${BINARY}

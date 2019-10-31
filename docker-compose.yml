@@ -1,0 +1,47 @@
+version: '3.7'
+services:
+  postgres:
+    container_name: postgres
+    image: postgres:11
+    environment:
+      # TODO
+      PGDATA: /var/lib/postgresql/data
+      POSTGRES_DB: eloquentlog
+      POSTGRES_PASSWORD: eloquentlog
+      POSTGRES_USER: eloquentlog
+    volumes:
+      - ./tmp/postgresql/data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  redis:
+    container_name: redis
+    image: redis:5
+    ports:
+      - "6379:6379"
+
+  server:
+    container_name: server
+    image: eloquentlog/eloquentlog-backend-api-server:latest
+    build:
+      context: .
+      args:
+        - BINARY=server
+    env_file: ./.env.docker
+    ports:
+      - "8000:8000"
+    depends_on:
+      - postgres
+      - redis
+
+  worker:
+    container_name: worker
+    image: eloquentlog/eloquentlog-backend-api-worker:latest
+    build:
+      context: .
+      args:
+        - BINARY=worker
+    env_file: ./.env.docker
+    depends_on:
+      - postgres
+      - redis
