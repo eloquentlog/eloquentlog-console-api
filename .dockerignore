@@ -12,5 +12,6 @@ tmp
 .gitignore
 .gitlab-ci.yml
 .rustfmt.toml
+docker-compose.yml
 Procfile
 RustConfig
