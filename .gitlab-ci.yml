@@ -3,6 +3,7 @@ stages:
   - verify
   - test
   - build
+  # - deploy
 
 .postgresql:
   - &postgresql
@@ -165,3 +166,38 @@ build-release:
     - make build:release
   only:
     - tags
+
+# TODO: as an experiment
+#
+# deploy-development:
+#   stage: deploy
+#   <<: *rust
+#   variables:
+#     PROJECT_ID: eloquentlog
+#     SERVICE_NAME: backend-api-dev
+#     REGION_NAME: europe-west1
+#     REGISTRY_HOST: gcr.io
+#     IMAGE_NAME: eloquentlog-backend-api
+#     IMAGE_TAG: latest
+#   before_script:
+#     - mkdir -p /app && cd /app
+#     - wget https://dl.google.com/dl/cloudsdk/release/google-cloud-sdk.tar.gz
+#     - tar zxvf google-cloud-sdk.tar.gz && \
+#       ./google-cloud-sdk/install.sh --usage-reporting=false --path-update=true
+#     - source /root/.bashrc
+#     - gcloud components install beta
+#     - echo $CLOUD_RUN_SA_KEY > $HOME/cloud_run_sa_key.json
+#   script:
+#     - gcloud auth activate-service-account \
+#       --key-file $HOME/cloud_run_sa_key.json
+#     - gcloud beta run deploy $service \
+#       --region $REGION_NAME \
+#       --project $PROJECT_ID \
+#       --image $REGISTRY_HOST/$PROJECT_ID/$IMAGE_NAME:$IMAGE_TAG
+#     - gcloud beta run services add-iam-policy-binding $service \
+#       --region $REGION_NAME \
+#       --project $PROJECT_ID \
+#       --member="allUsers" \
+#       --role="roles/run.invoker"
+#   only:
+#     - tags
