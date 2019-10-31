@@ -51,6 +51,47 @@ Build
     # debug
     % make build
 
+    # see help for building
+    % make help | grep 'build '
+    ...
+
+
+Docker
+~~~~~~
+
+Prepare ``.env.production``.
+
+.. code:: zsh
+
+    # server
+    % docker build --file Dockerfile \
+      --build-arg BINARY=server \
+      --tag eloquentlog/eloquentlog-backend-api-server:latest .
+    % docker run --env_file ./.env.production \
+      -it eloquentlog/eloquentlog-backend-api-server:latest
+
+    # worker
+    % docker build --file Dockerfile \
+      --build-arg BINARY=worker \
+      --tag eloquentlog/eloquentlog-backend-api-worker:latest .
+    % docker run --env_file ./.env.production \
+      -it eloquentlog/eloquentlog-backend-api-worker:latest
+
+Note
+^^^^
+
+As a common issue, ``--env_file`` doesn't handle double-quoted string like
+``FOO="bar"`` because it's not evaluated via shell.
+
+
+.. code:: zsh
+
+    # this might be something help if you want to connect to host from guest
+    % alias host="ip route show 0.0.0.0/0 | grep -Eo 'via \S+' | awk '{print \$2}'"
+    % docker run --add-host=postgres:$(host) --add-host=redis:$(host) \
+      --env-file ./.env.production \
+      --rm -it eloquentlog/eloquentlog-backend-api-server
+
 
 Development
 -----------
