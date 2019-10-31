@@ -95,34 +95,56 @@ cov: | coverage
 # }}}
 
 # build -- {{{
-build\:debug:  ## build debug [alias: build]
+build\:debug:  ## build targets in debug mode [alias: build]
 	cargo build
 .PHONY: build\:debug
 
 build: | build\:debug
 .PHONY: build
 
-build\:release:  ## Build release
+build\:debug\:server:  ## build only server binary in debug mode [alias: build:server]
+	cargo build --bin server
+.PHONY: build\:debug\:server
+
+build\:server: | build\:debug\:server
+.PHONY: build\:server
+
+build\:debug\:worker:  ## build only worker binary in debug mode [alias: build:worker]
+	cargo build --bin worker
+.PHONY: build\:debug\:worker
+
+build\:worker: | build\:debug\:worker
+.PHONY: build\:worker
+
+build\:release:  ## Build targets in release mode
 	cargo build --release
 .PHONY: build\:release
+
+build\:release\:server:  ## build only server binary in release mode
+	cargo build --bin server --release
+.PHONY: build\:release\:server
+
+build\:release\:worker:  ## build only worker binary in release mode
+	cargo build --bin worker --release
+.PHONY: build\:release\:worker
 # }}}
 
 # watch -- {{{
-watch\:serve:  ## Start watch process for development server [alias: serve]
+watch\:server:  ## Start watch process for development server [alias: server]
 	@cargo watch --exec 'run --bin server' --delay 0.3 \
 	  --ignore '(\.tool|tmp|migration|src\/worker)/\*'
-.PHONY: watch\:serve
+.PHONY: watch\:server
 
-serve: | watch\:serve
-.PHONY: serve
+server: | watch\:server
+.PHONY: server
 
-watch\:queue:  ## Start watch process for development worker [alias: queue]
+watch\:worker:  ## Start watch process for development worker [alias: worker]
 	@cargo watch --exec 'run --bin worker' --delay 0.3 \
 	  --ignore '(\.tool|tmp|migration|src\/server)/\*'
-.PHONY: watch\:queue
+.PHONY: watch\:worker
 
-queue: | watch\:queue
-.PHONY: queue
+worker: | watch\:worker
+.PHONY: worker
 
 watch\:check:  ## Start watch process for check
 	@cargo watch --postpone --exec 'check --all --verbose'
