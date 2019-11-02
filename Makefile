@@ -28,7 +28,7 @@ setup: | setup\:all
 # }}}
 
 # verify -- {{{
-verify\:check:  ## Check rust syntax [alias: check]
+verify\:check:  ## Check Rust syntax [alias: check]
 	@cargo check --all --verbose
 .PHONY: verify\:check
 
@@ -84,7 +84,7 @@ test: | test\:all
 # }}}
 
 # coverage -- {{{
-coverage:  ## Generate coverage report of unit tests only for lib using kcov [alias: cov]
+coverage:  ## Generate coverage report of unit tests only for lib using Kcov [alias: cov]
 	@cargo test --lib --no-run
 	@./.tool/setup-kcov
 	./.tool/get-covered eloquentlog_backend_api
