@@ -131,6 +131,33 @@ Testing
     % make test
 
 
+Deployment
+----------
+
+.. code:: zsh
+
+    # e.g. Build server
+    % docker build --file Dockerfile \
+      --build-arg BINARY=server \
+      --tag eloquentlog/eloquentlog-backend-api-server:latest .
+
+    # e.g. Publish the image to Cloud Registry on Google Cloud Platform
+    # - https://cloud.google.com/container-registry/docs/advanced-authentication
+    # - https://github.com/GoogleCloudPlatform/docker-credential-gcr
+    % VERSION=...
+    % OS=linux
+    % ARCH=amd64
+    % curl -fsSL "https://.../v${VERSION}/..._${OS}_${ARCH}-${VERSION}.tar.gz" \
+      | tar xz --to-stdout ./docker-credential-gcr \
+      > .tool/docker-credential-gcr && \
+      chmod +x .tool/docker-credential-gcr
+    % .tool/docker-credential-gcr configure-docker
+
+    % PROJECT_ID=...
+    % HOST_NAME=eu.gcr.io
+    % docker push $HOST_NAME/${PROJECT-ID}/eloquentlog-backend-api-server:latest
+
+
 License
 -------
 

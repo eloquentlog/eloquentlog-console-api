@@ -1,0 +1,40 @@
+steps:
+  - id: 'cache'
+    name: 'gcr.io/cloud-builders/docker'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        docker pull ${_REGISTRY_HOST}/$PROJECT_ID/${_NAME}-server:latest || \
+        exit 0
+
+  - id: 'latest'
+    name: 'gcr.io/cloud-builders/docker'
+    args: [
+      'build',
+      '--file', 'Dockerfile',
+      '--build-arg', 'BINARY=server',
+      '--tag', '${_REGISTRY_HOST}/$PROJECT_ID/${_NAME}-server:latest',
+      '--cache-from', '${_REGISTRY_HOST}/$PROJECT_ID/${_NAME}-server:latest',
+      '.'
+    ]
+    wait_for: ['cache']
+
+  - name: 'gcr.io/cloud-builders/gcloud'
+    args: [
+      'beta', 'run', 'deploy', '${_NAME}-server',
+      '--image', '${_REGISTRY_HOST}/$PROJECT_ID/${_NAME}-server:latest',
+      '--region', '${_REGISTRY_REGION}',
+      '--platform', 'managed',
+      '--allow-unauthenticated'
+    ]
+    wait_for: ['latest']
+
+substitutions:
+  _NAME: 'eloquentlog-backend-api'
+  _REGISTRY_HOST: 'eu.gcr.io'
+  _REGISTRY_REGION: 'europe-west1'
+logsBucket: 'gs://${PROJECT_ID}_cloudbuild/'
+timeout: '3600s'
+tags: ['latest']
+images: ['${_REGISTRY_HOST}/$PROJECT_ID/${_NAME}-server']
