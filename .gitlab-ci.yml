@@ -61,6 +61,10 @@ stages:
     - *vendor
   <<: *cache
 
+# TODO:
+# This way would not be good, since we can't run pipelines concurrently
+# on CI :'(
+# However, we'd like to use same cache across pull requests if possible.
 setup-checksum:
   stage: setup
   image: grauwoelfchen/rust-vet-tools:nightly

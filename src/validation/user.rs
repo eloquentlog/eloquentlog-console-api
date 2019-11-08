@@ -426,7 +426,7 @@ mod test {
             for (i, (value, message)) in tests.iter().enumerate() {
                 let data = &Json(RequestData {
                     email: "postmaster@example.org".to_string(),
-                    username: value.to_string(),
+                    username: (*value).to_string(),
                     password: "Passw0rd".to_string(),
 
                     ..Default::default()
@@ -440,7 +440,7 @@ mod test {
                     assert_eq!(1, errors.len());
                     assert_eq!("username", errors[0].field);
                     assert_eq!(
-                        vec![message.to_string()],
+                        vec![(*message).to_string()],
                         errors[0].messages,
                         "#{} username: {}",
                         i,
@@ -486,7 +486,7 @@ mod test {
             for (i, (value, messages)) in tests.iter().enumerate() {
                 let data = &Json(RequestData {
                     email: "postmaster@example.org".to_string(),
-                    username: value.to_string(),
+                    username: (*value).to_string(),
                     password: "Passw0rd".to_string(),
 
                     ..Default::default()
@@ -551,7 +551,7 @@ mod test {
             for value in tests.iter() {
                 let data = &Json(RequestData {
                     email: "postmaster@example.org".to_string(),
-                    username: value.to_string(),
+                    username: (*value).to_string(),
                     password: "Passw0rd".to_string(),
 
                     ..Default::default()
@@ -572,7 +572,7 @@ mod test {
             for (i, value) in tests.iter().enumerate() {
                 let data = &Json(RequestData {
                     email: "postmaster@example.org".to_string(),
-                    username: value.to_string(),
+                    username: (*value).to_string(),
                     password: "Passw0rd".to_string(),
 
                     ..Default::default()
@@ -752,7 +752,7 @@ mod test {
                 let data = &Json(RequestData {
                     email: "postmaster@example.org".to_string(),
                     username: "username".to_string(),
-                    password: value.to_string(),
+                    password: (*value).to_string(),
 
                     ..Default::default()
                 });
@@ -765,7 +765,7 @@ mod test {
                     assert_eq!(1, errors.len());
                     assert_eq!("password", errors[0].field);
                     assert_eq!(
-                        vec![message.to_string()],
+                        vec![(*message).to_string()],
                         errors[0].messages,
                         "#{} password: {}",
                         i,
