@@ -26,6 +26,7 @@ pub enum AuthenticationTokenError {
     BadCount,
     Invalid,
     Missing,
+    Unknown,
 }
 
 // Extract and verify a token given through HTTP Authentication header.
@@ -51,30 +52,32 @@ impl<'a, 'r> FromRequest<'a, 'r> for AuthenticationToken {
                 }
 
                 // TODO:
-                // * check X-Requested-With header
                 // * check Origin and Referer header
                 // * validate token format
 
-                let mut token =
-                    h[AUTHORIZATION_HEADER_PREFIX.len()..].to_string();
+                let token = h[AUTHORIZATION_HEADER_PREFIX.len()..].to_string();
                 if !token.contains('.') {
                     return bad_request_by!(AuthenticationTokenError::Invalid);
                 }
+
                 // NOTE:
-                // append signature read from cookie to the parts sent as
-                // a authentication header
-                let cookies = req.cookies();
-                token = cookies
-                    .get("signature")
+                // append signature taken by using session id to the parts
+                // extracted from authorization header.
+                // TOD: use get_private
+                let authentication_token: String = req
+                    .cookies()
+                    .get("sign")
                     .map(|c| token + "." + c.value())
                     .or_else(|| Some("".to_string()))
                     .unwrap();
 
-                // TODO: handle empty (unexpected) token
+                if authentication_token.is_empty() {
+                    return bad_request_by!(AuthenticationTokenError::Invalid);
+                }
 
                 let config = req.guard::<State<Config>>().unwrap();
                 match verify_token::<AuthenticationClaims>(
-                    &token,
+                    &authentication_token,
                     &config.authentication_token_issuer,
                     &config.authentication_token_secret,
                 ) {

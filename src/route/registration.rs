@@ -96,19 +96,18 @@ pub fn register<'a>(
 
             if let Ok((id, raw_token)) = result {
                 if let Some((token, sign)) = split_token(raw_token) {
+                    // TODO: use general value
+                    let session_id = UserEmail::generate_token();
+                    let key = format!("ur-{}", session_id);
+
                     // Instead of saving the signature into a cookie,
                     // putting it in session store.
                     //
                     // Because we need to make it available users to activate
                     // the account also via another device than signed up, so
                     // we can't rely on a cookie of http client (browser).
-                    let signature = sign.value();
-                    // TODO: use general value
-                    let session_id = UserEmail::generate_token();
-
-                    // TODO: Async with tokio? (consider about retrying)
                     let result: Result<String, RedisError> = ss_conn
-                        .set_ex(&session_id, signature, expires_at as usize)
+                        .set_ex(&key, sign, expires_at as usize)
                         .map_err(|e| {
                             error!(logger, "error: {}", e);
                             e

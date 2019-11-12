@@ -1,6 +1,6 @@
 use chrono::Utc;
 use rocket::State;
-use rocket::http::Status;
+use rocket::http::{Cookie, Cookies, Status};
 use rocket::response::Response as RawResponse;
 use rocket_slog::SyncLogger;
 
@@ -11,7 +11,7 @@ use model::Authenticatable;
 use model::token::{AuthenticationClaims, Claims, TokenData};
 use request::user::authentication::UserAuthentication as RequestData;
 use response::{Response, no_content_for};
-use util::split_token;
+use util::{split_token, make_cookie};
 
 #[options("/login")]
 pub fn login_preflight<'a>() -> RawResponse<'a> {
@@ -60,7 +60,8 @@ pub fn login<'a>(
                 },
             };
 
-            res.cookies(vec![sign]).format(json!({ "token": token }))
+            let cookie = make_cookie(sign);
+            res.cookies(vec![cookie]).format(json!({ "token": token }))
         },
         _ => {
             warn!(logger, "login failed: username {}", data.username);
@@ -72,12 +73,22 @@ pub fn login<'a>(
     }
 }
 
+// logout
+//
+// * Remove a cookie
+// * Delete session value in Redis
 #[post("/logout", format = "json")]
-pub fn logout(user: &User, logger: SyncLogger) -> Response {
+pub fn logout<'a>(
+    mut cookies: Cookies,
+    user: &User,
+    logger: SyncLogger,
+) -> Response<'a>
+{
     let res: Response = Default::default();
-
-    // TODO
     info!(logger, "user: {}", user.uuid);
 
-    res.status(Status::UnprocessableEntity)
+    // TODO: remove_private
+    cookies.remove(Cookie::named("sign"));
+
+    res.status(Status::Ok)
 }
