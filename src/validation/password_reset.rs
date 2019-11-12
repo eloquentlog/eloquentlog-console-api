@@ -216,7 +216,7 @@ mod test {
             for (i, (value, message)) in tests.iter().enumerate() {
                 let data = &Json(RequestData {
                     username: "username".to_string(),
-                    password: value.to_string(),
+                    password: (*value).to_string(),
                 });
                 let v = Validator { data, logger };
 
@@ -227,7 +227,7 @@ mod test {
                     assert_eq!(1, errors.len());
                     assert_eq!("password", errors[0].field);
                     assert_eq!(
-                        vec![message.to_string()],
+                        vec![(*message).to_string()],
                         errors[0].messages,
                         "#{} password: {}",
                         i,

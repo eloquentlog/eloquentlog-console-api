@@ -165,7 +165,7 @@ mod test {
         for (i, (s, expected)) in tests.iter().enumerate() {
             assert_eq!(
                 *expected,
-                contain_only_alphanumeric_or_underscore()(&s.to_string())
+                contain_only_alphanumeric_or_underscore()(&(*s).to_string())
                     .is_ok(),
                 "#{} value: {}",
                 i,
@@ -187,7 +187,8 @@ mod test {
         for (i, (s, expected)) in tests.iter().enumerate() {
             assert_eq!(
                 *expected,
-                not_contain_only_digits_or_underscore()(&s.to_string()).is_ok(),
+                not_contain_only_digits_or_underscore()(&(*s).to_string())
+                    .is_ok(),
                 "#{} value: {}",
                 i,
                 s
@@ -208,8 +209,10 @@ mod test {
         for (i, (given, s, expected)) in tests.iter().enumerate() {
             assert_eq!(
                 *expected,
-                not_contain_if_given(Some(given.to_string()))(&s.to_string())
-                    .is_ok(),
+                not_contain_if_given(Some((*given).to_string()))(
+                    &(*s).to_string(),
+                )
+                .is_ok(),
                 "#{} given: {} value: {}",
                 i,
                 given,
@@ -233,8 +236,8 @@ mod test {
         for (i, (needle, s, expected)) in tests.iter().enumerate() {
             assert_eq!(
                 *expected,
-                not_overlap_with(field_name)(needle.to_string())(
-                    &s.to_string()
+                not_overlap_with(field_name)((*needle).to_string())(
+                    &(*s).to_string()
                 )
                 .is_ok(),
                 "#{} field_name: {}, needle: {} value: {}",
@@ -259,7 +262,7 @@ mod test {
         for (i, (needle, s, expected)) in tests.iter().enumerate() {
             assert_eq!(
                 *expected,
-                not_start_with(needle)(&s.to_string()).is_ok(),
+                not_start_with(needle)(&(*s).to_string()).is_ok(),
                 "#{} needle: {} value: {}",
                 i,
                 needle,
@@ -281,7 +284,7 @@ mod test {
         for (i, (s, expected)) in tests.iter().enumerate() {
             assert_eq!(
                 *expected,
-                not_start_with_digits()(&s.to_string()).is_ok(),
+                not_start_with_digits()(&(*s).to_string()).is_ok(),
                 "#{} value: {}",
                 i,
                 s

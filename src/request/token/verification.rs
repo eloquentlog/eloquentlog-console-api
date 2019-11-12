@@ -5,15 +5,17 @@
 use std::ops::Deref;
 
 use redis::{Commands, RedisError};
-use rocket::{Request, State, request, request::Outcome};
-use rocket::http::{Status, RawStr};
-use rocket::request::FromRequest;
+use rocket::{Request, State};
+use rocket::http::RawStr;
+use rocket::request::{FromRequest, Outcome};
 use rocket_slog::SyncLogger;
 
 use config::Config;
 use model::token::VerificationClaims;
 use request::token::{AUTHORIZATION_HEADER_PREFIX, verify_token};
 use ss::SsConn;
+
+use {bad_request_by, not_found_by, unprocessable_entity_by};
 
 pub struct VerificationToken(pub String);
 
@@ -33,38 +35,17 @@ pub enum VerificationTokenError {
     Unknown,
 }
 
-fn respond_as_expired() -> Outcome<VerificationToken, VerificationTokenError> {
-    Outcome::Failure((
-        Status::UnprocessableEntity,
-        VerificationTokenError::Expired,
-    ))
-}
-
-fn respond_as_invalid() -> Outcome<VerificationToken, VerificationTokenError> {
-    Outcome::Failure((Status::BadRequest, VerificationTokenError::Invalid))
-}
-
-fn respond_as_missing() -> Outcome<VerificationToken, VerificationTokenError> {
-    Outcome::Failure((Status::BadRequest, VerificationTokenError::Missing))
-}
-
-fn respond_as_unknown() -> Outcome<VerificationToken, VerificationTokenError> {
-    Outcome::Failure((Status::NotFound, VerificationTokenError::Unknown))
-}
-
 // Extract and verify verification token given through HTTP Authorization
 // header and a private cookie.
 impl<'a, 'r> FromRequest<'a, 'r> for VerificationToken {
     type Error = VerificationTokenError;
 
-    fn from_request(
-        req: &'a Request<'r>,
-    ) -> request::Outcome<Self, Self::Error> {
+    fn from_request(req: &'a Request<'r>) -> Outcome<Self, Self::Error> {
         let logger = req.guard::<State<SyncLogger>>().unwrap();
 
         if req.headers().get_one("X-Requested-With") != Some("XMLHttpRequest") {
             error!(logger, "request: {}", req);
-            return respond_as_invalid();
+            return bad_request_by!(VerificationTokenError::Invalid);
         }
 
         let headers: Vec<_> = req.headers().get("Authorization").collect();
@@ -72,7 +53,7 @@ impl<'a, 'r> FromRequest<'a, 'r> for VerificationToken {
             1 => {
                 let h = &headers[0];
                 if !h.starts_with(AUTHORIZATION_HEADER_PREFIX) {
-                    return respond_as_invalid();
+                    return bad_request_by!(VerificationTokenError::Invalid);
                 }
 
                 // TODO:
@@ -81,7 +62,7 @@ impl<'a, 'r> FromRequest<'a, 'r> for VerificationToken {
 
                 let token = h[AUTHORIZATION_HEADER_PREFIX.len()..].to_string();
                 if !token.contains('.') {
-                    return respond_as_invalid();
+                    return bad_request_by!(VerificationTokenError::Invalid);
                 }
                 // NOTE:
                 // append signature taken by session id to the parts extracted
@@ -94,7 +75,7 @@ impl<'a, 'r> FromRequest<'a, 'r> for VerificationToken {
                     .unwrap_or_else(|| "".into());
 
                 if session_id.is_empty() {
-                    return respond_as_invalid();
+                    return bad_request_by!(VerificationTokenError::Invalid);
                 }
 
                 let result: Result<String, RedisError> =
@@ -103,7 +84,7 @@ impl<'a, 'r> FromRequest<'a, 'r> for VerificationToken {
                         e
                     });
                 if result.is_err() {
-                    return respond_as_unknown();
+                    return not_found_by!(VerificationTokenError::Unknown);
                 }
 
                 let verification_token = token + "." + &result.unwrap();
@@ -113,18 +94,20 @@ impl<'a, 'r> FromRequest<'a, 'r> for VerificationToken {
                     &config.verification_token_issuer,
                     &config.verification_token_secret,
                 ) {
-                    Ok(t) => request::Outcome::Success(VerificationToken(t)),
+                    Ok(t) => Outcome::Success(VerificationToken(t)),
                     Err(e) => {
                         error!(logger, "error: {}", e);
-                        respond_as_expired()
+                        unprocessable_entity_by!(
+                            VerificationTokenError::Expired
+                        )
                     },
                 }
             },
             0 => {
                 error!(logger, "error: Authorization header is missing");
-                respond_as_missing()
+                bad_request_by!(VerificationTokenError::Missing)
             },
-            _ => respond_as_invalid(),
+            _ => bad_request_by!(VerificationTokenError::Invalid),
         }
     }
 }
