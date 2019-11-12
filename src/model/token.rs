@@ -348,7 +348,7 @@ mod test {
                 tests.iter().enumerate()
             {
                 let data = TokenData {
-                    value: value.to_string(),
+                    value: (*value).to_string(),
                     granted_at: granted_at.timestamp(),
                     expires_at: (*granted_at + Duration::hours(24)).timestamp(),
                 };
