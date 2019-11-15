@@ -256,10 +256,12 @@ release-development:
     CLOUD_SDK_CHECKSUM: f152815d05a2f9374c87be1325a7d3bdbf62720d8fad9acb42dc2312d2e33f4a
     CLOUD_SDK_ARTIFACT: google-cloud-sdk
     CLOUD_SDK_FILENAME: ${CLOUD_SDK_ARTIFACT}-269.0.0-linux-x86_64.tar.gz
-    REGISTRY_HOST: eu.gcr.io
-    REGISTRY_REGION: europe-west1
     # (additional secret variables)
     # GCP_CLOUD_BUILD_CREDENTIAL_JSON: /path/to/credential.json
+    # GCP_CLOUD_BUILD_SUBSTR_ENV_VARS: /path/to/.env.deploy
+    # GCP_CLOUD_SQL_INSTANCE_CONNECTION_NAME: foo-bar-baz-qux-quux
+    # GCP_CLOUD_RUN_SERVICE_NAME: eloquentlog-backend-api
+    # GCP_PROJECT_ID: eloquentlog
   before_script:
     - *sqlite
     - *python
@@ -270,13 +272,23 @@ release-development:
     # NOTE: auth activate-service-account prints logs to $STDERR :'(
     - . .tool/$CLOUD_SDK_ARTIFACT/path.bash.inc;
       gcloud auth activate-service-account
-      --key-file=$GCP_CLOUD_BUILD_CREDENTIAL_JSON --quiet 2>/dev/null
+      --key-file=$GCP_CLOUD_BUILD_CREDENTIAL_JSON
+      --quiet 2>/dev/null
+    - SUBSTITUTIONS=$(
+        cat "${GCP_CLOUD_BUILD_SUBSTR_ENV_VARS}" |
+        grep '^_' |
+        sed -e :a -e 'N;s/\n/,/;ta' |
+        sed -e 's/"//g'
+      )
     - . .tool/$CLOUD_SDK_ARTIFACT/path.bash.inc;
       CLOUDSDK_CORE_PROJECT="${GCP_PROJECT_ID}" gcloud builds submit
       --config=.build.server.yml .
-      --substitutions="_REGISTRY_HOST=${REGISTRY_HOST},_REGISTRY_REGION=${REGISTRY_REGION}"
+      --substitutions="_SERVICE_NAME=${GCP_CLOUD_RUN_SERVICE_NAME},_CLOUD_SQL_INSTANCE_CONNECTION_NAME=${GCP_CLOUD_SQL_INSTANCE_CONNECTION_NAME},${SUBSTITUTIONS}"
+      --async
+      --quiet 2>/dev/null
   only:
-    - release-development@eloquentlog/eloquentlog-backend-api
+    # TODO
+    - master@eloquentlog/eloquentlog-backend-api
     # - /^v.*$/
     # except:
     #   - branches
