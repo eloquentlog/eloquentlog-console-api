@@ -1,4 +1,4 @@
-#![feature(proc_macro_hygiene, decl_macro, custom_attribute)]
+#![feature(proc_macro_hygiene, decl_macro)]
 
 //! Eloquentlog Backend API
 //!
