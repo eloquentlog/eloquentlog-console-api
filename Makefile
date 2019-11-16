@@ -1,9 +1,17 @@
+# schema (diesel)
 VAR_DATABASE_URL := $(if $(ENV),"$$$(shell echo "$(ENV)" | \
 	tr '[:lower:]' '[:upper:]')_DATABASE_URL","$$DATABASE_URL")
+MIGRATION_DIRECTORY := migration
 
 ENV := development
 
-MIGRATION_DIRECTORY := migration
+# deployment
+GCP_PROJECT_ID ?=
+GCP_CLOUD_BUILD_CREDENTIAL_JSON ?=
+GCP_CLOUD_BUILD_SUBSTR_ENV_VARS ?=
+GCP_CLOUD_RUN_SERVICE_NAME_BASE ?=
+GCP_CLOUD_SQL_POSTGRES_INSTANCE ?=
+GCP_CLOUD_STORAGE_LOG_DIRECTORY ?=
 
 # setup -- {{{
 setup\:vendor:  ## Install cargo vendor and run it
@@ -202,6 +210,36 @@ schema\:migration\:status:  ## List migrations
 	export DATABASE_URL="$(VAR_DATABASE_URL)"; \
 	diesel migration list --migration-dir $(MIGRATION_DIRECTORY)
 .PHONY: schema\:migration\:status
+# }}}
+
+# deploy -- {{{
+deploy\:%:  ## deploy {server|worker} on a cluster on Cloud Run (require GCP_XXX env vars)
+	@BUILD_TARGET="$(subst deploy:,,$@)"; \
+	if [ "$${BUILD_TARGET}" != "server" ] && \
+		[ "$${BUILD_TARGET}" != "worker" ]; then \
+		exit; \
+	fi; \
+	CLOUDSDK_CORE_PROJECT="$(GCP_PROJECT_ID)"; \
+	gcloud auth activate-service-account \
+		--key-file=$(GCP_CLOUD_BUILD_CREDENTIAL_JSON); \
+	SUBSTITUTIONS=$(shell \
+		cat $(GCP_CLOUD_BUILD_SUBSTR_ENV_VARS) | \
+		grep '^_' | \
+		sed -e :a -e 'N;s/\n/,/;ta' | \
+	  sed -e 's/"//g' \
+	); \
+	SUBSTITUTIONS=$$(printf "\
+		_BUILD_TARGET_NAME=$${BUILD_TARGET},\
+		_POSTGRES_INSTANCE=$(GCP_CLOUD_SQL_POSTGRES_INSTANCE),\
+		_BUILD_LOGS_BUCKET=$(GCP_CLOUD_STORAGE_LOG_DIRECTORY),\
+		_SERVICE_NAME=$(GCP_CLOUD_RUN_SERVICE_NAME_BASE)-$${BUILD_TARGET},\
+		%s" \
+		"$${SUBSTITUTIONS}" \
+	| sed 's/[[:space:]]//g'); \
+	gcloud builds submit \
+		--config=.build.yml . \
+		--substitutions="$${SUBSTITUTIONS}"
+.PHONY: deploy\:%
 # }}}
 
 # other utilities -- {{{

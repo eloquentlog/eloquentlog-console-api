@@ -9,7 +9,7 @@ tmp
 .env*
 .cargo/vendor
 .clippy.tomml
-.build.*.yml
+.build.yml
 .gcloudignore
 .gitignore
 .gitlab-ci.yml

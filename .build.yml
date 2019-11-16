@@ -1,0 +1,105 @@
+steps:
+  - id: 'cache'
+    name: 'gcr.io/cloud-builders/docker'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        docker pull ${_REGISTRY_HOST}/$PROJECT_ID/${_SERVICE_NAME}:latest || \
+        exit 0
+
+  - id: 'latest'
+    name: 'gcr.io/cloud-builders/docker'
+    args: [
+      'build',
+      '--file', 'Dockerfile',
+      '--build-arg', 'BINARY=${_BUILD_TARGET_NAME}',
+      '--tag', '${_REGISTRY_HOST}/$PROJECT_ID/${_SERVICE_NAME}:latest',
+      '--cache-from', '${_REGISTRY_HOST}/$PROJECT_ID/${_SERVICE_NAME}:latest',
+      '.'
+    ]
+    wait_for: ['cache']
+
+  - name: 'gcr.io/cloud-builders/gcloud'
+    args: [
+      'beta', 'run', 'deploy', '${_SERVICE_NAME}',
+      '--image', '${_REGISTRY_HOST}/$PROJECT_ID/${_SERVICE_NAME}:latest',
+      '--region', '${_REGISTRY_REGION}',
+      '--platform', 'managed',
+      '--add-cloudsql-instances', '${_POSTGRES_INSTANCE}',
+      '--allow-unauthenticated',
+      '--set-env-vars', # [application]
+        'ENV=${_ENV},',
+        '_ROCKET_HOST=${_ROCKET_HOST},',
+        '_ROCKET_PORT=${_ROCKET_PORT},',
+        '_ROCKET_CLI_COLORS=${_ROCKET_CLI_COLORS},',
+        '_ROCKET_KEEP_ALIVE=${_ROCKET_KEEP_ALIVE},',
+        '_APPLICATION_URL=${_APPLICATION_URL},',
+        '_AUTHENTICATION_TOKEN_ISSUER=${_AUTHENTICATION_TOKEN_ISSUER},',
+        '_AUTHENTICATION_TOKEN_KEY_ID=${_AUTHENTICATION_TOKEN_KEY_ID},',
+        '_AUTHENTICATION_TOKEN_SECRET=${_AUTHENTICATION_TOKEN_SECRET},',
+        '_DATABASE_URL=${_DATABASE_URL},',
+        '_MAILER_DOMAIN=${_MAILER_DOMAIN},',
+        '_MAILER_FROM_EMAIL=${_MAILER_FROM_EMAIL},',
+        '_MAILER_FROM_ALIAS=${_MAILER_FROM_ALIAS},',
+        '_MAILER_SMTP_HOST=${_MAILER_SMTP_HOST},',
+        '_MAILER_SMTP_PORT=${_MAILER_SMTP_PORT},',
+        '_MAILER_SMTP_USERNAME=${_MAILER_SMTP_USERNAME},',
+        '_MAILER_SMTP_PASSWORD=${_MAILER_SMTP_PASSWORD},',
+        '_MESSAGE_QUEUE_URL=${_MESSAGE_QUEUE_URL},',
+        '_SESSION_STORE_URL=${_SESSION_STORE_URL},',
+        '_VERIFICATION_TOKEN_ISSUER=${_VERIFICATION_TOKEN_ISSUER},',
+        '_VERIFICATION_TOKEN_KEY_ID=${_VERIFICATION_TOKEN_KEY_ID},',
+        '_VERIFICATION_TOKEN_SECRET=${_VERIFICATION_TOKEN_SECRET},',
+    ]
+    wait_for: ['latest']
+
+substitutions:
+  # [deployment]
+  # -- from args
+  _POSTGRES_INSTANCE: 'foo-bar-baz-qux-quux'
+  _BUILD_TARGET_NAME: 'server'
+  _BUILD_LOGS_BUCKET: '${_PROJECT_ID}_cloudbuild'
+  _SERVICE_NAME: 'eloquentlog-backend-api-server'
+
+  # -- from .env.deploy
+  _REGISTRY_HOST: 'eu.gcr.io'
+  _REGISTRY_REGION: 'europe-west1'
+
+  # [application]
+  # -- from .env.deploy
+  _ENV: 'development'
+  # server
+  _ROCKET_HOST: '0.0.0.0'
+  _ROCKET_PORT: '8080'
+  _ROCKET_CLI_COLORS: 'off'
+  _ROCKET_KEEP_ALIVE: '0'
+  # application
+  _APPLICATION_URL: 'https://example.org'
+  # authentication
+  _AUTHENTICATION_TOKEN_ISSUER: 'org.example.production'
+  _AUTHENTICATION_TOKEN_KEY_ID: 'key_id'
+  _AUTHENTICATION_TOKEN_SECRET: 'secret'
+  # database
+  _DATABASE_URL: 'postgresql://u$er:pa$$w0rd@/dbname?unix_sock=/cloudsql/${_POSTGRES_INSTANCE}/.s.PGSQL.5432'
+  # mailer
+  _MAILER_DOMAIN: 'example.org'
+  _MAILER_FROM_EMAIL: 'no-reply@example.org'
+  _MAILER_FROM_ALIAS: 'Eloquentlog'
+  _MAILER_SMTP_HOST: 'server.tld'
+  _MAILER_SMTP_PORT: '465'
+  _MAILER_SMTP_USERNAME: 'username'
+  _MAILER_SMTP_PASSWORD: 'password'
+  # message queue
+  _MESSAGE_QUEUE_URL: 'redis://h0st:6379/0'
+  # session store
+  _SESSION_STORE_URL: 'redis://h0st:6379/2'
+  # verification
+  _VERIFICATION_TOKEN_ISSUER: 'org.example.production'
+  _VERIFICATION_TOKEN_KEY_ID: 'key_id'
+  _VERIFICATION_TOKEN_SECRET: 'secret'
+
+logsBucket: 'gs://${_BUILD_LOGS_BUCKET}/'
+timeout: '3600s'
+tags: ['latest']
+images: ['${_REGISTRY_HOST}/$PROJECT_ID/${_SERVICE_NAME}']
