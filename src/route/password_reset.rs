@@ -8,23 +8,23 @@ use rocket::response::Response as RawResponse;
 use rocket_contrib::json::Json;
 use rocket_slog::SyncLogger;
 
-use config::Config;
-use db::DbConn;
-use job::{Job, JobKind};
-use model::token::{VerificationClaims, Claims, TokenData};
-use model::user::User;
-use mq::MqConn;
-use request::password_reset::{
+use crate::config::Config;
+use crate::db::DbConn;
+use crate::job::{Job, JobKind};
+use crate::model::token::{VerificationClaims, Claims, TokenData};
+use crate::model::user::User;
+use crate::mq::MqConn;
+use crate::request::password_reset::{
     PasswordReset, PasswordResetRequest, PasswordResetUpdate,
 };
-use request::token::verification::VerificationToken;
-use response::{Response, no_content_for};
-use service::password_updater::PasswordUpdater;
-use validation::ValidationError;
-use validation::password_reset::Validator as PasswordResetValidator;
-use validation::password_reset_request::Validator as PasswordResetRequestValidator;
-use ss::SsConn;
-use util::split_token;
+use crate::request::token::verification::VerificationToken;
+use crate::response::{Response, no_content_for};
+use crate::service::password_updater::PasswordUpdater;
+use crate::validation::ValidationError;
+use crate::validation::password_reset::Validator as PasswordResetValidator;
+use crate::validation::password_reset_request::Validator as PasswordResetRequestValidator;
+use crate::ss::SsConn;
+use crate::util::split_token;
 
 #[options("/password/reset")]
 pub fn request_preflight<'a>() -> RawResponse<'a> {

@@ -5,7 +5,7 @@ use serde_json::Value;
 
 use eloquentlog_backend_api::model;
 
-use {minify, run_test, load_user, make_raw_password, USERS};
+use crate::{minify, run_test, load_user, make_raw_password, USERS};
 
 #[test]
 fn test_get_no_message() {

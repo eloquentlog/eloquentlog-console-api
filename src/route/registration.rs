@@ -8,18 +8,18 @@ use rocket::response::Response as RawResponse;
 use rocket_contrib::json::Json;
 use rocket_slog::SyncLogger;
 
-use config::Config;
-use db::DbConn;
-use job::{Job, JobKind};
-use model::token::{VerificationClaims, Claims, TokenData};
-use model::user::{NewUser, User};
-use model::user_email::{NewUserEmail, UserEmail};
-use mq::MqConn;
-use response::{Response, no_content_for};
-use request::user::registration::UserRegistration;
-use validation::user::Validator;
-use ss::SsConn;
-use util::split_token;
+use crate::config::Config;
+use crate::db::DbConn;
+use crate::job::{Job, JobKind};
+use crate::model::token::{VerificationClaims, Claims, TokenData};
+use crate::model::user::{NewUser, User};
+use crate::model::user_email::{NewUserEmail, UserEmail};
+use crate::mq::MqConn;
+use crate::response::{Response, no_content_for};
+use crate::request::user::registration::UserRegistration;
+use crate::validation::user::Validator;
+use crate::ss::SsConn;
+use crate::util::split_token;
 
 #[options("/register")]
 pub fn register_preflight<'a>() -> RawResponse<'a> {

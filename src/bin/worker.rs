@@ -1,12 +1,5 @@
-extern crate dotenv;
-extern crate fourche;
-extern crate native_tls;
-extern crate redis;
-
 #[macro_use(error, info)]
 extern crate slog;
-
-extern crate eloquentlog_backend_api;
 
 use std::env;
 

@@ -9,12 +9,12 @@ use diesel::debug_query;
 use diesel::pg::{Pg, PgConnection};
 use serde::Serialize;
 
-use logger::Logger;
-pub use model::log_level::*;
-pub use model::log_format::*;
-pub use schema::messages;
+use crate::logger::Logger;
+use crate::request::message::Message as RequestData;
 
-use request::message::Message as RequestData;
+pub use crate::model::log_level::*;
+pub use crate::model::log_format::*;
+pub use crate::schema::messages;
 
 /// NewMessage
 #[derive(Debug, Insertable)]
@@ -216,7 +216,7 @@ mod data {
     use chrono::{Utc, TimeZone};
     use fnv::FnvHashMap;
 
-    use fnvhashmap;
+    use crate::fnvhashmap;
 
     type MessageFixture = FnvHashMap<&'static str, Message>;
 
@@ -242,11 +242,11 @@ mod data {
 mod test {
     use super::*;
 
-    use model::user::{User, users};
+    use crate::model::user::{User, users};
 
-    use model::message::data::MESSAGES;
-    use model::test::run;
-    use model::user::data::USERS;
+    use crate::model::message::data::MESSAGES;
+    use crate::model::test::run;
+    use crate::model::user::data::USERS;
 
     #[test]
     fn test_insert() {

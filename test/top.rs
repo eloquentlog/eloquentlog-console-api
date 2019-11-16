@@ -1,7 +1,7 @@
 use rocket::http::{ContentType, Header, Status};
 use serde_json::Value;
 
-use {run_test, load_user, make_raw_password, USERS};
+use crate::{run_test, load_user, make_raw_password, USERS};
 
 #[test]
 fn test_index() {

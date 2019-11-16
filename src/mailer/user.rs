@@ -4,24 +4,20 @@
 use lettre_email::Email;
 use slog::Logger;
 
-use config::Config;
-use mailer::{Client, Header, Mailer};
+use crate::config::Config;
+use crate::mailer::{Client, Header, Mailer};
 
 /// UserMailer is a wrapper handles email to user.
 ///
 /// ## Examples
 ///
 /// ```rust
-/// # extern crate dotenv;
-/// # extern crate lettre;
-/// # extern crate lettre_email;
-/// #
 /// # use dotenv::dotenv;
 /// # use lettre::smtp::response::{Category, Code, Detail, Severity};
 /// #
-/// # use eloquentlog_backend_api::config::Config;
-/// # use eloquentlog_backend_api::logger;
-/// # use eloquentlog_backend_api::mailer::user::UserMailer;
+/// # use crate::config::Config;
+/// # use crate::logger;
+/// # use crate::mailer::user::UserMailer;
 /// #
 /// # include!("./mock_transport.rs");
 /// #

@@ -3,7 +3,7 @@ use rocket::http::{ContentType, Header, Status};
 
 use eloquentlog_backend_api::job;
 
-use run_test;
+use crate::run_test;
 
 #[test]
 fn test_login_with_wrong_username() {
