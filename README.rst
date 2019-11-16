@@ -136,12 +136,14 @@ Deployment
 
 .. code:: zsh
 
-    # e.g. Build server
+    # e.g. server
+    $ IMAGE_NAME=eloquentlog-backend-api-server
+
     % docker build --file Dockerfile \
       --build-arg BINARY=server \
-      --tag eloquentlog/eloquentlog-backend-api-server:latest .
+      --tag eloquentlog/${IMAGE_NAME}:latest .
 
-    # e.g. Publish the image to Cloud Registry on Google Cloud Platform
+    # e.g. publish the image to Cloud Registry on Google Cloud Platform
     # - https://cloud.google.com/container-registry/docs/advanced-authentication
     # - https://github.com/GoogleCloudPlatform/docker-credential-gcr
     % VERSION=...
@@ -155,7 +157,7 @@ Deployment
 
     % PROJECT_ID=...
     % HOST_NAME=eu.gcr.io
-    % docker push $HOST_NAME/${PROJECT-ID}/eloquentlog-backend-api-server:latest
+    % docker push $HOST_NAME/${PROJECT-ID}/${IMAGE_NAME}:latest
 
 
 License
