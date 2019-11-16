@@ -273,7 +273,6 @@ release-development:
     - . .tool/$CLOUD_SDK_ARTIFACT/path.bash.inc;
       gcloud auth activate-service-account
       --key-file=$GCP_CLOUD_BUILD_CREDENTIAL_JSON
-      --quiet 2>/dev/null
     - SUBSTITUTIONS=$(
         cat "${GCP_CLOUD_BUILD_SUBSTR_ENV_VARS}" |
         grep '^_' |
@@ -285,7 +284,6 @@ release-development:
       --config=.build.server.yml .
       --substitutions="_SERVICE_NAME=${GCP_CLOUD_RUN_SERVICE_NAME},_CLOUD_SQL_INSTANCE_CONNECTION_NAME=${GCP_CLOUD_SQL_INSTANCE_CONNECTION_NAME},${SUBSTITUTIONS}"
       --async
-      --quiet 2>/dev/null
   only:
     # TODO
     - master@eloquentlog/eloquentlog-backend-api
