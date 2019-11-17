@@ -42,7 +42,8 @@ stages:
     # /usr/include/postgresql is symlink to postgresql-11
     if [ ! -d ".postgresql" ]; then
       mkdir .postgresql;
-      USE="readline ssl zlib uuid -perl -python" emerge -v dev-db/postgresql:11;
+      USE="readline ssl zlib uuid -perl -python"
+        emerge --quiet-build=y --nospinner --oneshot dev-db/postgresql:11;
       cp -R /usr/include/postgresql-11/ .postgresql/include;
       cp -R /usr/lib64/postgresql-11/ .postgresql/lib;
       cp -R /usr/share/postgresql-11/ .postgresql/share;
@@ -68,8 +69,8 @@ stages:
   - &python
     if [ ! -d ".python" ]; then
       mkdir -p .python/{include,lib/pkgconfig,lib64};
-      USE="readline sqlite ssl xml" emerge -v dev-lang/python:2.7;
-
+      USE="readline sqlite ssl xml"
+        emerge --quiet-build=y --nospinner --oneshot dev-lang/python:2.7;
       cp -R /usr/include/python2.7/ .python/include;
       cp -R /usr/lib64/python2.7/ .python/lib64;
       cp -R /usr/lib64/pkgconfig/python-2.7.pc .python/lib/pkgconfig/;
@@ -89,7 +90,8 @@ stages:
   - &sqlite
     if [ ! -d ".sqlite" ]; then
       mkdir -p .sqlite/{include,lib/pkgconfig};
-      USE="readline secure-delete" emerge -v dev-db/sqlite:3;
+      USE="readline secure-delete"
+        emerge --quiet-build=y --nospinner --oneshot dev-db/sqlite:3;
       cp -R /usr/include/sqlite3ext.h .sqlite/include/;
       cp -R /usr/include/sqlite3.h .sqlite/include/;
       cp -R /usr/lib64/libsqlite* .sqlite/lib/;
@@ -271,7 +273,7 @@ release-development:
   #   name: development
   script:
     # NOTE: auth activate-service-account prints logs to $STDERR :'(
-    - . .tool/$CLOUD_SDK_ARTIFACT/path.bash.inc; make deploy:server 2>/dev/null
+    - . .tool/$CLOUD_SDK_ARTIFACT/path.bash.inc; make deploy:server
   only:
     # TODO
     - master@eloquentlog/eloquentlog-backend-api
