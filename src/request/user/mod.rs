@@ -1,15 +1,15 @@
+pub mod authentication;
+pub mod registration;
+
 use rocket::{Request, State, request};
 use rocket::request::FromRequest;
 use rocket_slog::SyncLogger;
 
-use config::Config;
-use db::DbConn;
-use model::token::AuthenticationClaims;
-use model::user::User;
-use request::token::authentication::AuthenticationToken;
-
-pub mod authentication;
-pub mod registration;
+use crate::config::Config;
+use crate::db::DbConn;
+use crate::model::token::AuthenticationClaims;
+use crate::model::user::User;
+use crate::request::token::authentication::AuthenticationToken;
 
 /// User
 impl<'a, 'r> FromRequest<'a, 'r> for &'a User {

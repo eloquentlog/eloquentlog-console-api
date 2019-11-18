@@ -5,10 +5,10 @@ use diesel::PgConnection;
 use diesel::result::Error;
 use slog::Logger;
 
-use config::Config;
-use model::user::User;
-use model::user_email::UserEmail;
-use mailer::user::UserMailer;
+use crate::config::Config;
+use crate::model::user::User;
+use crate::model::user_email::UserEmail;
+use crate::mailer::user::UserMailer;
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub enum JobKind {

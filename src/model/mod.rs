@@ -2,9 +2,6 @@
 //!
 //! SQL types are imported publicly in each model entities.
 
-use diesel::pg::PgConnection;
-use logger::Logger;
-
 // sql types
 mod log_level;
 mod log_format;
@@ -20,6 +17,10 @@ pub mod token;
 pub mod message;
 pub mod user;
 pub mod user_email;
+
+use diesel::pg::PgConnection;
+
+use crate::logger::Logger;
 
 // Note
 //
@@ -42,30 +43,37 @@ pub mod user_email;
 // * password reset ... reset_password_token (user)
 // * identify       ... identification_token (new general user email)
 pub trait Activatable {
-    fn activate(&self, &PgConnection, &Logger) -> Result<(), &'static str>;
+    fn activate(
+        &self,
+        conn: &PgConnection,
+        logger: &Logger,
+    ) -> Result<(), &'static str>;
 }
 
 pub trait Authenticatable {
     fn update_password(
         &mut self,
-        &str,
-        &PgConnection,
-        &Logger,
+        new_password: &str,
+        conn: &PgConnection,
+        logger: &Logger,
     ) -> Result<(), &'static str>;
 
-    fn verify_password(&self, &str) -> bool;
+    fn verify_password(&self, password: &str) -> bool;
 }
 
 pub trait Verifiable<T: Sized> {
     type TokenClaims: token::Claims;
 
-    fn extract_concrete_token(&str, &str, &str)
-        -> Result<String, &'static str>;
+    fn extract_concrete_token(
+        token: &str,
+        issuer: &str,
+        secret: &str,
+    ) -> Result<String, &'static str>;
 
     fn load_by_concrete_token(
-        &str,
-        &PgConnection,
-        &Logger,
+        concrete_token: &str,
+        conn: &PgConnection,
+        logger: &Logger,
     ) -> Result<T, &'static str>;
 }
 
@@ -76,9 +84,9 @@ pub mod test {
     use diesel::{PgConnection, prelude::*};
     use dotenv::dotenv;
 
-    use config::Config;
-    use db::{DbPoolHolder, init_pool_holder};
-    use logger::{Logger, get_logger};
+    use crate::config::Config;
+    use crate::db::{DbPoolHolder, init_pool_holder};
+    use crate::logger::{Logger, get_logger};
 
     lazy_static! {
         static ref CONFIG: Config = {

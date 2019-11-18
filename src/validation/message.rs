@@ -3,10 +3,10 @@ use std::result::Result;
 use accord::validators::{either, length_if_present};
 use rocket_contrib::json::Json;
 
-use logger::Logger;
-use model::message::{LogFormat, LogLevel, NewMessage};
-use request::message::Message as RequestData;
-use validation::*;
+use crate::logger::Logger;
+use crate::model::message::{LogFormat, LogLevel, NewMessage};
+use crate::request::message::Message as RequestData;
+use crate::validation::*;
 
 #[derive(Debug, Clone, Serialize)]
 pub struct ValidationError {
@@ -65,8 +65,8 @@ mod test {
     use dotenv::dotenv;
     use rocket_contrib::json::Json;
 
-    use config::Config;
-    use logger::{Logger, get_logger};
+    use crate::config::Config;
+    use crate::logger::{Logger, get_logger};
 
     pub fn run<T>(test: T)
     where T: FnOnce(&Logger) -> () + panic::UnwindSafe {

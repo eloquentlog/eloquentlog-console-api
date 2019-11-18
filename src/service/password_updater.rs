@@ -2,9 +2,9 @@ use std::fmt;
 
 use rocket_slog::SyncLogger;
 
-use config::Config;
-use db::DbConn;
-use model::{Authenticatable, Verifiable};
+use crate::config::Config;
+use crate::db::DbConn;
+use crate::model::{Authenticatable, Verifiable};
 
 pub struct PasswordUpdater<'a, T>
 where T: Authenticatable + Clone + Verifiable<T> + fmt::Display

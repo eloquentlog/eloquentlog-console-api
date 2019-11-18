@@ -1,9 +1,3 @@
-extern crate dotenv;
-extern crate rocket;
-extern crate rocket_slog;
-
-extern crate eloquentlog_backend_api;
-
 use std::env;
 
 use dotenv::dotenv;

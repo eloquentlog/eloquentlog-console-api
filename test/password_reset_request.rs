@@ -5,7 +5,7 @@ use redis::{Commands, RedisError};
 use eloquentlog_backend_api::model;
 use eloquentlog_backend_api::job;
 
-use {run_test, load_user, USERS};
+use crate::{run_test, load_user, USERS};
 
 #[test]
 fn test_password_reset_request_with_validation_error() {

@@ -2,9 +2,9 @@ use rocket::State;
 use rocket::http::Status;
 use rocket_slog::SyncLogger;
 
-use config::Config;
-use model::user::User;
-use response::Response;
+use crate::config::Config;
+use crate::model::user::User;
+use crate::response::Response;
 
 #[get("/")]
 pub fn index<'a>(

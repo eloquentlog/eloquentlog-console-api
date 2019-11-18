@@ -7,7 +7,7 @@ use rocket::{Request, State, Outcome};
 use diesel::{PgConnection, prelude::*};
 use diesel::r2d2::{ConnectionManager, Pool, PooledConnection};
 
-use config::Config;
+use crate::config::Config;
 
 pub type DbPool = Pool<ConnectionManager<PgConnection>>;
 pub type DbPooledConn = PooledConnection<ConnectionManager<PgConnection>>;

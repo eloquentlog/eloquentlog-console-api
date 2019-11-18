@@ -9,17 +9,19 @@ use diesel::pg::{Pg, PgConnection};
 use diesel::result::Error;
 use uuid::Uuid;
 
-pub use model::user_state::*;
-pub use model::user_reset_password_state::*;
-pub use model::token::{AuthenticationClaims, Claims, VerificationClaims};
-pub use schema::users;
-pub use schema::user_emails;
+pub use crate::model::user_state::*;
+pub use crate::model::user_reset_password_state::*;
+pub use crate::model::token::{AuthenticationClaims, Claims, VerificationClaims};
+pub use crate::schema::users;
+pub use crate::schema::user_emails;
 
-use model::{Activatable, Authenticatable, Verifiable};
-use model::user_email::{UserEmail, UserEmailRole, UserEmailIdentificationState};
-use logger::Logger;
-use request::user::registration::UserRegistration as RequestData;
-use util::generate_random_hash;
+use crate::model::{Activatable, Authenticatable, Verifiable};
+use crate::model::user_email::{
+    UserEmail, UserEmailRole, UserEmailIdentificationState,
+};
+use crate::logger::Logger;
+use crate::request::user::registration::UserRegistration as RequestData;
+use crate::util::generate_random_hash;
 
 const BCRYPT_COST: u32 = 12;
 const RESET_PASSWORD_HASH_LENGTH: i32 = 128;
@@ -559,7 +561,7 @@ pub mod data {
     use fnv::FnvHashMap;
     use uuid::Uuid;
 
-    use fnvhashmap;
+    use crate::fnvhashmap;
 
     type UserFixture = FnvHashMap<&'static str, User>;
 
@@ -618,10 +620,10 @@ pub mod data {
 mod test {
     use super::*;
 
-    use model::test::run;
-    use model::token::{AuthenticationClaims, Claims, TokenData};
-    use model::user::data::USERS;
-    use model::user_email::data::USER_EMAILS;
+    use crate::model::test::run;
+    use crate::model::token::{AuthenticationClaims, Claims, TokenData};
+    use crate::model::user::data::USERS;
+    use crate::model::user_email::data::USER_EMAILS;
 
     #[test]
     fn test_new_user_format() {

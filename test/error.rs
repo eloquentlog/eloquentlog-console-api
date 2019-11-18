@@ -1,6 +1,6 @@
 use rocket::http::Status;
 
-use run_test;
+use crate::run_test;
 
 #[test]
 fn test_404_not_found() {

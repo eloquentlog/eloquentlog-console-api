@@ -2,9 +2,9 @@ use std::fmt;
 
 use rocket_slog::SyncLogger;
 
-use config::Config;
-use db::DbConn;
-use model::{Activatable, Verifiable};
+use crate::config::Config;
+use crate::db::DbConn;
+use crate::model::{Activatable, Verifiable};
 
 pub struct AccountActivator<'a, T, U>
 where

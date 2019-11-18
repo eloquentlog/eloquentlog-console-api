@@ -1,9 +1,9 @@
-use jsonwebtoken::errors::Error;
-
-use model::token::Claims;
-
 pub mod authentication;
 pub mod verification;
+
+use jsonwebtoken::errors::Error;
+
+use crate::model::token::Claims;
 
 const AUTHORIZATION_HEADER_PREFIX: &str = "Bearer ";
 

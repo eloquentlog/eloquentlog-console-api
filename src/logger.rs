@@ -4,7 +4,7 @@ use sloggers::{
     types::Severity,
 };
 
-use config::Config;
+use crate::config::Config;
 
 pub type Logger = slog::Logger;
 
@@ -29,7 +29,7 @@ mod test {
 
     use slog::Drain;
 
-    use model::test::run;
+    use crate::model::test::run;
 
     #[test]
     fn test_get_logger_development() {
