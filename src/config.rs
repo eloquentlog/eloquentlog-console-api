@@ -260,7 +260,7 @@ mod test {
 
     use parking_lot::Mutex;
 
-    use hashmap;
+    use crate::hashmap;
 
     // TODO: set HashMap as an arg
     fn with<T>(keys: &'static str, test: T)

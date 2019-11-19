@@ -6,7 +6,7 @@ use rocket::request::Request;
 use rocket::response::Responder;
 use rocket::response::Response as RawResponse;
 
-use route::{ORIGIN, MAX_AGE, VARY};
+use crate::route::{ORIGIN, MAX_AGE, VARY};
 
 #[derive(Debug)]
 pub struct Response<'a> {

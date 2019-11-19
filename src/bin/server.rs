@@ -1,10 +1,3 @@
-extern crate dotenv;
-extern crate proctitle;
-extern crate rocket;
-extern crate rocket_slog;
-
-extern crate eloquentlog_backend_api;
-
 use std::env;
 
 use dotenv::dotenv;
@@ -27,7 +20,7 @@ fn get_env() -> String {
 }
 
 fn main() {
-    set_title(format!("eloquentlog: server"));
+    set_title("eloquentlog: server");
     let name = get_env();
 
     dotenv().ok();

@@ -3,13 +3,13 @@ use rocket::http::Status;
 use rocket::response::Response as RawResponse;
 use rocket_slog::SyncLogger;
 
-use config::Config;
-use db::DbConn;
-use model::user::User;
-use model::user_email::UserEmail;
-use request::token::verification::VerificationToken;
-use response::{Response, no_content_for};
-use service::account_activator::AccountActivator;
+use crate::config::Config;
+use crate::db::DbConn;
+use crate::model::user::User;
+use crate::model::user_email::UserEmail;
+use crate::request::token::verification::VerificationToken;
+use crate::response::{Response, no_content_for};
+use crate::service::account_activator::AccountActivator;
 
 #[options("/user/activate/<session_id>")]
 pub fn activate_preflight<'a>(

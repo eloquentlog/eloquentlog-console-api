@@ -10,12 +10,12 @@ use rocket::http::RawStr;
 use rocket::request::{FromRequest, Outcome};
 use rocket_slog::SyncLogger;
 
-use config::Config;
-use model::token::VerificationClaims;
-use request::token::{AUTHORIZATION_HEADER_PREFIX, verify_token};
-use ss::SsConn;
+use crate::config::Config;
+use crate::model::token::VerificationClaims;
+use crate::request::token::{AUTHORIZATION_HEADER_PREFIX, verify_token};
+use crate::ss::SsConn;
 
-use {bad_request_by, not_found_by, unprocessable_entity_by};
+use crate::{bad_request_by, not_found_by, unprocessable_entity_by};
 
 pub struct VerificationToken(pub String);
 

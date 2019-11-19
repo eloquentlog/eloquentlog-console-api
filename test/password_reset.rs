@@ -5,7 +5,7 @@ use rocket::local::Client;
 use eloquentlog_backend_api::model;
 use eloquentlog_backend_api::job;
 
-use {run_test, load_user, USERS};
+use crate::{run_test, load_user, USERS};
 
 fn password_reset_request_by(
     user: &model::user::User,

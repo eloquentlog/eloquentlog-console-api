@@ -1,7 +1,7 @@
 use rocket::Request;
 use rocket::http::Status;
 
-use response::Response;
+use crate::response::Response;
 
 #[catch(400)]
 pub fn bad_request<'a>(_req: &Request) -> Response<'a> {

@@ -8,4 +8,7 @@ vendor
 .cargo/vendor
 .tool/kcov
 .tool/gitlab-runner
+.tool/*sdk*
+.tool/*credential*
+!.tool/{setup,load}*
 **/*.rs.bk

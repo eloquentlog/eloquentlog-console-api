@@ -3,14 +3,13 @@ use std::fmt;
 
 use chrono::{NaiveDateTime, Utc};
 
-use model::user::User;
-
 use jsonwebtoken::{
     Algorithm, Header, Validation, decode as decode_token, decode_header,
     encode as encode_data,
 };
 
-use model::user_email::UserEmail;
+use crate::model::user::User;
+use crate::model::user_email::UserEmail;
 
 #[derive(Clone)]
 pub struct TokenData {
@@ -246,12 +245,11 @@ impl Claims for AuthenticationClaims {
 mod test {
     use super::*;
 
-    extern crate base64;
-    use self::base64::decode;
+    use base64::decode;
     use chrono::{DateTime, Duration, TimeZone, Utc};
     use serde_json;
 
-    use model::test::run;
+    use crate::model::test::run;
 
     #[test]
     fn test_token_format() {
