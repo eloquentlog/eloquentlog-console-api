@@ -4,10 +4,10 @@ use accord::validators::{contains, length};
 use diesel::PgConnection;
 use rocket_contrib::json::Json;
 
-use logger::Logger;
-use model::user::{NewUser, User};
-use request::user::registration::UserRegistration as RequestData;
-use validation::*;
+use crate::logger::Logger;
+use crate::model::user::{NewUser, User};
+use crate::request::user::registration::UserRegistration as RequestData;
+use crate::validation::*;
 
 pub struct Validator<'a> {
     conn: &'a PgConnection,
@@ -128,7 +128,7 @@ mod test {
 
     use rocket_contrib::json::Json;
 
-    use model::test::run;
+    use crate::model::test::run;
 
     #[test]
     fn test_validate_email_is_empty() {

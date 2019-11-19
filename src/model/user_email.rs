@@ -4,15 +4,15 @@ use chrono::NaiveDateTime;
 use diesel::{Associations, Identifiable, Queryable, debug_query, prelude::*};
 use diesel::pg::{Pg, PgConnection};
 
-pub use model::token::Claims;
-pub use model::user_email_role::*;
-pub use model::user_email_identification_state::*;
-pub use schema::user_emails;
+pub use crate::model::token::Claims;
+pub use crate::model::user_email_role::*;
+pub use crate::model::user_email_identification_state::*;
+pub use crate::schema::user_emails;
 
-use logger::Logger;
-use model::Activatable;
-use model::user::User;
-use util::generate_random_hash;
+use crate::logger::Logger;
+use crate::model::Activatable;
+use crate::model::user::User;
+use crate::util::generate_random_hash;
 
 const VERIFICATION_HASH_LENGTH: i32 = 128;
 const VERIFICATION_HASH_SOURCE: &[u8] =
@@ -254,8 +254,8 @@ pub mod data {
     use chrono::{Utc, TimeZone};
     use fnv::FnvHashMap;
 
-    use fnvhashmap;
-    use model::user::data::USERS;
+    use crate::fnvhashmap;
+    use crate::model::user::data::USERS;
 
     type UserEmailFixture = FnvHashMap<&'static str, UserEmail>;
 
@@ -307,12 +307,12 @@ mod test {
 
     use chrono::{Duration, Utc};
 
-    use model::user::{User, users};
-    use model::token::{VerificationClaims, TokenData};
+    use crate::model::user::{User, users};
+    use crate::model::token::{VerificationClaims, TokenData};
 
-    use model::test::run;
-    use model::user::data::USERS;
-    use model::user_email::data::USER_EMAILS;
+    use crate::model::test::run;
+    use crate::model::user::data::USERS;
+    use crate::model::user_email::data::USER_EMAILS;
 
     #[test]
     fn test_new_user_emails_default() {

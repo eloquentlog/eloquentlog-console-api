@@ -3,20 +3,53 @@ stages:
   - verify
   - test
   - build
-  # - deploy
+  - release
+
+.diesel:
+  - &diesel
+    if [ ! -d ".diesel" ]; then
+      mkdir .diesel;
+      make setup:tool;
+      cp /usr/local/cargo/bin/diesel .diesel/diesel;
+    else
+      cp .diesel/diesel /usr/local/cargo/bin/diesel;
+    fi
+
+.cloud-sdk:
+  - &cloud-sdk
+    mkdir -p .tool;
+    cd .tool;
+    if [ ! -d "../.cloud-sdk" ]; then
+      mkdir -p ../.cloud-sdk;
+      curl -O $CLOUD_SDK_BASE_URL/$CLOUD_SDK_FILENAME;
+      echo "${CLOUD_SDK_CHECKSUM}" "" ./$CLOUD_SDK_FILENAME | sha256sum -c -;
+      cp $CLOUD_SDK_FILENAME ../.cloud-sdk/;
+    else
+      cp ../.cloud-sdk/$CLOUD_SDK_FILENAME .;
+    fi;
+    tar zxf $CLOUD_SDK_FILENAME;
+    ./$CLOUD_SDK_ARTIFACT/install.sh
+      --command-completion=false
+      --path-update=false
+      --usage-reporting=false
+      --rc-path=/dev/null
+      --override-components beta cloud-build-local core
+      --quiet;
+    cd ../
 
 .postgresql:
   - &postgresql
     # /usr/include/postgresql is symlink to postgresql-11
     if [ ! -d ".postgresql" ]; then
-      USE="readline ssl zlib uuid -perl -python" emerge -v dev-db/postgresql:11;
       mkdir .postgresql;
+      USE="readline ssl zlib uuid -perl -python"
+        emerge --quiet-build=y --nospinner --oneshot dev-db/postgresql:11;
       cp -R /usr/include/postgresql-11/ .postgresql/include;
       cp -R /usr/lib64/postgresql-11/ .postgresql/lib;
       cp -R /usr/share/postgresql-11/ .postgresql/share;
-      cp -R /usr/bin/psql .postgresql/psql;
+      cp /usr/lib64/postgresql-11/bin/psql .postgresql/psql;
     else
-      cp -R .postgresql/psql /usr/bin/psql;
+      cp .postgresql/psql /usr/bin/psql;
       cp -R .postgresql/share/ /usr/share/postgresql-11;
       cp -R .postgresql/include/ /usr/include/postgresql-11;
       ln -s /usr/include/postgresql /usr/include/postgresql-11;
@@ -32,9 +65,49 @@ stages:
       ldconfig;
     fi
 
+.python:
+  - &python
+    if [ ! -d ".python" ]; then
+      mkdir -p .python/{include,lib/pkgconfig,lib64};
+      USE="readline sqlite ssl xml"
+        emerge --quiet-build=y --nospinner --oneshot dev-lang/python:2.7;
+      cp -R /usr/include/python2.7/ .python/include;
+      cp -R /usr/lib64/python2.7/ .python/lib64;
+      cp -R /usr/lib64/pkgconfig/python-2.7.pc .python/lib/pkgconfig/;
+      cp -R /usr/lib/python-exec/ .python/lib/python-exec;
+      cp /usr/bin/python2.7 .python/python2.7;
+    else
+      cp -R .python/python2.7 /usr/bin/python2.7;
+      cp -R .python/lib/pkgconfig/* /usr/lib64/pkgconfig/;
+      cp -R .python/lib64/ /usr/lib64/python2.7;
+      cp -R .python/lib/python-exec/ /user/lib/python-exec;
+      cp -R .python/include/ /user/include/python2.7;
+      rm -fr /etc/ld.so.cache;
+      ldconfig;
+    fi
+
+.sqlite:
+  - &sqlite
+    if [ ! -d ".sqlite" ]; then
+      mkdir -p .sqlite/{include,lib/pkgconfig};
+      USE="readline secure-delete"
+        emerge --quiet-build=y --nospinner --oneshot dev-db/sqlite:3;
+      cp -R /usr/include/sqlite3ext.h .sqlite/include/;
+      cp -R /usr/include/sqlite3.h .sqlite/include/;
+      cp -R /usr/lib64/libsqlite* .sqlite/lib/;
+      cp -R /usr/lib64/pkgconfig/sqlite3.pc .sqlite/lib/pkgconfig/;
+      cp /usr/bin/sqlite3 .sqlite/sqlite3;
+    else
+      cp -R .sqlite/sqlite3 /usr/bin/sqlite3;
+      cp -R .sqlite/lib/pkgconfig/* /usr/lib64/pkgconfig/;
+      cp -R .sqlite/lib/libsqlite* /usr/lib64/;
+      cp -R .sqlite/include/* /usr/include/;
+      rm -fr /etc/ld.so.cache;
+      ldconfig;
+    fi
+
 .vendor:
   - &vendor
-    make setup:tool;
     if [ ! -d "vendor" ]; then
       make setup:vendor;
     fi
@@ -43,8 +116,9 @@ stages:
   cache:
     key: ${CARGO_LOCK_CHECKSUM}
     paths:
-      - .postgresql
+      - .diesel
       - .cargo
+      - .postgresql
       - vendor
 
 .vet-tools: &vet-tools
@@ -61,22 +135,23 @@ stages:
     - *vendor
   <<: *cache
 
-# TODO:
-# This way would not be good, since we can't run pipelines concurrently
-# on CI :'(
-# However, we'd like to use same cache across pull requests if possible.
+.gentoo: &gentoo
+  image: grauwoelfchen/gentoo-amd64-nomultilib:latest
+  before_script:
+  <<: *cache
+
 setup-checksum:
   stage: setup
   image: grauwoelfchen/rust-vet-tools:nightly
   variables:
-    GITLAB_COM: https://gitlab.com/api/v4
-    PROJECT_ID: 4765963
-    API_HEADER: "PRIVATE-TOKEN: ${PRIVATE_TOKEN}"
+    GITLAB_HOST: gitlab.com
+    GITLAB_PROJECT_ID: 4765963
+    API_HEADER: "PRIVATE-TOKEN: ${GITLAB_PRIVATE_TOKEN}"
   script:
     - curl --version
     - export VALUE=$(md5sum Cargo.lock | awk '{print $1}') &&
       curl --silent --request PUT --header "${API_HEADER}"
-      "${GITLAB_COM}/projects/${PROJECT_ID}/variables/CARGO_LOCK_CHECKSUM"
+      "https://${GITLAB_HOST}/api/v4/projects/${GITLAB_PROJECT_ID}/variables/CARGO_LOCK_CHECKSUM"
       --form "value=${VALUE}"
 
 check:
@@ -108,6 +183,7 @@ lint:
     - cargo clippy --version
     - *vendor
   script:
+    - mkdir .git/hooks
     - make verify:lint
   <<: *cache
 
@@ -141,10 +217,12 @@ test:
     TEST_VERIFICATION_TOKEN_KEY_ID: "test-verification-token-key_id"
     TEST_VERIFICATION_TOKEN_SECRET: "test-verification-token-secret"
   before_script:
+    - mkdir -p .git/hooks
     - *postgresql
     - rustc --version
     - cargo --version
     - kcov --version
+    - *diesel
     - *vendor
     - psql $TEST_DATABASE_URL -c "CREATE EXTENSION IF NOT EXISTS \"uuid-ossp\""
     - DATABASE_URL=$TEST_DATABASE_URL make schema:migration:commit
@@ -169,39 +247,43 @@ build-release:
   script:
     - make build:release
   only:
-    - tags
+    - master
 
-# TODO: as an experiment
-#
-# deploy-development:
-#   stage: deploy
-#   <<: *rust
-#   variables:
-#     PROJECT_ID: eloquentlog
-#     SERVICE_NAME: backend-api-dev
-#     REGION_NAME: europe-west1
-#     REGISTRY_HOST: gcr.io
-#     IMAGE_NAME: eloquentlog-backend-api
-#     IMAGE_TAG: latest
-#   before_script:
-#     - mkdir -p /app && cd /app
-#     - wget https://dl.google.com/dl/cloudsdk/release/google-cloud-sdk.tar.gz
-#     - tar zxvf google-cloud-sdk.tar.gz && \
-#       ./google-cloud-sdk/install.sh --usage-reporting=false --path-update=true
-#     - source /root/.bashrc
-#     - gcloud components install beta
-#     - echo $CLOUD_RUN_SA_KEY > $HOME/cloud_run_sa_key.json
-#   script:
-#     - gcloud auth activate-service-account \
-#       --key-file $HOME/cloud_run_sa_key.json
-#     - gcloud beta run deploy $service \
-#       --region $REGION_NAME \
-#       --project $PROJECT_ID \
-#       --image $REGISTRY_HOST/$PROJECT_ID/$IMAGE_NAME:$IMAGE_TAG
-#     - gcloud beta run services add-iam-policy-binding $service \
-#       --region $REGION_NAME \
-#       --project $PROJECT_ID \
-#       --member="allUsers" \
-#       --role="roles/run.invoker"
-#   only:
-#     - tags
+# FIXME: experiment (server)
+release-development:
+  stage: release
+  <<: *gentoo
+  variables:
+    CLOUD_SDK_BASE_URL: https://dl.google.com/dl/cloudsdk/channels/rapid/downloads
+    CLOUD_SDK_CHECKSUM: f152815d05a2f9374c87be1325a7d3bdbf62720d8fad9acb42dc2312d2e33f4a
+    CLOUD_SDK_ARTIFACT: google-cloud-sdk
+    CLOUD_SDK_FILENAME: ${CLOUD_SDK_ARTIFACT}-269.0.0-linux-x86_64.tar.gz
+    # (additional secret variables)
+    # GCP_CLOUD_BUILD_CREDENTIAL_JSON: /path/to/credential.json
+    # GCP_CLOUD_BUILD_SUBSTR_ENV_VARS: /path/to/.env.deploy
+    # GCP_CLOUD_RUN_SERVICE_NAME_BASE: eloquentlog-backend-api
+    # GCP_CLOUD_SQL_POSTGRES_INSTANCE: foo-bar-baz-qux-quux
+    # GCP_CLOUD_STORAGE_LOG_DIRECTORY: eloquentlog_cloudbuild
+    # GCP_PROJECT_ID: eloquentlog
+  before_script:
+    - *sqlite
+    - *python
+    - *cloud-sdk
+  # environment:
+  #   name: development
+  script:
+    # NOTE: auth activate-service-account prints logs to $STDERR :'(
+    - . .tool/$CLOUD_SDK_ARTIFACT/path.bash.inc; make deploy:server
+  only:
+    # TODO
+    - master@eloquentlog/eloquentlog-backend-api
+    # - /^v.*$/
+    # except:
+    #   - branches
+    #   - tags
+  cache:
+    key: release-development
+    paths:
+      - .cloud-sdk
+      - .python
+      - .sqlite

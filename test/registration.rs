@@ -5,7 +5,7 @@ use redis::{Commands, RedisError};
 use eloquentlog_backend_api::model;
 use eloquentlog_backend_api::job;
 
-use run_test;
+use crate::run_test;
 
 #[test]
 fn test_register_with_validation_error() {

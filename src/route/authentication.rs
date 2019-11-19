@@ -4,14 +4,14 @@ use rocket::http::{Cookie, Cookies, Status};
 use rocket::response::Response as RawResponse;
 use rocket_slog::SyncLogger;
 
-use config::Config;
-use db::DbConn;
-use model::user::User;
-use model::Authenticatable;
-use model::token::{AuthenticationClaims, Claims, TokenData};
-use request::user::authentication::UserAuthentication as RequestData;
-use response::{Response, no_content_for};
-use util::{split_token, make_cookie};
+use crate::config::Config;
+use crate::db::DbConn;
+use crate::model::user::User;
+use crate::model::Authenticatable;
+use crate::model::token::{AuthenticationClaims, Claims, TokenData};
+use crate::request::user::authentication::UserAuthentication as RequestData;
+use crate::response::{Response, no_content_for};
+use crate::util::{split_token, make_cookie};
 
 #[options("/login")]
 pub fn login_preflight<'a>() -> RawResponse<'a> {

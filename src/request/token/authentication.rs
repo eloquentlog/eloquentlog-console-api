@@ -5,11 +5,11 @@ use rocket::{Request, State};
 use rocket::request::{FromRequest, Outcome};
 use rocket_slog::SyncLogger;
 
-use config::Config;
-use model::token::AuthenticationClaims;
-use request::token::{AUTHORIZATION_HEADER_PREFIX, verify_token};
+use crate::config::Config;
+use crate::model::token::AuthenticationClaims;
+use crate::request::token::{AUTHORIZATION_HEADER_PREFIX, verify_token};
 
-use {bad_request_by, unprocessable_entity_by};
+use crate::{bad_request_by, unprocessable_entity_by};
 
 pub struct AuthenticationToken(pub String);
 

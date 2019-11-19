@@ -13,7 +13,7 @@ use lettre::smtp::client::net::DEFAULT_TLS_PROTOCOLS;
 use native_tls::TlsConnector;
 use slog::Logger;
 
-use config::Config;
+use crate::config::Config;
 
 struct Header<'a> {
     from: (&'a str, &'a str),
@@ -106,8 +106,8 @@ mod test {
     use lettre::{EmailAddress, Envelope};
     use lettre::smtp::response::{Category, Code, Detail, Severity};
 
-    use model::test::run;
-    use model::user::data::USERS;
+    use crate::model::test::run;
+    use crate::model::user::data::USERS;
 
     include!("./mock_transport.rs");
 

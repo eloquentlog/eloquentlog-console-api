@@ -4,9 +4,9 @@ use accord::validators::length;
 use diesel::PgConnection;
 use rocket_contrib::json::Json;
 
-use logger::Logger;
-use request::password_reset::PasswordReset as RequestData;
-use validation::*;
+use crate::logger::Logger;
+use crate::request::password_reset::PasswordReset as RequestData;
+use crate::validation::*;
 
 pub struct Validator<'a> {
     // conn: &'a PgConnection,
@@ -77,7 +77,7 @@ mod test {
 
     use rocket_contrib::json::Json;
 
-    use model::test::run;
+    use crate::model::test::run;
 
     #[test]
     fn test_validate_password_is_too_short() {

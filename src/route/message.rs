@@ -3,12 +3,12 @@ use rocket::response::Response as RawResponse;
 use rocket_contrib::json::Json;
 use rocket_slog::SyncLogger;
 
-use db::DbConn;
-use model::message::{LogFormat, LogLevel, Message, NewMessage};
-use model::user::User;
-use response::{Response, no_content_for};
-use request::message::Message as RequestData;
-use validation::message::Validator;
+use crate::db::DbConn;
+use crate::model::message::{LogFormat, LogLevel, Message, NewMessage};
+use crate::model::user::User;
+use crate::response::{Response, no_content_for};
+use crate::request::message::Message as RequestData;
+use crate::validation::message::Validator;
 
 const MESSAGES_PER_REQUEST: i64 = 100;
 

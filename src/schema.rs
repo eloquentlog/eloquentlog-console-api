@@ -1,6 +1,7 @@
 table! {
     use diesel::sql_types::*;
-    use model::message::{ELogFormat, ELogLevel};
+
+    use crate::model::message::{ELogFormat, ELogLevel};
 
     messages (id) {
         id -> Int8,
@@ -19,7 +20,8 @@ table! {
 table! {
     use diesel::sql_types::*;
     use diesel::pg::types::sql_types::Uuid;
-    use model::user::{EUserState, EUserResetPasswordState};
+
+    use crate::model::user::{EUserState, EUserResetPasswordState};
 
     users (id) {
         id -> Int8,
@@ -40,7 +42,11 @@ table! {
 
 table! {
     use diesel::sql_types::*;
-    use model::user_email::{EUserEmailIdentificationState, EUserEmailRole};
+
+    use crate::model::user_email::{
+        EUserEmailIdentificationState,
+        EUserEmailRole,
+    };
 
     user_emails (id) {
         id -> Int8,
