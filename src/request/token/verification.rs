@@ -65,21 +65,36 @@ impl<'a, 'r> FromRequest<'a, 'r> for VerificationToken {
                     return bad_request_by!(VerificationTokenError::Invalid);
                 }
                 // NOTE:
-                // append signature taken by session id to the parts extracted
-                // from authorization header.
-                let mut ss_conn = req.guard::<SsConn>().unwrap();
-                // /_api/password/reset/<...> and /_api/user/activate/<...>
-                let session_id: &'a RawStr = req
+                // append signature taken by using session id to the parts
+                // extracted from authorization header.
+                //
+                // URL looks like:
+                // * /_api/password/reset/<...>
+                // * /_api/user/activate/<...>
+                let session_id: String = req
                     .get_param(2)
-                    .and_then(|r| r.ok())
-                    .unwrap_or_else(|| "".into());
+                    .and_then(|r: Result<&'a RawStr, _>| {
+                        let path = req.uri().path();
+                        let prefix =
+                            if path.starts_with("/_api/password/reset/h/") {
+                                "pr"
+                            } else if path.starts_with("/_api/user/actiate/") {
+                                "ur"
+                            } else {
+                                ""
+                            };
+                        let key = format!("{}-{}", prefix, r.ok().unwrap());
+                        Some(key)
+                    })
+                    .unwrap_or_else(|| "".to_string());
 
                 if session_id.is_empty() {
                     return bad_request_by!(VerificationTokenError::Invalid);
                 }
 
+                let mut ss_conn = req.guard::<SsConn>().unwrap();
                 let result: Result<String, RedisError> =
-                    ss_conn.get(session_id.as_str()).map_err(|e| {
+                    ss_conn.get(&session_id).map_err(|e| {
                         error!(logger, "error: {}", e);
                         e
                     });

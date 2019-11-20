@@ -18,7 +18,7 @@ pub fn generate_random_hash(source: &[u8], length: i32) -> String {
         .collect()
 }
 
-pub fn split_token<'a>(token: String) -> Option<(String, Cookie<'a>)> {
+pub fn split_token(token: String) -> Option<(String, String)> {
     let parts: Vec<&str> = token.split('.').collect();
     // unexpected
     if parts.len() != 3 {
@@ -32,17 +32,21 @@ pub fn split_token<'a>(token: String) -> Option<(String, Cookie<'a>)> {
     // consider about implementation "Are you there?" modal
     let payload = parts[0..2].join(".");
 
-    // This is session cookie (no expires and max-age)
-    //
+    Some((payload, parts[2].to_string()))
+}
+
+// Make a cookie for signature (sign).
+//
+// This is session cookie (no expires and max-age)
+pub fn make_cookie<'a>(sign: String) -> Cookie<'a> {
     // TODO:
     // consider about extension (re-set it again?)
-    let mut signature = Cookie::new("signature", parts[2].to_string());
+    let mut signature = Cookie::new("sign", sign);
     signature.set_domain("127.0.0.1");
     signature.set_same_site(SameSite::Strict);
     signature.set_secure(false); // FIXME
     signature.set_http_only(true);
-
-    Some((payload, signature))
+    signature
 }
 
 #[cfg(test)]
