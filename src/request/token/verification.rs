@@ -71,30 +71,29 @@ impl<'a, 'r> FromRequest<'a, 'r> for VerificationToken {
                 // URL looks like:
                 // * /_api/password/reset/<...>
                 // * /_api/user/activate/<...>
-                let session_id: String = req
+                let key: String = req
                     .get_param(2)
                     .and_then(|r: Result<&'a RawStr, _>| {
+                        let session_id = r.ok().unwrap();
+
                         let path = req.uri().path();
-                        let prefix =
-                            if path.starts_with("/_api/password/reset/h/") {
-                                "pr"
-                            } else if path.starts_with("/_api/user/actiate/") {
-                                "ur"
-                            } else {
-                                ""
-                            };
-                        let key = format!("{}-{}", prefix, r.ok().unwrap());
-                        Some(key)
+                        if path.starts_with("/_api/password/reset/") {
+                            Some(format!("pr-{}", session_id))
+                        } else if path.starts_with("/_api/user/activate/") {
+                            Some(format!("ur-{}", session_id))
+                        } else {
+                            None
+                        }
                     })
                     .unwrap_or_else(|| "".to_string());
 
-                if session_id.is_empty() {
+                if key.is_empty() {
                     return bad_request_by!(VerificationTokenError::Invalid);
                 }
 
                 let mut ss_conn = req.guard::<SsConn>().unwrap();
                 let result: Result<String, RedisError> =
-                    ss_conn.get(&session_id).map_err(|e| {
+                    ss_conn.get(&key).map_err(|e| {
                         error!(logger, "error: {}", e);
                         e
                     });
