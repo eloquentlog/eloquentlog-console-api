@@ -1,6 +1,7 @@
 use std::env;
 
 use dotenv::dotenv;
+use proctitle::set_title;
 use rocket_slog::SlogFairing;
 
 use eloquentlog_backend_api::logger;
@@ -19,6 +20,7 @@ fn get_env() -> String {
 }
 
 fn main() {
+    set_title("eloquentlog: server");
     let name = get_env();
 
     dotenv().ok();

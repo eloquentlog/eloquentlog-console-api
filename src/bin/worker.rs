@@ -1,3 +1,5 @@
+#![feature(rustc_private)]
+
 #[macro_use(error, info)]
 extern crate slog;
 
@@ -5,6 +7,7 @@ use std::env;
 
 use dotenv::dotenv;
 use fourche::queue::Queue;
+use proctitle::set_title;
 use redis::Client;
 
 use eloquentlog_backend_api::config::Config;
@@ -21,6 +24,7 @@ fn get_env() -> String {
 }
 
 fn main() {
+    set_title("eloquentlog: worker");
     let name = get_env();
 
     dotenv().ok();
@@ -35,7 +39,6 @@ fn main() {
 
     let logger = get_logger(&config);
     let mut queue = Queue::new("default", &mut mq_conn);
-
     loop {
         match queue.dequeue::<Job<String>>() {
             Ok(job) => {
