@@ -1,5 +1,5 @@
 use fourche::queue::Queue;
-use rocket::http::{ContentType, Status};
+use rocket::http::{ContentType, Header, Status};
 use redis::{Commands, RedisError};
 
 use eloquentlog_backend_api::model;
@@ -14,6 +14,7 @@ fn test_register_with_validation_error() {
         let res = client
             .post("/_api/register")
             .header(ContentType::JSON)
+            .header(Header::new("X-Requested-With", "XMLHttpRequest"))
             .body(format!(
                 r#"{{
                   "email": "{}",
@@ -37,6 +38,7 @@ fn test_register() {
         let res = client
             .post("/_api/register")
             .header(ContentType::JSON)
+            .header(Header::new("X-Requested-With", "XMLHttpRequest"))
             .body(format!(
                 r#"{{
                   "email": "{}",
@@ -59,7 +61,9 @@ fn test_register() {
         assert!(!job.args.is_empty());
 
         let session_id = job.args[1].to_string();
-        let result: Result<String, RedisError> = conn.ss.get(session_id);
+        let key = format!("ur-{}", session_id);
+
+        let result: Result<String, RedisError> = conn.ss.get(key);
         assert!(result.is_ok());
     });
 }

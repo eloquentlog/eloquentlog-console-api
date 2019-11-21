@@ -13,6 +13,7 @@ fn test_index() {
         let mut res = client
             .post("/_api/login")
             .header(ContentType::JSON)
+            .header(Header::new("X-Requested-With", "XMLHttpRequest"))
             .body(format!(
                 r#"{{
                     "username": "{}",
@@ -28,6 +29,8 @@ fn test_index() {
 
         let mut res = client
             .get("/")
+            .header(ContentType::JSON)
+            .header(Header::new("X-Requested-With", "XMLHttpRequest"))
             .header(Header::new("Authorization", format!("Bearer {}", token)))
             .dispatch();
 
