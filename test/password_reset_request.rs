@@ -1,5 +1,5 @@
 use fourche::queue::Queue;
-use rocket::http::{ContentType, Status};
+use rocket::http::{ContentType, Header, Status};
 use redis::{Commands, RedisError};
 
 use eloquentlog_backend_api::model;
@@ -17,6 +17,7 @@ fn test_password_reset_request_with_validation_error() {
         let res = client
             .put("/_api/passordlreset")
             .header(ContentType::JSON)
+            .header(Header::new("X-Requested-With", "XMLHttpRequest"))
             .body(format!(
                 r#"{{
                   "email": "{}"
@@ -42,6 +43,7 @@ fn test_password_reset_request() {
         let res = client
             .put("/_api/password/reset")
             .header(ContentType::JSON)
+            .header(Header::new("X-Requested-With", "XMLHttpRequest"))
             .body(format!(
                 r#"{{
                   "email": "{}"
@@ -62,8 +64,8 @@ fn test_password_reset_request() {
         assert!(!job.args.is_empty());
 
         let session_id = job.args[1].to_string();
-        dbg!(&session_id);
-        let value: Result<String, RedisError> = conn.ss.get(session_id);
+        let key = format!("pr-{}", session_id);
+        let value: Result<String, RedisError> = conn.ss.get(key);
         assert!(value.is_ok());
     });
 }

@@ -32,6 +32,7 @@ fn test_get_no_message() {
 
         let mut res = client
             .get("/_api/messages")
+            .header(Header::new("X-Requested-With", "XMLHttpRequest"))
             .header(Header::new("Authorization", format!("Bearer {}", token)))
             .dispatch();
 
@@ -86,6 +87,7 @@ fn test_get_recent_messages() {
 
         let mut res = client
             .get("/_api/messages")
+            .header(Header::new("X-Requested-With", "XMLHttpRequest"))
             .header(Header::new("Authorization", format!("Bearer {}", token)))
             .dispatch();
 
@@ -140,6 +142,7 @@ fn test_post_with_validation_errors() {
         let mut res = client
             .post("/_api/messages")
             .header(ContentType::JSON)
+            .header(Header::new("X-Requested-With", "XMLHttpRequest"))
             .header(Header::new("Authorization", format!("Bearer {}", token)))
             .body(
                 r#"{
@@ -181,6 +184,7 @@ fn test_post() {
         let mut res = client
             .post("/_api/messages")
             .header(ContentType::JSON)
+            .header(Header::new("X-Requested-With", "XMLHttpRequest"))
             .header(Header::new("Authorization", format!("Bearer {}", token)))
             .body(
                 r#"{
@@ -239,6 +243,7 @@ fn test_put() {
         let mut res = client
             .put(format!("/_api/messages/{}", id))
             .header(ContentType::JSON)
+            .header(Header::new("X-Requested-With", "XMLHttpRequest"))
             .header(Header::new("Authorization", format!("Bearer {}", token)))
             .body(format!(
                 r#"{{
