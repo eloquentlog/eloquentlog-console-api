@@ -111,8 +111,8 @@ Use cargo-watch_
 
 .. code:: zsh
 
-    % make watch:serve
-    % make watch:queue
+    % make watch:server
+    % make watch:worker
 
     % curl \
       -H "Content-Type: application/json" \
