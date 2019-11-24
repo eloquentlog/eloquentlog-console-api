@@ -16,7 +16,7 @@ extern crate serde_json;
 extern crate uuid;
 
 #[macro_use]
-extern crate eloquentlog_backend_api;
+extern crate eloquentlog_console_api;
 
 mod authentication;
 mod message;
@@ -40,13 +40,13 @@ use rocket::local::Client;
 use rocket_slog::SlogFairing;
 use uuid::Uuid;
 
-use eloquentlog_backend_api::server;
-use eloquentlog_backend_api::db;
-use eloquentlog_backend_api::mq;
-use eloquentlog_backend_api::ss;
-use eloquentlog_backend_api::config;
-use eloquentlog_backend_api::logger;
-use eloquentlog_backend_api::model;
+use eloquentlog_console_api::server;
+use eloquentlog_console_api::db;
+use eloquentlog_console_api::mq;
+use eloquentlog_console_api::ss;
+use eloquentlog_console_api::config;
+use eloquentlog_console_api::logger;
+use eloquentlog_console_api::model;
 
 // NOTE:
 // For now, run tests sequencially :'(

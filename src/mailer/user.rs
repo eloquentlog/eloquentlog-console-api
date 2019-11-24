@@ -15,9 +15,9 @@ use crate::mailer::{Client, Header, Mailer};
 /// # use dotenv::dotenv;
 /// # use lettre::smtp::response::{Category, Code, Detail, Severity};
 /// #
-/// # use eloquentlog_backend_api::config::Config;
-/// # use eloquentlog_backend_api::logger;
-/// # use eloquentlog_backend_api::mailer::user::UserMailer;
+/// # use eloquentlog_console_api::config::Config;
+/// # use eloquentlog_console_api::logger;
+/// # use eloquentlog_console_api::mailer::user::UserMailer;
 /// #
 /// # include!("./mock_transport.rs");
 /// #

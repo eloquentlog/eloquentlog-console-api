@@ -3,7 +3,7 @@ use chrono::{Utc, TimeZone};
 use rocket::http::{ContentType, Header, Status};
 use serde_json::Value;
 
-use eloquentlog_backend_api::model;
+use eloquentlog_console_api::model;
 
 use crate::{minify, run_test, load_user, make_raw_password, USERS};
 

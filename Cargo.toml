@@ -1,10 +1,10 @@
 [package]
 autobins = false
-name = "eloquentlog-backend-api"
+name = "eloquentlog-console-api"
 version = "0.0.1"
 authors = ["Yasuhiro Яша Asaka <yasuhiro.asaka@grauwoelfchen.net>"]
-description = "A backend api server for Eloquentlog."
-repository = "https://gitlab.com/eloquentlog/eloquentlog-backend-api"
+description = "The console backend API server of Eloquentlog."
+repository = "https://gitlab.com/eloquentlog/eloquentlog-console-api"
 edition = "2018"
 keywords = []
 license = "AGPL-3.0-or-later"

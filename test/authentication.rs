@@ -1,7 +1,7 @@
 use fourche::queue::Queue;
 use rocket::http::{ContentType, Header, Status};
 
-use eloquentlog_backend_api::job;
+use eloquentlog_console_api::job;
 
 use crate::run_test;
 

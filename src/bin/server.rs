@@ -4,12 +4,12 @@ use dotenv::dotenv;
 use proctitle::set_title;
 use rocket_slog::SlogFairing;
 
-use eloquentlog_backend_api::logger;
-use eloquentlog_backend_api::server;
-use eloquentlog_backend_api::db::init_pool_holder as init_db_pool_holder;
-use eloquentlog_backend_api::mq::init_pool_holder as init_mq_pool_holder;
-use eloquentlog_backend_api::ss::init_pool_holder as init_ss_pool_holder;
-use eloquentlog_backend_api::config::Config;
+use eloquentlog_console_api::logger;
+use eloquentlog_console_api::server;
+use eloquentlog_console_api::db::init_pool_holder as init_db_pool_holder;
+use eloquentlog_console_api::mq::init_pool_holder as init_mq_pool_holder;
+use eloquentlog_console_api::ss::init_pool_holder as init_ss_pool_holder;
+use eloquentlog_console_api::config::Config;
 
 fn get_env() -> String {
     match env::var("ENV") {

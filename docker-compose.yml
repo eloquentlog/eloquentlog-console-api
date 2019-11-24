@@ -22,7 +22,7 @@ services:
 
   server:
     container_name: server
-    image: eloquentlog/eloquentlog-backend-api-server:latest
+    image: eloquentlog/eloquentlog-console-api-server:latest
     build:
       context: .
       args:
@@ -36,7 +36,7 @@ services:
 
   worker:
     container_name: worker
-    image: eloquentlog/eloquentlog-backend-api-worker:latest
+    image: eloquentlog/eloquentlog-console-api-worker:latest
     build:
       context: .
       args:

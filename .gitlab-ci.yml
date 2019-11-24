@@ -261,7 +261,7 @@ release-development:
     # (additional secret variables)
     # GCP_CLOUD_BUILD_CREDENTIAL_JSON: /path/to/credential.json
     # GCP_CLOUD_BUILD_SUBSTR_ENV_VARS: /path/to/.env.deploy
-    # GCP_CLOUD_RUN_SERVICE_NAME_BASE: eloquentlog-backend-api
+    # GCP_CLOUD_RUN_SERVICE_NAME_BASE: eloquentlog-console-api
     # GCP_CLOUD_SQL_POSTGRES_INSTANCE: foo-bar-baz-qux-quux
     # GCP_CLOUD_STORAGE_LOG_DIRECTORY: eloquentlog_cloudbuild
     # GCP_PROJECT_ID: eloquentlog
@@ -276,7 +276,7 @@ release-development:
     - . .tool/$CLOUD_SDK_ARTIFACT/path.bash.inc; make deploy:server
   only:
     # TODO
-    - master@eloquentlog/eloquentlog-backend-api
+    - master@eloquentlog/eloquentlog-console-api
     # - /^v.*$/
     # except:
     #   - branches

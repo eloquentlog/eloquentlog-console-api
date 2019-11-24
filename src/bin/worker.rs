@@ -10,10 +10,10 @@ use fourche::queue::Queue;
 use proctitle::set_title;
 use redis::Client;
 
-use eloquentlog_backend_api::config::Config;
-use eloquentlog_backend_api::db::establish_connection;
-use eloquentlog_backend_api::job::Job;
-use eloquentlog_backend_api::logger::get_logger;
+use eloquentlog_console_api::config::Config;
+use eloquentlog_console_api::db::establish_connection;
+use eloquentlog_console_api::job::Job;
+use eloquentlog_console_api::logger::get_logger;
 
 fn get_env() -> String {
     match env::var("ENV") {

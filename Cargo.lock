@@ -421,7 +421,7 @@ version = "1.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
-name = "eloquentlog-backend-api"
+name = "eloquentlog-console-api"
 version = "0.0.1"
 dependencies = [
  "accord 0.2.2 (git+https://github.com/ChrisBuchholz/accord.git?rev=e56cecc)",

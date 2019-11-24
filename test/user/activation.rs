@@ -1,8 +1,8 @@
 use fourche::queue::Queue;
 use rocket::http::{ContentType, Header, Status};
 
-use eloquentlog_backend_api::model;
-use eloquentlog_backend_api::job;
+use eloquentlog_console_api::model;
+use eloquentlog_console_api::job;
 
 use super::super::run_test;
 

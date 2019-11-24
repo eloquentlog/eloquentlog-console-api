@@ -1,27 +1,27 @@
-Eloquentlog Backend API
+Eloquentlog Console API
 =======================
 
-.. image:: https://gitlab.com/eloquentlog/eloquentlog-backend-api/badges/master/pipeline.svg
-   :target: https://gitlab.com/eloquentlog/eloquentlog-backend-api/commits/master
+.. image:: https://gitlab.com/eloquentlog/eloquentlog-console-api/badges/master/pipeline.svg
+   :target: https://gitlab.com/eloquentlog/eloquentlog-console-api/commits/master
 
-.. image:: https://gitlab.com/eloquentlog/eloquentlog-backend-api/badges/master/coverage.svg
-   :target: https://gitlab.com/eloquentlog/eloquentlog-backend-api/commits/master
+.. image:: https://gitlab.com/eloquentlog/eloquentlog-console-api/badges/master/coverage.svg
+   :target: https://gitlab.com/eloquentlog/eloquentlog-console-api/commits/master
 
 .. code:: text
 
    Eloquentlog
 
-   ╔╗ ┌─┐┌─┐┬┌─┌─┐┌┐┌┌┬┐  ╔═╗╔═╗╦
-   ╠╩╗├─┤│  ├┴┐├┤ │││ ││  ╠═╣╠═╝║
-   ╚═╝┴ ┴└─┘┴ ┴└─┘┘└┘─┴┘  ╩ ╩╩  ╩
+   ╔═╗┌─┐┌┐┌┌─┐┌─┐┬  ┌─┐  ╔═╗╔═╗╦
+	 ║  │ ││││└─┐│ ││  ├┤   ╠═╣╠═╝║
+	 ╚═╝└─┘┘└┘└─┘└─┘┴─┘└─┘  ╩ ╩╩  ╩
 
-The backend API server of Eloquentlog_.
+The console backend API server of Eloquentlog_.
 
 
 Repository
 ----------
 
-https://gitlab.com/eloquentlog/eloquentlog-backend-api
+https://gitlab.com/eloquentlog/eloquentlog-console-api
 
 
 Requirements
@@ -66,16 +66,16 @@ Prepare ``.env.production``.
     # server
     % docker build --file Dockerfile \
       --build-arg BINARY=server \
-      --tag eloquentlog/eloquentlog-backend-api-server:latest .
+      --tag eloquentlog/eloquentlog-console-api-server:latest .
     % docker run --env_file ./.env.production \
-      -it eloquentlog/eloquentlog-backend-api-server:latest
+      -it eloquentlog/eloquentlog-console-api-server:latest
 
     # worker
     % docker build --file Dockerfile \
       --build-arg BINARY=worker \
-      --tag eloquentlog/eloquentlog-backend-api-worker:latest .
+      --tag eloquentlog/eloquentlog-console-api-worker:latest .
     % docker run --env_file ./.env.production \
-      -it eloquentlog/eloquentlog-backend-api-worker:latest
+      -it eloquentlog/eloquentlog-console-api-worker:latest
 
 Note
 ^^^^
@@ -90,7 +90,7 @@ As a common issue, ``--env_file`` doesn't handle double-quoted string like
     % alias host="ip route show 0.0.0.0/0 | grep -Eo 'via \S+' | awk '{print \$2}'"
     % docker run --add-host=postgres:$(host) --add-host=redis:$(host) \
       --env-file ./.env.production \
-      --rm -it eloquentlog/eloquentlog-backend-api-server
+      --rm -it eloquentlog/eloquentlog-console-api-server
 
 
 Development
@@ -137,7 +137,7 @@ Deployment
 .. code:: zsh
 
     # e.g. server
-    $ IMAGE_NAME=eloquentlog-backend-api-server
+    $ IMAGE_NAME=eloquentlog-console-api-server
 
     % docker build --file Dockerfile \
       --build-arg BINARY=server \
@@ -169,7 +169,7 @@ License
    ┣╸ ┃  ┃ ┃┃┓┃┃ ┃┣╸ ┃┗┫ ┃ ┃  ┃ ┃┃╺┓
    ┗━╸┗━╸┗━┛┗┻┛┗━┛┗━╸╹ ╹ ╹ ┗━╸┗━┛┗━┛
 
-   Backend API
+   Console API
    Copyright (c) 2018-2019 Lupine Software LLC
 
 

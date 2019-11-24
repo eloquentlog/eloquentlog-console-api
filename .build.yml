@@ -60,7 +60,7 @@ substitutions:
   _POSTGRES_INSTANCE: 'foo-bar-baz-qux-quux'
   _BUILD_TARGET_NAME: 'server'
   _BUILD_LOGS_BUCKET: '${_PROJECT_ID}_cloudbuild'
-  _SERVICE_NAME: 'eloquentlog-backend-api-server'
+  _SERVICE_NAME: 'eloquentlog-console-api-server'
 
   # -- from .env.deploy
   _REGISTRY_HOST: 'eu.gcr.io'
