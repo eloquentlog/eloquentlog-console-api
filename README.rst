@@ -12,8 +12,8 @@ Eloquentlog Console API
    Eloquentlog
 
    ╔═╗┌─┐┌┐┌┌─┐┌─┐┬  ┌─┐  ╔═╗╔═╗╦
-	 ║  │ ││││└─┐│ ││  ├┤   ╠═╣╠═╝║
-	 ╚═╝└─┘┘└┘└─┘└─┘┴─┘└─┘  ╩ ╩╩  ╩
+   ║  │ ││││└─┐│ ││  ├┤   ╠═╣╠═╝║
+   ╚═╝└─┘┘└┘└─┘└─┘┴─┘└─┘  ╩ ╩╩  ╩
 
 The console backend API server of Eloquentlog_.
 
@@ -173,8 +173,7 @@ License
    Copyright (c) 2018-2019 Lupine Software LLC
 
 
-`AGPL-3.0-or-later`
-
+``AGPL-3.0-or-later``.
 
 .. code:: text
 
