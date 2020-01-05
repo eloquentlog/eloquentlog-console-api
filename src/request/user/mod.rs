@@ -16,13 +16,14 @@ impl<'a, 'r> FromRequest<'a, 'r> for &'a User {
     type Error = ();
 
     fn from_request(req: &'a Request<'r>) -> request::Outcome<&'a User, ()> {
+        let authentication_token = req
+            .guard::<AuthenticationToken>()
+            .failure_then(|v| request::Outcome::Failure((v.0, ())))?;
+
         let login = req.local_cache(|| {
             let config = req.guard::<State<Config>>().unwrap();
             let db_conn = req.guard::<DbConn>().unwrap();
             let logger = req.guard::<SyncLogger>().unwrap();
-
-            let authentication_token =
-                req.local_cache(|| req.guard::<AuthenticationToken>().unwrap());
 
             User::find_by_token::<AuthenticationClaims>(
                 &authentication_token,
