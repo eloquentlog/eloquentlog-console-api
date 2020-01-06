@@ -219,7 +219,7 @@ deploy\:%:  ## deploy {server|worker} on a cluster on Cloud Run (require GCP_XXX
 		[ "$${BUILD_TARGET}" != "worker" ]; then \
 		exit; \
 	fi; \
-	CLOUDSDK_CORE_PROJECT="$(GCP_PROJECT_ID)"; \
+	export CLOUDSDK_CORE_PROJECT="$(GCP_PROJECT_ID)"; \
 	gcloud auth activate-service-account \
 		--key-file=$(GCP_CLOUD_BUILD_CREDENTIAL_JSON); \
 	SUBSTITUTIONS=$(shell \

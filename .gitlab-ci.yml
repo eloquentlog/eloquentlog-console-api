@@ -258,7 +258,7 @@ release-development:
     CLOUD_SDK_CHECKSUM: f152815d05a2f9374c87be1325a7d3bdbf62720d8fad9acb42dc2312d2e33f4a
     CLOUD_SDK_ARTIFACT: google-cloud-sdk
     CLOUD_SDK_FILENAME: ${CLOUD_SDK_ARTIFACT}-269.0.0-linux-x86_64.tar.gz
-    # (additional secret variables)
+    # (e.g.) # additional secret variables
     # GCP_CLOUD_BUILD_CREDENTIAL_JSON: /path/to/credential.json
     # GCP_CLOUD_BUILD_SUBSTR_ENV_VARS: /path/to/.env.deploy
     # GCP_CLOUD_RUN_SERVICE_NAME_BASE: eloquentlog-console-api
