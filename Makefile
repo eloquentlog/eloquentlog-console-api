@@ -17,7 +17,7 @@ GCP_CLOUD_STORAGE_LOG_DIRECTORY ?=
 setup\:vendor:  ## Install cargo vendor and run it
 	@mkdir -p .cargo
 	@which cargo-vendor >/dev/null 2>&1 || cargo install \
-	  cargo-vendor --force
+		cargo-vendor --force
 	@cargo vendor > .cargo/config
 .PHONY: setup\:vendor
 
@@ -25,7 +25,7 @@ setup\:tool:  ## Install development tools
 # for cargo-husky
 	@mkdir -p .git/hooks
 	@which diesel >/dev/null 2>&1 || cargo install \
-	  diesel_cli --no-default-features --features "postgres" --force
+		diesel_cli --no-default-features --features "postgres" --force
 .PHONY: setup\:tool
 
 setup\:all: | setup\:tool setup\:vendor  ## Setup vendor and tool both [alias: setup]
@@ -140,7 +140,7 @@ build\:release\:worker:  ## build only worker binary in release mode
 # watch -- {{{
 watch\:server:  ## Start watch process for development server [alias: server]
 	@cargo watch --exec 'run --bin server' --delay 0.3 \
-	  --ignore '(\.tool|tmp|migration|src\/worker)/\*'
+		--ignore '(\.tool|tmp|migration|src\/worker)/\*'
 .PHONY: watch\:server
 
 server: | watch\:server
@@ -148,7 +148,7 @@ server: | watch\:server
 
 watch\:worker:  ## Start watch process for development worker [alias: worker]
 	@cargo watch --exec 'run --bin worker' --delay 0.3 \
-	  --ignore '(\.tool|tmp|migration|src\/server)/\*'
+		--ignore '(\.tool|tmp|migration|src\/server)/\*'
 .PHONY: watch\:worker
 
 worker: | watch\:worker
@@ -185,8 +185,8 @@ watch\:test: | watch\:test\:all
 # schema -- {{{
 schema\:migration\:commit:  ## Run all migrations
 	@if [ -f "$$(pwd)/.env" ]; then \
-	  source $$(pwd)/.env && \
-		export $$(cut -d= -f1 $$(pwd)/.env | grep -vE "^(#|$$)"); \
+		source $$(pwd)/.env && \
+		export $$(cut -d "=" -f 1 $$(pwd)/.env | grep -vE "^(\#|$$)"); \
 	fi; \
 	export DATABASE_URL="$(VAR_DATABASE_URL)"; \
 	diesel setup --migration-dir $(MIGRATION_DIRECTORY) && \
@@ -195,8 +195,8 @@ schema\:migration\:commit:  ## Run all migrations
 
 schema\:migration\:revert:  ## Rollback a latest migration
 	@if [ -f "$$(pwd)/.env" ]; then \
-	  source $$(pwd)/.env && \
-		export $$(cut -d= -f1 $$(pwd)/.env | grep -vE "^(#|$$)"); \
+		source $$(pwd)/.env && \
+		export $$(cut -d "=" -f 1 $$(pwd)/.env | grep -vE "^(\#|$$)"); \
 	fi; \
 	export DATABASE_URL="$(VAR_DATABASE_URL)"; \
 	diesel migration revert --migration-dir $(MIGRATION_DIRECTORY)
@@ -204,8 +204,8 @@ schema\:migration\:revert:  ## Rollback a latest migration
 
 schema\:migration\:status:  ## List migrations
 	@if [ -f "$$(pwd)/.env" ]; then \
-	  source $$(pwd)/.env && \
-		export $$(cut -d= -f1 $$(pwd)/.env | grep -vE "^(#|$$)"); \
+		source $$(pwd)/.env && \
+		export $$(cut -d "=" -f 1 $$(pwd)/.env | grep -vE "^(\#|$$)"); \
 	fi; \
 	export DATABASE_URL="$(VAR_DATABASE_URL)"; \
 	diesel migration list --migration-dir $(MIGRATION_DIRECTORY)
@@ -226,7 +226,7 @@ deploy\:%:  ## Deploy `{server|worker}` on a cluster on Cloud Run (require: GCP_
 		cat $(GCP_CLOUD_BUILD_SUBSTR_ENV_VARS) | \
 		grep '^_' | \
 		sed -e :a -e 'N;s/\n/,/;ta' | \
-	  sed -e 's/"//g' \
+		sed -e 's/"//g' \
 	); \
 	SUBSTITUTIONS=$$(printf "\
 		_BUILD_TARGET_NAME=$${BUILD_TARGET},\
@@ -234,8 +234,7 @@ deploy\:%:  ## Deploy `{server|worker}` on a cluster on Cloud Run (require: GCP_
 		_BUILD_LOGS_BUCKET=$(GCP_CLOUD_STORAGE_LOG_DIRECTORY),\
 		_SERVICE_NAME=$(GCP_CLOUD_RUN_SERVICE_NAME_BASE)-$${BUILD_TARGET},\
 		%s" \
-		"$${SUBSTITUTIONS}" \
-	| sed 's/[[:space:]]//g'); \
+		"$${SUBSTITUTIONS}" | sed 's/[[:space:]]//g'); \
 	gcloud builds submit \
 		--config=.build.yml . \
 		--substitutions="$${SUBSTITUTIONS}"
@@ -254,12 +253,12 @@ doc:  ## Generate doc for lib
 
 help:  ## Display this message
 	@grep --extended-regexp '^[0-9a-z\:\\\%]+: ' $(MAKEFILE_LIST) | \
-	  grep --extended-regexp '  ## ' | \
-	  sed --expression='s/\(\s|\(\s[0-9a-z\:\\]*\)*\)  /  /' | \
-	  tr --delete \\\\ | \
-	  awk 'BEGIN {FS = ":  ## "}; \
-	      {printf "\033[38;05;222m%-24s\033[0m %s\n", $$1, $$2}' | \
-	  sort
+		grep --extended-regexp '  ## ' | \
+		sed --expression='s/\(\s|\(\s[0-9a-z\:\\]*\)*\)  /  /' | \
+		tr --delete \\\\ | \
+		awk 'BEGIN {FS = ":  ## "}; \
+			{printf "\033[38;05;222m%-24s\033[0m %s\n", $$1, $$2}' | \
+		sort
 .PHONY: help
 # }}}
 
