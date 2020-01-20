@@ -2,6 +2,7 @@
 VAR_DATABASE_URL := $(if $(ENV),"$$$(shell echo "$(ENV)" | \
 	tr '[:lower:]' '[:upper:]')_DATABASE_URL","$$DATABASE_URL")
 MIGRATION_DIRECTORY := migration
+MIGRATION_NAME ?=
 
 ENV := development
 
@@ -192,6 +193,23 @@ schema\:migration\:commit:  ## Run all migrations
 	diesel setup --migration-dir $(MIGRATION_DIRECTORY) && \
 	diesel migration run --migration-dir $(MIGRATION_DIRECTORY)
 .PHONY: schema\:migration\:commit
+
+schema\:migration\:create:  ## Generate new migration files (require: MIGRATION_NAME env var)
+	@if [ -z "$(MIGRATION_NAME)" ]; then \
+		echo "You need to set \$$MIGRATION_NAME, e.g. \`MIGRATION_NAME=xxx make ...\`"; \
+		exit 1; \
+	fi
+	@if [ -f "$$(pwd)/.env" ]; then \
+		source $$(pwd)/.env && \
+		export $$(cut -d "=" -f 1 $$(pwd)/.env | grep -vE "^(\#|$$)"); \
+	fi; \
+	export DATABASE_URL="$(VAR_DATABASE_URL)"; \
+	diesel setup --migration-dir $(MIGRATION_DIRECTORY) && \
+	diesel migration generate \
+		--migration-dir $(MIGRATION_DIRECTORY) \
+		--version $$(date +%Y%m%d%H%M%S) \
+		$(MIGRATION_NAME)
+.PHONY: schema\:migration\:create
 
 schema\:migration\:revert:  ## Rollback a latest migration
 	@if [ -f "$$(pwd)/.env" ]; then \
