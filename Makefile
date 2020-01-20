@@ -213,7 +213,7 @@ schema\:migration\:status:  ## List migrations
 # }}}
 
 # deploy -- {{{
-deploy\:%:  ## deploy {server|worker} on a cluster on Cloud Run (require GCP_XXX env vars)
+deploy\:%:  ## Deploy `{server|worker}` on a cluster on Cloud Run (require: GCP_XXX env vars)
 	@BUILD_TARGET="$(subst deploy:,,$@)"; \
 	if [ "$${BUILD_TARGET}" != "server" ] && \
 		[ "$${BUILD_TARGET}" != "worker" ]; then \
@@ -253,7 +253,7 @@ doc:  ## Generate doc for lib
 .PHONY: doc
 
 help:  ## Display this message
-	@grep --extended-regexp '^[0-9a-z\:\\]+: ' $(MAKEFILE_LIST) | \
+	@grep --extended-regexp '^[0-9a-z\:\\\%]+: ' $(MAKEFILE_LIST) | \
 	  grep --extended-regexp '  ## ' | \
 	  sed --expression='s/\(\s|\(\s[0-9a-z\:\\]*\)*\)  /  /' | \
 	  tr --delete \\\\ | \
