@@ -50,7 +50,7 @@ impl FromSql<ELogFormat, Pg> for LogFormat {
 impl From<String> for LogFormat {
     fn from(s: String) -> Self {
         match s.to_ascii_uppercase().as_ref() {
-            "toml" => LogFormat::TOML,
+            "TOML" => LogFormat::TOML,
             _ => LogFormat::TOML,
         }
     }
