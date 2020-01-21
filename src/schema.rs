@@ -62,5 +62,25 @@ table! {
     }
 }
 
+table! {
+    use diesel::sql_types::*;
+
+    use crate::model::access_token::{EAccessTokenState, EAgentType};
+
+    access_tokens (id) {
+        id -> Int8,
+        agent_id -> Int8,
+        agent_type -> EAgentType,
+        name -> VarChar,
+        token -> Nullable<Bytea>,
+        state -> EAccessTokenState,
+        revoked_at -> Nullable<Timestamp>,
+        created_at -> Timestamp,
+        updated_at -> Timestamp,
+    }
+}
+
 joinable!(user_emails -> users (user_id));
 allow_tables_to_appear_in_same_query!(users, user_emails);
+
+allow_tables_to_appear_in_same_query!(users, access_tokens);

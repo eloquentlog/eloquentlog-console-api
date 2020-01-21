@@ -3,17 +3,20 @@
 //! SQL types are imported publicly in each model entities.
 
 // sql types
+mod access_token_state;
+mod agent_type;
 mod log_level;
 mod log_format;
 mod user_email_identification_state;
 mod user_email_role;
-mod user_state;
 mod user_reset_password_state;
+mod user_state;
 
 // non-persistent (deciduous) entities
 pub mod token;
 
 // models
+pub mod access_token;
 pub mod message;
 pub mod user;
 pub mod user_email;
