@@ -1,5 +1,4 @@
 stages:
-  - setup
   - verify
   - test
   - build
@@ -14,28 +13,6 @@ stages:
     else
       cp .diesel/diesel /usr/local/cargo/bin/diesel;
     fi
-
-.cloud-sdk:
-  - &cloud-sdk
-    mkdir -p .tool;
-    cd .tool;
-    if [ ! -d "../.cloud-sdk" ]; then
-      mkdir -p ../.cloud-sdk;
-      curl -O $CLOUD_SDK_BASE_URL/$CLOUD_SDK_FILENAME;
-      echo "${CLOUD_SDK_CHECKSUM}" "" ./$CLOUD_SDK_FILENAME | sha256sum -c -;
-      cp $CLOUD_SDK_FILENAME ../.cloud-sdk/;
-    else
-      cp ../.cloud-sdk/$CLOUD_SDK_FILENAME .;
-    fi;
-    tar zxf $CLOUD_SDK_FILENAME;
-    ./$CLOUD_SDK_ARTIFACT/install.sh
-      --command-completion=false
-      --path-update=false
-      --usage-reporting=false
-      --rc-path=/dev/null
-      --override-components beta cloud-build-local core
-      --quiet;
-    cd ../
 
 .postgresql:
   - &postgresql
@@ -114,7 +91,11 @@ stages:
 
 .cache: &cache
   cache:
-    key: ${CARGO_LOCK_CHECKSUM}
+    key:
+      files:
+        - Cargo.lock
+      # NOTE: set an environment variable `CI_CACHE_VERSION`
+      prefix: "${CI_PROJECT_NAME}-cache-${CI_CACHE_VERSION}"
     paths:
       - .diesel
       - .cargo
@@ -122,12 +103,12 @@ stages:
       - vendor
 
 .vet-tools: &vet-tools
-  image: grauwoelfchen/rust-vet-tools:nightly
+  image: registry.gitlab.com/grauwoelfchen/portolan/rust-vet-tools:1.40.0-nightly
   except:
     - tags
 
 .rust: &rust
-  image: grauwoelfchen/rust:nightly
+  image: registry.gitlab.com/grauwoelfchen/portolan/rust:1.40.0-nightly
   before_script:
     - *postgresql
     - rustc --version
@@ -136,24 +117,10 @@ stages:
   <<: *cache
 
 .gentoo: &gentoo
-  image: grauwoelfchen/gentoo-amd64-nomultilib:latest
-  before_script:
+  image: registry.gitlab.com/grauwoelfchen/portolan/gentoo-amd64-nomultilib:latest
   <<: *cache
 
-setup-checksum:
-  stage: setup
-  image: grauwoelfchen/rust-vet-tools:nightly
-  variables:
-    GITLAB_HOST: gitlab.com
-    GITLAB_PROJECT_ID: 4765963
-    API_HEADER: "PRIVATE-TOKEN: ${GITLAB_PRIVATE_TOKEN}"
-  script:
-    - curl --version
-    - export VALUE=$(md5sum Cargo.lock | awk '{print $1}') &&
-      curl --silent --request PUT --header "${API_HEADER}"
-      "https://${GITLAB_HOST}/api/v4/projects/${GITLAB_PROJECT_ID}/variables/CARGO_LOCK_CHECKSUM"
-      --form "value=${VALUE}"
-
+# -- verify {{{
 check:
   stage: verify
   <<: *vet-tools
@@ -186,7 +153,9 @@ lint:
     - mkdir .git/hooks
     - make verify:lint
   <<: *cache
+# }}}
 
+# -- test {{{
 test:
   stage: test
   <<: *vet-tools
@@ -232,7 +201,9 @@ test:
   after_script:
     - cat target/coverage/index.json
   <<: *cache
+# }}}
 
+# -- build  {{{
 build-debug:
   stage: build
   <<: *rust
@@ -248,8 +219,32 @@ build-release:
     - make build:release
   only:
     - master
+# }}}
 
 # FIXME: experiment (server)
+# -- release {{{
+.cloud-sdk:
+  - &cloud-sdk
+    mkdir -p .tool;
+    cd .tool;
+    if [ ! -d "../.cloud-sdk" ]; then
+      mkdir -p ../.cloud-sdk;
+      curl -O $CLOUD_SDK_BASE_URL/$CLOUD_SDK_FILENAME;
+      echo "${CLOUD_SDK_CHECKSUM}" "" ./$CLOUD_SDK_FILENAME | sha256sum -c -;
+      cp $CLOUD_SDK_FILENAME ../.cloud-sdk/;
+    else
+      cp ../.cloud-sdk/$CLOUD_SDK_FILENAME .;
+    fi;
+    tar zxf $CLOUD_SDK_FILENAME;
+    ./$CLOUD_SDK_ARTIFACT/install.sh
+      --command-completion=false
+      --path-update=false
+      --usage-reporting=false
+      --rc-path=/dev/null
+      --override-components beta cloud-build-local core
+      --quiet;
+    cd ../
+
 release-development:
   stage: release
   <<: *gentoo
@@ -287,3 +282,4 @@ release-development:
       - .cloud-sdk
       - .python
       - .sqlite
+# }}}
