@@ -34,7 +34,7 @@ CREATE TABLE access_tokens (
 
 ALTER SEQUENCE access_tokens_id_seq OWNED BY access_tokens.id;
 
-CREATE UNIQUE INDEX access_tokens_agent_idx ON access_tokens(agent_id, agent_type);
+CREATE UNIQUE INDEX access_tokens_name ON access_tokens(name, agent_id);
 CREATE UNIQUE INDEX access_tokens_token_idx ON access_tokens(token);
 
 CREATE INDEX access_tokens_state_idx ON access_tokens(state);

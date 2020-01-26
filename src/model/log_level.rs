@@ -6,10 +6,10 @@ use std::fmt;
 use std::io::Write;
 use std::slice::Iter;
 
-use serde::Serialize;
 use diesel::deserialize::{self, FromSql};
 use diesel::pg::Pg;
 use diesel::serialize::{self, IsNull, Output, ToSql};
+use serde::Serialize;
 
 #[derive(SqlType)]
 #[postgres(type_name = "e_log_level")]
