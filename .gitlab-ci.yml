@@ -103,12 +103,12 @@ stages:
       - vendor
 
 .vet-tools: &vet-tools
-  image: registry.gitlab.com/grauwoelfchen/portolan/rust-vet-tools:1.40.0-nightly
+  image: registry.gitlab.com/grauwoelfchen/portolan/rust-vet-tools:1.42.0-nightly
   except:
     - tags
 
 .rust: &rust
-  image: registry.gitlab.com/grauwoelfchen/portolan/rust:1.40.0-nightly
+  image: registry.gitlab.com/grauwoelfchen/portolan/rust:1.42.0-nightly
   before_script:
     - *postgresql
     - rustc --version
