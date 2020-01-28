@@ -242,7 +242,7 @@ build-release:
       --usage-reporting=false
       --rc-path=/dev/null
       --override-components beta cloud-build-local core
-      --quiet;
+      --quiet >.CLOUD_SDK_ARTIFACT/install.log 2>&1;
     cd ../
 
 release-development:
