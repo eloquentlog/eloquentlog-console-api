@@ -1,6 +1,6 @@
 DROP INDEX IF EXISTS access_tokens_state_idx;
 
-DROP INDEX IF EXISTS access_tokens_agent_idx;
+DROP INDEX IF EXISTS access_tokens_name;
 DROP INDEX IF EXISTS access_tokens_token_idx;
 
 DROP TABLE IF EXISTS access_tokens;

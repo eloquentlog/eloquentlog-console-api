@@ -12,7 +12,7 @@ use diesel::deserialize::{self, FromSql};
 use diesel::pg::Pg;
 use diesel::serialize::{self, IsNull, Output, ToSql};
 
-#[derive(SqlType, QueryId)]
+#[derive(QueryId, SqlType)]
 #[postgres(type_name = "e_user_email_role")]
 pub struct EUserEmailRole;
 

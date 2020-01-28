@@ -18,6 +18,7 @@ extern crate uuid;
 #[macro_use]
 extern crate eloquentlog_console_api;
 
+mod access_token;
 mod authentication;
 mod message;
 mod error;

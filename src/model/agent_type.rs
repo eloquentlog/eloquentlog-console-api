@@ -11,7 +11,7 @@ use serde::Serialize;
 
 static AGENT_TYPES: [AgentType; 2] = [AgentType::Client, AgentType::Person];
 
-#[derive(SqlType)]
+#[derive(QueryId, SqlType)]
 #[postgres(type_name = "e_agent_type")]
 pub struct EAgentType;
 

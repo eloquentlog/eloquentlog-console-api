@@ -111,19 +111,24 @@ pub mod test {
         let conn = DB_POOL_HOLDER.get().expect("database connection");
         let logger = get_logger(&CONFIG);
 
-        let _: std::result::Result<(), diesel::result::Error> =
-            conn.build_transaction().read_write().run(|| {
+        let done = conn
+            .build_transaction()
+            .read_write()
+            .run::<(), diesel::result::Error, _>(|| {
                 setup(&conn);
 
                 let result = panic::catch_unwind(AssertUnwindSafe(|| {
-                    test(&conn, &CONFIG, &logger)
+                    test(&conn, &CONFIG, &logger);
                 }));
 
-                teardown(&conn);
+                if result.is_err() {
+                    return Err(diesel::result::Error::RollbackTransaction);
+                }
 
-                assert!(result.is_ok());
+                teardown(&conn);
                 Ok(())
             });
+        assert!(done.is_ok());
     }
 
     fn setup(conn: &PgConnection) {
@@ -135,7 +140,8 @@ pub mod test {
     }
 
     pub fn clean(conn: &PgConnection) {
-        let tables = ["users", "user_emails", "messages"].join(", ");
+        let tables =
+            ["users", "user_emails", "access_tokens", "messages"].join(", ");
         let q = format!("TRUNCATE TABLE {} RESTART IDENTITY CASCADE;", tables);
         let _ = diesel::sql_query(q)
             .execute(conn)

@@ -29,7 +29,7 @@ const RESET_PASSWORD_HASH_SOURCE: &[u8] =
     b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz01234567890";
 
 /// Returns encrypted password hash as bytes using bcrypt.
-fn encrypt_password(password: &str) -> Option<Vec<u8>> {
+pub fn encrypt_password(password: &str) -> Option<Vec<u8>> {
     match hash(password, BCRYPT_COST) {
         Ok(v) => Some(v.into_bytes()),
         Err(e) => {
