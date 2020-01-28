@@ -45,7 +45,7 @@ CLOUDSDK_ROOT_DIR=. ./$name/install.sh \
   --path-update=false \
   --rc-path=/dev/null \
   --override-components beta cloud-build-local core \
-  --quiet > $name/install.log
+  --quiet > $name/install.log 2>&1
 
 echo "-----> Done"
 cd $root_path
