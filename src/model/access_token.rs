@@ -27,8 +27,6 @@ pub struct NewAccessToken {
     pub agent_id: i64,
     pub agent_type: AgentType,
     pub name: String,
-    pub token: Option<Vec<u8>>,
-    pub state: AccessTokenState,
 }
 
 impl Default for NewAccessToken {
@@ -37,8 +35,6 @@ impl Default for NewAccessToken {
             agent_id: -1, // validation error
             agent_type: AgentType::Client,
             name: "".to_string(), // validation error
-            token: None,          // validation error
-            state: AccessTokenState::Disabled,
         }
     }
 }
@@ -85,6 +81,33 @@ impl fmt::Display for AccessToken {
 }
 
 impl AccessToken {
+    pub fn insert(
+        access_token: &NewAccessToken,
+        conn: &PgConnection,
+        logger: &Logger,
+    ) -> Option<Self>
+    {
+        let token = Self::generate_token();
+        let q = diesel::insert_into(access_tokens::table).values((
+            access_tokens::agent_id.eq(access_token.agent_id),
+            access_tokens::agent_type.eq(&access_token.agent_type),
+            access_tokens::name.eq(&access_token.name),
+            Some(access_tokens::token.eq(token)),
+            // default
+            access_tokens::state.eq(AccessTokenState::Disabled),
+        ));
+
+        info!(logger, "{}", debug_query::<Pg, _>(&q).to_string());
+
+        match q.get_result::<Self>(conn) {
+            Err(e) => {
+                error!(logger, "err: {}", e);
+                None
+            },
+            Ok(u) => Some(u),
+        }
+    }
+
     pub fn find_by_id(
         id: i64,
         conn: &PgConnection,
@@ -210,12 +233,11 @@ mod test {
 
         assert_eq!(at.agent_id, -1);
         assert_eq!(at.agent_type, AgentType::Client);
-        assert_eq!(at.token, None);
-        assert_eq!(at.state, AccessTokenState::Disabled);
+        assert_eq!(at.name, "".to_string());
     }
 
     #[test]
-    fn test_new_access_token_from_access() {
+    fn test_new_access_token_from_user() {
         run(|conn, _, _| {
             let u = USERS.get("weenie").unwrap();
             let user = diesel::insert_into(users::table)
@@ -227,8 +249,7 @@ mod test {
 
             assert_eq!(at.agent_id, user.id);
             assert_eq!(at.agent_type, AgentType::Person);
-            assert_eq!(at.token, None);
-            assert_eq!(at.state, AccessTokenState::Disabled);
+            assert_eq!(at.name, "".to_string());
         });
     }
 
@@ -357,5 +378,33 @@ mod test {
             );
             assert_eq!(result, Some(access_token));
         });
+    }
+
+    #[test]
+    fn test_insert() {
+        run(|conn, _, logger| {
+            let u = USERS.get("oswald").unwrap();
+            let user = diesel::insert_into(users::table)
+                .values(u)
+                .get_result::<User>(conn)
+                .unwrap_or_else(|e| panic!("Error at inserting: {}", e));
+
+            let at = NewAccessToken {
+                agent_id: user.id,
+                agent_type: AgentType::Person,
+                name: "".to_string(),
+            };
+
+            let result = AccessToken::insert(&at, conn, logger);
+            assert!(result.is_some());
+
+            let access_token = result.unwrap();
+            let result = access_tokens::table
+                .filter(access_tokens::id.eq(access_token.id))
+                .first::<AccessToken>(conn)
+                .expect("Failed to get a record");
+            assert!(result.token.is_some());
+            assert_eq!(result.state, AccessTokenState::Disabled);
+        })
     }
 }

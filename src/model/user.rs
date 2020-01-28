@@ -11,6 +11,7 @@ use uuid::Uuid;
 
 pub use crate::model::user_state::*;
 pub use crate::model::user_reset_password_state::*;
+pub use crate::model::access_token::{AccessToken, AgentType, NewAccessToken};
 pub use crate::model::token::{AuthenticationClaims, Claims, VerificationClaims};
 pub use crate::schema::users;
 pub use crate::schema::user_emails;
@@ -400,29 +401,33 @@ impl Activatable for User {
                     .limit(1);
                 info!(logger, "{}", debug_query::<Pg, _>(&q).to_string());
 
-                let dependency = q
+                let user_email = q
                     .load::<(Self, UserEmail)>(conn)
                     .map(|mut v| v.pop().unwrap().1)
                     .or_else(|e| {
                         error!(logger, "error: {}", e);
                         Err(e)
-                    });
+                    })
+                    .unwrap();
 
-                if let Ok(user_email) = dependency {
-                    if user_email.activate(conn, logger).is_err() {
-                        return Err(Error::RollbackTransaction);
-                    }
-
+                if user_email.activate(conn, logger).is_ok() {
                     let q = diesel::update(self)
                         .set(users::state.eq(UserState::Active));
                     info!(logger, "{}", debug_query::<Pg, _>(&q).to_string());
 
-                    return match q.get_result::<Self>(conn) {
+                    match q.get_result::<Self>(conn) {
                         Err(e) => {
                             error!(logger, "err: {}", e);
-                            Err(Error::RollbackTransaction)
                         },
-                        Ok(_) => Ok(()),
+                        Ok(u) => {
+                            // create (disabled) personal access token
+                            let mut t = NewAccessToken::from(&u);
+                            t.name = "Personal Access Token".to_string();
+                            let result = AccessToken::insert(&t, conn, logger);
+                            if result.is_some() {
+                                return Ok(());
+                            }
+                        },
                     };
                 }
                 Err(Error::RollbackTransaction)
