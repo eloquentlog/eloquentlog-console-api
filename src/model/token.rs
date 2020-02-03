@@ -78,6 +78,10 @@ where Self: std::marker::Sized
 }
 
 /// VerificationClaims
+///
+/// This claims is used for `users.reset_password_token` and
+/// `user_emails.identification_token`. They are expected to be treated with an
+/// expiration. See also `AccountActivator` service.
 #[derive(Debug, Deserialize, Serialize)]
 pub struct VerificationClaims {
     pub sub: String,
@@ -161,6 +165,9 @@ impl Claims for VerificationClaims {
 }
 
 /// AuthenticationClaims
+///
+/// This claims is used for user's signin action and request with an access
+/// token.
 #[derive(Debug, Deserialize, Serialize)]
 pub struct AuthenticationClaims {
     pub sub: String,
