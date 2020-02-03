@@ -218,17 +218,6 @@ fn test_user_activate() {
             model::access_token::AccessToken::find_personal_token_by_user_id(
                 user.id, conn.db, logger,
             );
-        assert!(result.is_some());
-
-        let access_token = result.unwrap();
-        assert_eq!(access_token.name, "Personal Access Token".to_string());
-        assert_eq!(
-            access_token.agent_type,
-            model::access_token::AgentType::Person,
-        );
-        assert_eq!(
-            access_token.state,
-            model::access_token::AccessTokenState::Disabled,
-        );
+        assert!(result.is_none());
     });
 }

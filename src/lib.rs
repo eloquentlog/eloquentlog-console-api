@@ -74,7 +74,8 @@ pub fn server() -> rocket::Rocket {
         .mount(
             "/_api",
             routes![
-                route::access_token::get_access_token,
+                route::access_token::generation::generate,
+                route::access_token::generation::generate_preflight,
                 route::authentication::login,
                 route::authentication::login_preflight,
                 route::authentication::logout,
