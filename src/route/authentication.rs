@@ -1,7 +1,6 @@
 use chrono::Utc;
 use rocket::State;
 use rocket::http::{Cookie, Cookies, Status};
-use rocket::response::Response as RawResponse;
 use rocket_slog::SyncLogger;
 
 use crate::config::Config;
@@ -10,12 +9,22 @@ use crate::model::user::User;
 use crate::model::Authenticatable;
 use crate::model::token::{AuthenticationClaims, Claims, TokenData};
 use crate::request::user::authentication::UserAuthentication as RequestData;
-use crate::response::{Response, no_content_for};
+use crate::response::Response;
 use crate::util::{split_token, make_cookie};
 
-#[options("/login")]
-pub fn login_preflight<'a>() -> RawResponse<'a> {
-    no_content_for("POST")
+pub mod preflight {
+    use rocket::response::Response as RawResponse;
+    use crate::response::no_content_for;
+
+    #[options("/login")]
+    pub fn login<'a>() -> RawResponse<'a> {
+        no_content_for("POST")
+    }
+
+    #[options("/logout")]
+    pub fn logout<'a>() -> RawResponse<'a> {
+        no_content_for("POST")
+    }
 }
 
 #[post("/login", data = "<data>", format = "json")]

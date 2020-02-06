@@ -1,35 +1,37 @@
 use rocket::http::Status;
-use rocket::response::Response as RawResponse;
 use rocket_contrib::json::Json;
 use rocket_slog::SyncLogger;
 
 use crate::db::DbConn;
 use crate::model::message::{LogFormat, LogLevel, Message, NewMessage};
 use crate::model::user::User;
-use crate::response::{Response, no_content_for};
+use crate::response::Response;
 use crate::request::message::Message as RequestData;
 use crate::validation::message::Validator;
 
 const MESSAGES_PER_REQUEST: i64 = 100;
 
-#[options("/messages")]
-pub fn messages_preflight<'a>() -> RawResponse<'a> {
-    no_content_for("GET,POST")
-}
+pub mod preflight {
+    use rocket::response::Response as RawResponse;
+    use rocket_slog::SyncLogger;
+    use crate::response::no_content_for;
 
-#[get("/messages")]
-pub fn get_messages(user: &User, conn: DbConn, logger: SyncLogger) -> Response {
-    let res: Response = Default::default();
+    // TODO: refer interfaces for Redis
+    #[options("/message/lrange")]
+    pub fn lrange<'a>() -> RawResponse<'a> {
+        no_content_for("GET")
+    }
 
-    info!(logger, "user: {}", user.uuid);
+    #[options("/message/add")]
+    pub fn add<'a>() -> RawResponse<'a> {
+        no_content_for("POST")
+    }
 
-    let messages = Message::recent_by_user_id(
-        user.id,
-        MESSAGES_PER_REQUEST,
-        &conn,
-        &logger,
-    );
-    res.format(json!({ "messages": messages }))
+    #[options("/message/put/<id>")]
+    pub fn put<'a>(id: usize, logger: SyncLogger) -> RawResponse<'a> {
+        info!(logger, "id: {}", id);
+        no_content_for("PUT")
+    }
 }
 
 // Save a new log message.
@@ -42,8 +44,9 @@ pub fn get_messages(user: &User, conn: DbConn, logger: SyncLogger) -> Response {
 //    ...
 // }
 // ```
-#[post("/messages", format = "json", data = "<data>")]
-pub fn post_message(
+// FIXME: rename function
+#[post("/message/add", format = "json", data = "<data>")]
+pub fn add(
     user: &User,
     data: Json<RequestData>,
     conn: DbConn,
@@ -73,14 +76,25 @@ pub fn post_message(
     }
 }
 
-#[options("/messages/<id>")]
-pub fn message_preflight<'a>(id: usize, logger: SyncLogger) -> RawResponse<'a> {
-    info!(logger, "id: {}", id);
-    no_content_for("GET,PUT")
+// FIXME: take args
+#[get("/message/lrange")]
+pub fn lrange(user: &User, conn: DbConn, logger: SyncLogger) -> Response {
+    let res: Response = Default::default();
+
+    info!(logger, "user: {}", user.uuid);
+
+    let messages = Message::recent_by_user_id(
+        user.id,
+        MESSAGES_PER_REQUEST,
+        &conn,
+        &logger,
+    );
+    res.format(json!({ "message": messages }))
 }
 
-#[put("/messages/<id>", format = "json", data = "<data>")]
-pub fn put_message(
+// FIXME: rename function
+#[put("/message/put/<id>", format = "json", data = "<data>")]
+pub fn put(
     user: &User,
     id: usize,
     data: Json<RequestData>,

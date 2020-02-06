@@ -4,7 +4,7 @@ use rocket::http::{ContentType, Header, Status};
 use eloquentlog_console_api::model;
 use eloquentlog_console_api::job;
 
-use super::super::run_test;
+use super::run_test;
 
 #[test]
 fn test_user_activate_with_invalid_token() {
