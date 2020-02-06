@@ -8,7 +8,7 @@ use eloquentlog_console_api::model;
 use crate::{minify, run_test, load_user, make_raw_password, USERS};
 
 #[test]
-fn test_get_no_message() {
+fn test_lrange_no_message() {
     run_test(|client, conn, _, _| {
         let u = USERS.get("oswald").unwrap().clone();
         let password = make_raw_password(&u);
@@ -31,7 +31,7 @@ fn test_get_no_message() {
         let token = result["token"].as_str().unwrap();
 
         let mut res = client
-            .get("/_api/messages")
+            .get("/_api/message/lrange")
             .header(Header::new("X-Requested-With", "XMLHttpRequest"))
             .header(Header::new("Authorization", format!("Bearer {}", token)))
             .dispatch();
@@ -42,7 +42,7 @@ fn test_get_no_message() {
 }
 
 #[test]
-fn test_get_recent_messages() {
+fn test_lrange_recent_messages() {
     run_test(|client, conn, _, _| {
         let u = USERS.get("oswald").unwrap().clone();
         let password = make_raw_password(&u);
@@ -86,7 +86,7 @@ fn test_get_recent_messages() {
             .unwrap_or_else(|_| panic!("Error inserting: {}", m));
 
         let mut res = client
-            .get("/_api/messages")
+            .get("/_api/message/lrange")
             .header(Header::new("X-Requested-With", "XMLHttpRequest"))
             .header(Header::new("Authorization", format!("Bearer {}", token)))
             .dispatch();
@@ -97,7 +97,7 @@ fn test_get_recent_messages() {
             res.body_string().unwrap(),
             minify(format!(
                 r#"{{
-"messages": [{{
+"message": [{{
   "code": null,
   "content": null,
   "created_at": "2019-08-07T06:05:04.333",
@@ -117,7 +117,7 @@ fn test_get_recent_messages() {
 }
 
 #[test]
-fn test_post_with_validation_errors() {
+fn test_add_with_validation_errors() {
     run_test(|client, conn, _, _| {
         let u = USERS.get("oswald").unwrap().clone();
         let password = make_raw_password(&u);
@@ -140,7 +140,7 @@ fn test_post_with_validation_errors() {
         let token = result["token"].as_str().unwrap();
 
         let mut res = client
-            .post("/_api/messages")
+            .post("/_api/message/add")
             .header(ContentType::JSON)
             .header(Header::new("X-Requested-With", "XMLHttpRequest"))
             .header(Header::new("Authorization", format!("Bearer {}", token)))
@@ -159,7 +159,7 @@ fn test_post_with_validation_errors() {
 }
 
 #[test]
-fn test_post() {
+fn test_add() {
     run_test(|client, conn, _, _| {
         let u = USERS.get("oswald").unwrap().clone();
         let password = make_raw_password(&u);
@@ -182,7 +182,7 @@ fn test_post() {
         let token = result["token"].as_str().unwrap();
 
         let mut res = client
-            .post("/_api/messages")
+            .post("/_api/message/add")
             .header(ContentType::JSON)
             .header(Header::new("X-Requested-With", "XMLHttpRequest"))
             .header(Header::new("Authorization", format!("Bearer {}", token)))
@@ -241,7 +241,7 @@ fn test_put() {
             .unwrap_or_else(|_| panic!("Error inserting: {}", m));
 
         let mut res = client
-            .put(format!("/_api/messages/{}", id))
+            .put(format!("/_api/message/put/{}", id))
             .header(ContentType::JSON)
             .header(Header::new("X-Requested-With", "XMLHttpRequest"))
             .header(Header::new("Authorization", format!("Bearer {}", token)))

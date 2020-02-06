@@ -4,7 +4,6 @@ use fourche::queue::Queue;
 use redis::{Commands, RedisError};
 use rocket::State;
 use rocket::http::Status;
-use rocket::response::Response as RawResponse;
 use rocket_contrib::json::Json;
 use rocket_slog::SyncLogger;
 
@@ -15,15 +14,25 @@ use crate::model::token::{VerificationClaims, Claims, TokenData};
 use crate::model::user::{NewUser, User};
 use crate::model::user_email::{NewUserEmail, UserEmail};
 use crate::mq::MqConn;
-use crate::response::{Response, no_content_for};
+use crate::response::Response;
 use crate::request::user::registration::UserRegistration;
 use crate::validation::user::Validator;
 use crate::ss::SsConn;
 use crate::util::split_token;
 
-#[options("/register")]
-pub fn register_preflight<'a>() -> RawResponse<'a> {
-    no_content_for("POST")
+pub mod preflight {
+    use rocket::response::Response as RawResponse;
+    use crate::response::no_content_for;
+
+    #[options("/register")]
+    pub fn register<'a>() -> RawResponse<'a> {
+        no_content_for("POST")
+    }
+
+    #[options("/deregister")]
+    pub fn deregister<'a>() -> RawResponse<'a> {
+        no_content_for("POST")
+    }
 }
 
 #[post("/register", data = "<data>", format = "json")]
@@ -132,11 +141,6 @@ pub fn register<'a>(
             }))
         },
     }
-}
-
-#[options("/deregister")]
-pub fn deregister_preflight<'a>() -> RawResponse<'a> {
-    no_content_for("POST")
 }
 
 #[post("/deregister", format = "json")]

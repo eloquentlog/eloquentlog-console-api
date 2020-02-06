@@ -1,7 +1,6 @@
 use chrono::Utc;
 use rocket::State;
 use rocket::http::Status;
-use rocket::response::Response as RawResponse;
 use rocket_slog::SyncLogger;
 
 use crate::config::Config;
@@ -9,11 +8,21 @@ use crate::db::DbConn;
 use crate::model::access_token::{AccessToken};
 use crate::model::token::{AuthenticationClaims, Claims, TokenData};
 use crate::model::user::User;
-use crate::response::{Response, no_content_for};
+use crate::response::Response;
 
-#[options("/access_token/generate")]
-pub fn generate_preflight<'a>() -> RawResponse<'a> {
-    no_content_for("GET")
+pub mod preflight {
+    use rocket::response::Response as RawResponse;
+    use crate::response::no_content_for;
+
+    #[options("/access_token/generate")]
+    pub fn generate<'a>() -> RawResponse<'a> {
+        no_content_for("GET")
+    }
+
+    #[options("/access_token/list")]
+    pub fn list<'a>() -> RawResponse<'a> {
+        no_content_for("GET")
+    }
 }
 
 #[get("/access_token/generate")]
@@ -62,4 +71,19 @@ pub fn generate<'a>(
             }}))
         },
     }
+}
+
+#[get("/access_token/list")]
+pub fn list<'a>(
+    user: &User,
+    _conn: DbConn,
+    _config: State<Config>,
+    logger: SyncLogger,
+) -> Response<'a>
+{
+    let res: Response = Default::default();
+
+    info!(logger, "user: {}", user.uuid);
+
+    res
 }

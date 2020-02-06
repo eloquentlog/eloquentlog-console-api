@@ -4,7 +4,6 @@ use fourche::queue::Queue;
 use redis::{Commands, RedisError};
 use rocket::State;
 use rocket::http::Status;
-use rocket::response::Response as RawResponse;
 use rocket_contrib::json::Json;
 use rocket_slog::SyncLogger;
 
@@ -18,7 +17,7 @@ use crate::request::password_reset::{
     PasswordReset, PasswordResetRequest, PasswordResetUpdate,
 };
 use crate::request::token::verification::VerificationToken;
-use crate::response::{Response, no_content_for};
+use crate::response::Response;
 use crate::service::password_updater::PasswordUpdater;
 use crate::validation::ValidationError;
 use crate::validation::password_reset::Validator as PasswordResetValidator;
@@ -26,9 +25,25 @@ use crate::validation::password_reset_request::Validator as PasswordResetRequest
 use crate::ss::SsConn;
 use crate::util::split_token;
 
-#[options("/password/reset")]
-pub fn request_preflight<'a>() -> RawResponse<'a> {
-    no_content_for("PUT")
+pub mod preflight {
+    use rocket::response::Response as RawResponse;
+    use rocket_slog::SyncLogger;
+    use crate::response::no_content_for;
+
+    #[options("/password/reset")]
+    pub fn request<'a>() -> RawResponse<'a> {
+        no_content_for("PUT")
+    }
+
+    #[options("/password/reset/<session_id>")]
+    pub fn verify_update<'a>(
+        session_id: String,
+        logger: SyncLogger,
+    ) -> RawResponse<'a>
+    {
+        info!(logger, "session_id: {}", session_id);
+        no_content_for("GET,PATCH")
+    }
 }
 
 #[put("/password/reset", data = "<payload>", format = "json")]
@@ -130,16 +145,6 @@ pub fn request<'a>(
         }));
     }
     res.status(Status::NotFound)
-}
-
-#[options("/password/reset/<session_id>")]
-pub fn preflight<'a>(
-    session_id: String,
-    logger: SyncLogger,
-) -> RawResponse<'a>
-{
-    info!(logger, "session_id: {}", session_id);
-    no_content_for("GET,PATCH")
 }
 
 // TODO:
