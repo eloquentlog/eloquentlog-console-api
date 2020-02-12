@@ -26,6 +26,8 @@ extern crate parking_lot;
 #[macro_use]
 extern crate rusty_fork;
 
+use std::collections::HashMap;
+
 mod response;
 mod validation;
 mod service;
@@ -50,7 +52,7 @@ pub mod route;
 macro_rules! hashmap(
     { $($key:expr => $value:expr),+ } => {
         {
-            let mut m = ::std::collections::HashMap::new();
+            let mut m = HashMap::new();
             $(m.insert($key, $value);)+
             m
         }
@@ -68,10 +70,11 @@ macro_rules! fnvhashmap(
     };
 );
 
-pub fn server() -> rocket::Rocket {
-    rocket::ignite()
-        .mount("/", routes![route::top::index])
-        .mount(
+// returns a sorted vec by namespace.
+pub fn routes() -> Vec<(&'static str, Vec<rocket::Route>)> {
+    let mut r = vec![
+        ("/", routes![route::top::index]),
+        (
             "/_api",
             routes![
                 // foundation
@@ -102,7 +105,17 @@ pub fn server() -> rocket::Rocket {
                 route::user::preflight::activate,
                 route::user::activate,
             ],
-        )
+        ),
+    ];
+    r.sort_by(|a, b| a.0.cmp(b.0));
+    r
+}
+
+pub fn server() -> rocket::Rocket {
+    let r: HashMap<&str, Vec<_>> = routes().iter().cloned().collect();
+    rocket::ignite()
+        .mount("/", r["/"].clone())
+        .mount("/_api", r["/_api"].clone())
         .register(catchers![
             route::error::bad_request,
             route::error::not_found,

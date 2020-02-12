@@ -104,6 +104,20 @@ Vet
     # see make help about details
     % make verify
 
+Route
+~~~~~
+
+.. code:: zsh
+
+    # check current routes
+    % make route
+    ...
+
+    # or build router
+    % make build:router
+    % ./target/debug/router
+    ...
+
 Run
 ~~~
 

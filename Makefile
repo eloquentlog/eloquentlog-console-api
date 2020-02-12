@@ -111,12 +111,22 @@ build\:debug:  ## build targets in debug mode [alias: build]
 build: | build\:debug
 .PHONY: build
 
+build\:release:  ## Build targets in release mode
+	cargo build --release
+.PHONY: build\:release
+
+## applications
+
 build\:debug\:server:  ## build only server binary in debug mode [alias: build:server]
 	cargo build --bin server
 .PHONY: build\:debug\:server
 
 build\:server: | build\:debug\:server
 .PHONY: build\:server
+
+build\:release\:server:  ## build only server binary in release mode
+	cargo build --bin server --release
+.PHONY: build\:release\:server
 
 build\:debug\:worker:  ## build only worker binary in debug mode [alias: build:worker]
 	cargo build --bin worker
@@ -125,17 +135,22 @@ build\:debug\:worker:  ## build only worker binary in debug mode [alias: build:w
 build\:worker: | build\:debug\:worker
 .PHONY: build\:worker
 
-build\:release:  ## Build targets in release mode
-	cargo build --release
-.PHONY: build\:release
-
-build\:release\:server:  ## build only server binary in release mode
-	cargo build --bin server --release
-.PHONY: build\:release\:server
-
 build\:release\:worker:  ## build only worker binary in release mode
 	cargo build --bin worker --release
 .PHONY: build\:release\:worker
+
+## utilities
+
+build\:debug\:router:  ## build only router binary in debug mode [alias: build:router]
+	cargo build --bin router
+.PHONY: build\:debug\:router
+
+build\:router: | build\:debug\:router
+.PHONY: build\:router
+
+build\:release\:router:  ## build only router binary in release mode
+	cargo build --bin router --release
+.PHONY: build\:release\:router
 # }}}
 
 # watch -- {{{
@@ -268,6 +283,10 @@ clean:  ## Tidy up
 doc:  ## Generate doc for lib
 	@cargo doc --lib --no-deps
 .PHONY: doc
+
+route:  ## Print all routes using router
+	@cargo run --bin router
+.PHONY: route
 
 help:  ## Display this message
 	@grep --extended-regexp '^[0-9a-z\:\\\%]+: ' $(MAKEFILE_LIST) | \
