@@ -1,3 +1,4 @@
+pub mod agent_type;
 pub mod message;
 pub mod password_reset;
 pub mod token;
