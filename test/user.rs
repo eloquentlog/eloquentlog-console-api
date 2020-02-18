@@ -215,9 +215,9 @@ fn test_user_activate() {
         assert_eq!(user.state, model::user::UserState::Active);
 
         let result =
-            model::access_token::AccessToken::find_personal_token_by_user_id(
+            model::access_token::AccessToken::find_disabled_personal_token_by_user_id(
                 user.id, conn.db, logger,
             );
-        assert!(result.is_none());
+        assert!(result.is_some());
     });
 }
