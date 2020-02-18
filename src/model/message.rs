@@ -163,25 +163,35 @@ impl Message {
         }
     }
 
-    pub fn recent_by_user_id(
+    pub fn fetch_messages_by_user_id(
+        _key: String,
         user_id: i64,
-        count: i64,
+        offset: i64,
+        limit: i64,
         conn: &PgConnection,
         logger: &Logger,
-    ) -> Vec<Message>
+    ) -> Option<Vec<Self>>
     {
+        if user_id < 1 || limit < 1 {
+            return None;
+        }
+
+        // FIXME: Add key (namespace) support
+
         let q = messages::table
             .filter(messages::user_id.eq(user_id))
-            .limit(count)
-            .order(messages::created_at.desc());
+            .order(messages::created_at.desc())
+            .offset(offset)
+            .limit(limit);
+
         info!(logger, "{}", debug_query::<Pg, _>(&q).to_string());
 
         match q.load::<Message>(conn) {
             Err(e) => {
                 println!("err: {}", e);
-                vec![]
+                None
             },
-            Ok(r) => r,
+            Ok(r) => Some(r),
         }
     }
 

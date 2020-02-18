@@ -31,7 +31,7 @@ fn test_lrange_no_message() {
         let token = result["token"].as_str().unwrap();
 
         let mut res = client
-            .get("/_api/message/lrange")
+            .get("/_api/message/lrange/namespace/0/2")
             .header(Header::new("X-Requested-With", "XMLHttpRequest"))
             .header(Header::new("Authorization", format!("Bearer {}", token)))
             .dispatch();
@@ -42,7 +42,7 @@ fn test_lrange_no_message() {
 }
 
 #[test]
-fn test_lrange_recent_messages() {
+fn test_lrange_messages() {
     run_test(|client, conn, _, _| {
         let u = USERS.get("oswald").unwrap().clone();
         let password = make_raw_password(&u);
@@ -86,7 +86,7 @@ fn test_lrange_recent_messages() {
             .unwrap_or_else(|_| panic!("Error inserting: {}", m));
 
         let mut res = client
-            .get("/_api/message/lrange")
+            .get("/_api/message/lrange/namespace/0/2")
             .header(Header::new("X-Requested-With", "XMLHttpRequest"))
             .header(Header::new("Authorization", format!("Bearer {}", token)))
             .dispatch();
@@ -96,8 +96,8 @@ fn test_lrange_recent_messages() {
         assert_eq!(
             res.body_string().unwrap(),
             minify(format!(
-                r#"{{
-"message": [{{
+                r#"[{{
+"message": {{
   "code": null,
   "content": null,
   "created_at": "2019-08-07T06:05:04.333",
@@ -108,8 +108,8 @@ fn test_lrange_recent_messages() {
   "title": "title",
   "updated_at": "2019-08-07T06:05:04.333",
   "user_id": {}
-}}]
-}}"#,
+}}
+}}]"#,
                 id, user.id
             ))
         );
@@ -117,7 +117,7 @@ fn test_lrange_recent_messages() {
 }
 
 #[test]
-fn test_add_with_validation_errors() {
+fn test_append_with_validation_errors() {
     run_test(|client, conn, _, _| {
         let u = USERS.get("oswald").unwrap().clone();
         let password = make_raw_password(&u);
@@ -140,7 +140,7 @@ fn test_add_with_validation_errors() {
         let token = result["token"].as_str().unwrap();
 
         let mut res = client
-            .post("/_api/message/add")
+            .post("/_api/message/append/namespace")
             .header(ContentType::JSON)
             .header(Header::new("X-Requested-With", "XMLHttpRequest"))
             .header(Header::new("Authorization", format!("Bearer {}", token)))
@@ -159,7 +159,7 @@ fn test_add_with_validation_errors() {
 }
 
 #[test]
-fn test_add() {
+fn test_append() {
     run_test(|client, conn, _, _| {
         let u = USERS.get("oswald").unwrap().clone();
         let password = make_raw_password(&u);
@@ -182,7 +182,7 @@ fn test_add() {
         let token = result["token"].as_str().unwrap();
 
         let mut res = client
-            .post("/_api/message/add")
+            .post("/_api/message/append/namespace")
             .header(ContentType::JSON)
             .header(Header::new("X-Requested-With", "XMLHttpRequest"))
             .header(Header::new("Authorization", format!("Bearer {}", token)))
@@ -198,74 +198,5 @@ fn test_add() {
 
         assert_eq!(res.status(), Status::Ok);
         assert!(res.body_string().unwrap().contains("id"));
-    });
-}
-
-#[test]
-fn test_put() {
-    run_test(|client, conn, _, _| {
-        let u = USERS.get("oswald").unwrap().clone();
-        let password = make_raw_password(&u);
-        let user = load_user(u, conn.db);
-
-        let mut res = client
-            .post("/_api/login")
-            .header(ContentType::JSON)
-            .body(format!(
-                r#"{{
-                    "username": "{}",
-                    "password": "{}"
-                }}"#,
-                user.email, password,
-            ))
-            .dispatch();
-
-        let body = res.body_string().unwrap();
-        let result: Value = serde_json::from_str(&body).unwrap();
-        let token = result["token"].as_str().unwrap();
-
-        let m = model::message::NewMessage {
-            code: None,
-            lang: "en".to_string(),
-            level: model::message::LogLevel::Information,
-            format: model::message::LogFormat::TOML,
-            title: Some("title".to_string()),
-            content: None,
-            user_id: user.id,
-        };
-
-        let id = diesel::insert_into(model::message::messages::table)
-            .values(&m)
-            .returning(model::message::messages::id)
-            .get_result::<i64>(conn.db)
-            .unwrap_or_else(|_| panic!("Error inserting: {}", m));
-
-        let mut res = client
-            .put(format!("/_api/message/put/{}", id))
-            .header(ContentType::JSON)
-            .header(Header::new("X-Requested-With", "XMLHttpRequest"))
-            .header(Header::new("Authorization", format!("Bearer {}", token)))
-            .body(format!(
-                r#"{{
-                    "id": {},
-                    "title": "Updated message",
-                    "content": "Hello, world!"
-                }}"#,
-                id,
-            ))
-            .dispatch();
-
-        let result = model::message::messages::table
-            .find(id)
-            .first::<model::message::Message>(conn.db)
-            .unwrap();
-        assert_eq!("Updated message", result.title);
-        assert_eq!("Hello, world!", result.content.unwrap());
-
-        assert_eq!(res.status(), Status::Ok);
-        assert!(res
-            .body_string()
-            .unwrap()
-            .contains(&format!("\"id\":{}", id)));
     });
 }

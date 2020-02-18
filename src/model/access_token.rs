@@ -132,11 +132,11 @@ impl AccessToken {
         info!(logger, "{}", debug_query::<Pg, _>(&q).to_string());
 
         match q.load::<Self>(conn) {
-            Ok(v) => Some(v),
             Err(e) => {
                 error!(logger, "err: {}", e);
                 None
             },
+            Ok(v) => Some(v),
         }
     }
 
