@@ -254,12 +254,13 @@ mod test {
 
     use base64::decode;
     use chrono::{DateTime, Duration, TimeZone, Utc};
+    use rstest::rstest;
     use serde_json;
 
-    use crate::model::test::run;
+    use crate::model::test::CONFIG;
 
     #[test]
-    fn test_token_format() {
+    fn token_format() {
         let now = Utc::now();
         let ts = now.timestamp();
 
@@ -273,7 +274,7 @@ mod test {
     }
 
     #[test]
-    fn test_verification_claims_encode() {
+    fn verification_claims_encode() {
         let now = Utc.ymd(2019, 6, 11).and_hms(23, 19, 32);
         let data = TokenData {
             value: "dummy".to_string(),
@@ -312,88 +313,112 @@ mod test {
         assert_eq!(claims.sub, data.value);
         assert_eq!(claims.iss, "issuer");
         assert_eq!(claims.iat, 1_560_295_172);
-        assert_eq!(claims.exp, claims.iat + 60 * 60 * 24); // +86400 (1560381572)
+
+        let one_day = 86400; // 60 * 60 * 24
+        assert_eq!(claims.exp, claims.iat + one_day); // 1560381572
+
         assert_eq!(claims.nbf, 1_560_295_172);
     }
 
+    #[rstest(
+        value, issuer, secret, granted_at,
+        case( // expires
+            "dummy",
+            &CONFIG.verification_token_issuer,
+            &CONFIG.verification_token_secret,
+            Utc.ymd(2001, 1, 1).and_hms(10, 0, 0),
+        ),
+        case( // not before (future)
+            "dummy",
+            &CONFIG.verification_token_issuer,
+            &CONFIG.verification_token_secret,
+            Utc::now() + Duration::hours(3),
+        ),
+        case( // wrong issuer
+            "dummy",
+            "unknown",
+            &CONFIG.verification_token_secret,
+            Utc::now(),
+        ),
+        case( // invalid secret
+            "dummy",
+            &CONFIG.verification_token_issuer,
+            "invalid",
+            Utc::now(),
+        )
+        ::trace
+    )]
     #[test]
-    fn test_verification_claims_decode_failure() {
-        run(|_, config, _| {
-            let tests: [(&str, &str, &str, DateTime<Utc>); 4] = [
-                (
-                    // expires
-                    "dummy",
-                    &config.verification_token_issuer,
-                    &config.verification_token_secret,
-                    Utc.ymd(2001, 1, 1).and_hms(10, 0, 0),
-                ),
-                (
-                    // not before
-                    "dummy",
-                    &config.verification_token_issuer,
-                    &config.verification_token_secret,
-                    Utc::now() + Duration::hours(3),
-                ),
-                (
-                    // wrong issuer
-                    "dummy",
-                    "unknown",
-                    &config.verification_token_secret,
-                    Utc::now(),
-                ),
-                (
-                    // invalid secret
-                    "dummy",
-                    &config.verification_token_issuer,
-                    "invalid",
-                    Utc::now(),
-                ),
-            ];
-            for (_, (value, issuer, secret, granted_at)) in
-                tests.iter().enumerate()
-            {
-                let data = TokenData {
-                    value: (*value).to_string(),
-                    granted_at: granted_at.timestamp(),
-                    expires_at: (*granted_at + Duration::hours(24)).timestamp(),
-                };
-                let token = VerificationClaims::encode(
-                    data,
-                    &config.verification_token_issuer,
-                    &config.verification_token_key_id,
-                    &config.verification_token_secret,
-                );
-                assert!(
-                    VerificationClaims::decode(&token, issuer, secret).is_err()
-                );
-            }
-        });
+    fn verification_claims_decode_failure(
+        value: &'static str,
+        issuer: &'static str,
+        secret: &'static str,
+        granted_at: DateTime<Utc>,
+    )
+    {
+        let data = TokenData {
+            value: value.to_string(),
+            granted_at: granted_at.timestamp(),
+            expires_at: (granted_at + Duration::hours(24)).timestamp(),
+        };
+        let token = VerificationClaims::encode(
+            data,
+            &CONFIG.verification_token_issuer,
+            &CONFIG.verification_token_key_id,
+            &CONFIG.verification_token_secret,
+        );
+        assert!(VerificationClaims::decode(&token, &issuer, &secret,).is_err());
     }
 
+    #[rstest(
+        value, issuer, secret, granted_at,
+        case( // within limit
+            "dummy",
+            &CONFIG.verification_token_issuer,
+            &CONFIG.verification_token_secret,
+            Utc::now() - Duration::hours(3), // will be created at compile
+        ),
+        case( // now
+            "dummy",
+            &CONFIG.verification_token_issuer,
+            &CONFIG.verification_token_secret,
+            Utc::now(),
+        ),
+        ::trace
+    )]
     #[test]
-    fn test_verification_claims_decode() {
-        let granted_at = Utc::now();
+    fn verification_claims_decode_success(
+        value: &'static str,
+        issuer: &'static str,
+        secret: &'static str,
+        granted_at: DateTime<Utc>,
+    )
+    {
+        dbg!(&granted_at);
         let data = TokenData {
-            value: "dummy".to_string(),
+            value: value.to_string(),
             granted_at: granted_at.timestamp(),
             expires_at: (granted_at + Duration::hours(24)).timestamp(),
         };
 
         let token = VerificationClaims::encode(
             data.clone(),
-            "issuer",
-            "key_id",
-            "secret",
+            &CONFIG.verification_token_issuer,
+            &CONFIG.verification_token_key_id,
+            &CONFIG.verification_token_secret,
         );
 
-        let claims = VerificationClaims::decode(&token, "issuer", "secret")
+        let claims = VerificationClaims::decode(&token, &issuer, &secret)
             .ok()
             .unwrap();
 
         assert_eq!(claims.sub, data.value);
-        assert_eq!(claims.iss, "issuer");
+        assert_eq!(claims.iss, CONFIG.verification_token_issuer);
         assert_eq!(claims.iat, data.granted_at as usize);
-        assert_eq!(claims.exp, claims.iat + 60 * 60 * 24); // +86400 (1560381572)
+
+        let one_day = 86400; // 60 * 60 * 24
+        assert_eq!(claims.exp, claims.iat + one_day); // 1560381572
+
         assert_eq!(claims.nbf, data.granted_at as usize);
     }
 }

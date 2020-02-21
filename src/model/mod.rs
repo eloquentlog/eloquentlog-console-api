@@ -92,10 +92,13 @@ pub mod test {
     use crate::logger::{Logger, get_logger};
 
     lazy_static! {
-        static ref CONFIG: Config = {
+        pub static ref CONFIG: Config = {
             dotenv().ok();
             Config::from("testing").unwrap()
         };
+    }
+
+    lazy_static! {
         static ref DB_POOL_HOLDER: DbPoolHolder = {
             init_pool_holder(
                 &CONFIG.database_url,
