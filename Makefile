@@ -246,8 +246,8 @@ schema\:migration\:status:  ## List migrations
 # }}}
 
 # deploy -- {{{
-deploy\:%:  ## Deploy `{server|worker}` on a cluster on Cloud Run (require: GCP_XXX env vars)
-	@BUILD_TARGET="$(subst deploy:,,$@)"; \
+_deploy\:%:
+	@BUILD_TARGET="$(subst _deploy-,,$@)"; \
 	if [ "$${BUILD_TARGET}" != "server" ] && \
 		[ "$${BUILD_TARGET}" != "worker" ]; then \
 		exit; \
@@ -267,11 +267,16 @@ deploy\:%:  ## Deploy `{server|worker}` on a cluster on Cloud Run (require: GCP_
 		_BUILD_LOGS_BUCKET=$(GCP_CLOUD_STORAGE_LOG_DIRECTORY),\
 		_SERVICE_NAME=$(GCP_CLOUD_RUN_SERVICE_NAME_BASE)-$${BUILD_TARGET},\
 		%s" \
-		"$${SUBSTITUTIONS}" | sed 's/[[:space:]]//g'); \
+		"$${SUBSTITUTIONS}" | sed 's/ //g'); \
 	gcloud builds submit \
 		--config=.build.yml . \
 		--substitutions="$${SUBSTITUTIONS}"
-.PHONY: deploy\:%
+
+deploy\:server: | _deploy-server  ## Deploy `server` on a cluster on Cloud Run (require: GCP_XXX env vars)
+.PHONY: deploy\:server
+
+deploy\:worker: | _deploy-worker  ## Deploy `worker` on a cluster on Cloud Run (require: GCP_XXX env vars)
+.PHONY: deploy\:worker
 # }}}
 
 # other utilities -- {{{
@@ -291,7 +296,7 @@ route:  ## Print all routes using router
 help:  ## Display this message
 	@grep --extended-regexp '^[0-9a-z\:\\\%]+: ' $(MAKEFILE_LIST) | \
 		grep --extended-regexp '  ## ' | \
-		sed --expression='s/\(\s|\(\s[0-9a-z\:\\]*\)*\)  /  /' | \
+		sed --expression='s/\(\s|\(\s[-_0-9a-z\:\\]*\)*\)  /  /' | \
 		tr --delete \\\\ | \
 		awk 'BEGIN {FS = ":  ## "}; \
 			{printf "\033[38;05;222m%-24s\033[0m %s\n", $$1, $$2}' | \
