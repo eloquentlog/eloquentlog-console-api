@@ -148,162 +148,167 @@ fn max_if_present(
     })
 }
 
+#[rustfmt::skip::attributes(rstest)]
 #[cfg(test)]
 mod test {
     use super::*;
 
-    #[test]
-    fn test_contain_only_alphanumeric_or_underscore() {
-        let tests: [(&'static str, bool); 5] = [
-            ("$", false),
-            ("(text)", false),
-            ("0-o", false),
-            ("_123", true),
-            ("ab_123", true),
-        ];
+    use rstest::rstest;
 
-        for (i, (s, expected)) in tests.iter().enumerate() {
-            assert_eq!(
-                *expected,
-                contain_only_alphanumeric_or_underscore()(&(*s).to_string())
-                    .is_ok(),
-                "#{} value: {}",
-                i,
-                s
-            );
-        }
+    #[rstest(
+        raw_s, expected,
+        case("$", false),
+        case("(text)", false),
+        case("0-o", false),
+        case("_123", true),
+        case("ab_123", true),
+        ::trace
+    )]
+    #[test]
+    fn test_contain_only_alphanumeric_or_underscore(
+        raw_s: &'static str,
+        expected: bool,
+    )
+    {
+        let f = contain_only_alphanumeric_or_underscore();
+        let s = &raw_s.to_string();
+
+        assert_eq!(expected, f(s).is_ok());
     }
 
+    #[rstest(raw_s, expected,
+        case("123456789", false),
+        case("123_456", false),
+        case("0___", false),
+        case("u123", true),
+        case("123four", true),
+        ::trace
+    )]
     #[test]
-    fn test_not_contain_only_digits_or_underscore() {
-        let tests: [(&'static str, bool); 5] = [
-            ("123456789", false),
-            ("123_456", false),
-            ("0___", false),
-            ("u123", true),
-            ("123four", true),
-        ];
+    fn test_not_contain_only_digits_or_underscore(
+        raw_s: &'static str,
+        expected: bool,
+    )
+    {
+        let f = not_contain_only_digits_or_underscore();
+        let s = &raw_s.to_string();
 
-        for (i, (s, expected)) in tests.iter().enumerate() {
-            assert_eq!(
-                *expected,
-                not_contain_only_digits_or_underscore()(&(*s).to_string())
-                    .is_ok(),
-                "#{} value: {}",
-                i,
-                s
-            );
-        }
+        assert_eq!(expected, f(s).is_ok());
     }
 
+    #[rstest(
+        needle, raw_s, expected,
+        case("@", "@23456789", false),
+        case("_", "123__45", false),
+        case("a", "0a___", false),
+        case("_", "u123", true),
+        case("4", "123four", true),
+        ::trace
+    )]
     #[test]
-    fn test_not_contain_if_given() {
-        let tests: [(&'static str, &'static str, bool); 5] = [
-            ("@", "@23456789", false),
-            ("_", "123__45", false),
-            ("a", "0a___", false),
-            ("_", "u123", true),
-            ("4", "123four", true),
-        ];
+    fn test_not_contain_if_given(
+        needle: &'static str,
+        raw_s: &'static str,
+        expected: bool,
+    )
+    {
+        let f = not_contain_if_given(Some((needle).to_string()));
+        let s = &raw_s.to_string();
 
-        for (i, (given, s, expected)) in tests.iter().enumerate() {
-            assert_eq!(
-                *expected,
-                not_contain_if_given(Some((*given).to_string()))(
-                    &(*s).to_string(),
-                )
-                .is_ok(),
-                "#{} given: {} value: {}",
-                i,
-                given,
-                s
-            );
-        }
+        assert_eq!(expected, f(s).is_ok());
     }
 
+    #[rstest(
+        needle, raw_s, expected,
+        case("abcdef", "cdef", false),
+        case("abcdef", "abcdefghijk", false),
+        case("aaaa", "aaaa___", false),
+        case("!!!", "@123_45", true),
+        case("4", "123four", true),
+        ::trace
+    )]
     #[test]
-    fn test_not_overlap_with() {
-        let tests: [(&'static str, &'static str, bool); 5] = [
-            ("abcdef", "cdef", false),
-            ("abcdef", "abcdefghijk", false),
-            ("aaaa", "aaaa___", false),
-            ("!!!", "@123_45", true),
-            ("4", "123four", true),
-        ];
-
+    fn test_not_overlap_with(
+        needle: &'static str,
+        raw_s: &'static str,
+        expected: bool,
+    )
+    {
         let field_name = "test_field";
 
-        for (i, (needle, s, expected)) in tests.iter().enumerate() {
-            assert_eq!(
-                *expected,
-                not_overlap_with(field_name)((*needle).to_string())(
-                    &(*s).to_string()
-                )
-                .is_ok(),
-                "#{} field_name: {}, needle: {} value: {}",
-                i,
-                field_name,
-                needle,
-                s
-            );
-        }
+        let f = not_overlap_with(field_name)(needle.to_string());
+        let s = &raw_s.to_string();
+
+        assert_eq!(expected, f(s).is_ok());
     }
 
+    #[rstest(
+        needle, raw_s, expected,
+        case("@", "@23456789", false),
+        case("_", "__12345", false),
+        case("0", "0___", false),
+        case("_", "u123", true),
+        case("4", "123four", true),
+        ::trace
+    )]
     #[test]
-    fn test_not_start_with() {
-        let tests: [(&'static str, &'static str, bool); 5] = [
-            ("@", "@23456789", false),
-            ("_", "__12345", false),
-            ("0", "0___", false),
-            ("_", "u123", true),
-            ("4", "123four", true),
-        ];
+    fn test_not_start_with(
+        needle: &'static str,
+        raw_s: &'static str,
+        expected: bool,
+    )
+    {
+        let f = not_start_with(needle);
+        let s = &raw_s.to_string();
 
-        for (i, (needle, s, expected)) in tests.iter().enumerate() {
-            assert_eq!(
-                *expected,
-                not_start_with(needle)(&(*s).to_string()).is_ok(),
-                "#{} needle: {} value: {}",
-                i,
-                needle,
-                s
-            );
-        }
+        assert_eq!(expected, f(s).is_ok());
     }
 
+    #[rstest(
+        raw_s, expected,
+        case("0123456789", false),
+        case("12345", false),
+        case("0", false),
+        case("u123", true),
+        case("_123four", true),
+        ::trace
+    )]
     #[test]
-    fn test_not_start_with_digits() {
-        let tests: [(&'static str, bool); 5] = [
-            ("0123456789", false),
-            ("12345", false),
-            ("0", false),
-            ("u123", true),
-            ("_123four", true),
-        ];
+    fn test_not_start_with_digits(raw_s: &'static str, expected: bool) {
+        let f = not_start_with_digits();
+        let s = &raw_s.to_string();
 
-        for (i, (s, expected)) in tests.iter().enumerate() {
-            assert_eq!(
-                *expected,
-                not_start_with_digits()(&(*s).to_string()).is_ok(),
-                "#{} value: {}",
-                i,
-                s
-            );
-        }
+        assert_eq!(expected, f(s).is_ok());
     }
 
+    #[rstest(
+        raw_s, expected,
+        case(None, false),
+        case(Some("".to_string()), true),
+        ::trace
+    )]
     #[test]
-    fn test_required() {
-        assert!(required()(&None).is_err());
-        assert!(required()(&Some("".to_string())).is_ok());
+    fn test_required(raw_s: Option<String>, expected: bool) {
+        let f = required();
+        let s = &raw_s;
+
+        assert_eq!(expected, f(s).is_ok());
     }
 
+    #[rstest(
+        max, raw_s, expected,
+        case(3, Some("1234".to_string()), false),
+        case(3, Some("123".to_string()), true),
+        case(0, Some("".to_string()), true),
+        case(3, None, true),
+        case(0, None, true),
+        ::trace
+    )]
     #[test]
-    fn test_max_if_present() {
-        assert!(max_if_present(3)(&Some("1234".to_string())).is_err());
-        assert!(max_if_present(3)(&Some("123".to_string())).is_ok());
-        assert!(max_if_present(0)(&Some("".to_string())).is_ok());
-        assert!(max_if_present(3)(&None).is_ok());
-        assert!(max_if_present(0)(&None).is_ok());
+    fn test_max_if_present(max: usize, raw_s: Option<String>, expected: bool) {
+        let f = max_if_present(max);
+        let s = &raw_s;
+
+        assert_eq!(expected, f(s).is_ok());
     }
 }
