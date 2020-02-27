@@ -71,11 +71,13 @@ impl<'a> Validator<'a> {
     }
 }
 
+#[rustfmt::skip::attributes(rstest)]
 #[cfg(test)]
 mod test {
     use super::*;
 
     use rocket_contrib::json::Json;
+    use rstest::rstest;
 
     use crate::model::test::run;
 
@@ -154,12 +156,97 @@ mod test {
         })
     }
 
+    #[rstest(
+        username, password,
+        case("u$ern4mE", "Myu$ern4mE1sPart0fPassw0rd"),
+        case("u$ern4mE", "u$ern4mE1sMyPassw0rd"),
+        case("u$ern4mE", "u$ern4mE"),
+        case("u$ern4mE", "Myu$ern4mE"),
+        ::trace
+    )]
     #[test]
-    fn test_validate_password_contains_username() {
+    fn test_validate_password_contains_username(
+        username: &'static str,
+        password: &'static str,
+    )
+    {
+        run(|_, _, logger| {
+            let data = &Json(RequestData {
+                username: username.to_string(),
+                password: password.to_string(),
+            });
+            let v = Validator { data, logger };
+
+            let result = v.validate();
+            assert!(result.is_err());
+
+            if let Err(errors) = &result {
+                assert_eq!(1, errors.len());
+                assert_eq!("password", errors[0].field);
+                assert_eq!(
+                    vec!["Must not overlap with username"],
+                    errors[0].messages
+                );
+            } else {
+                panic!("must fail");
+            }
+        })
+    }
+
+    #[rstest(
+        username, password,
+        case("myPassw0rds", "Passw0rd"),
+        case("Passw0rds", "Passw0rd"),
+        case("Passw0rd", "Passw0rd"),
+        case("myPassw0rd", "Passw0rd"),
+        ::trace
+    )]
+    #[test]
+    fn test_validate_password_is_included_in_username(
+        username: &'static str,
+        password: &'static str,
+    )
+    {
+        run(|_, _, logger| {
+            let data = &Json(RequestData {
+                username: username.to_string(),
+                password: password.to_string(),
+            });
+            let v = Validator { data, logger };
+
+            let result = v.validate();
+            assert!(result.is_err());
+
+            if let Err(errors) = &result {
+                assert_eq!(1, errors.len());
+                assert_eq!("password", errors[0].field);
+                assert_eq!(
+                    vec!["Must not overlap with username"],
+                    errors[0].messages
+                );
+            } else {
+                panic!("must fail");
+            }
+        })
+    }
+
+    #[rstest(
+        password, message,
+        case("passw0rd", "Must contain 'A-Z'"),
+        case("PASSW0RD", "Must contain 'a-z'"),
+        case("passworD", "Must contain '0-9'"),
+        ::trace
+    )]
+    #[test]
+    fn test_validate_password_is_not_formatted_according_rules(
+        password: &'static str,
+        message: &'static str,
+    )
+    {
         run(|_, _, logger| {
             let data = &Json(RequestData {
                 username: "username".to_string(),
-                password: "Myusername1sAPartOfpassw0rd".to_string(),
+                password: password.to_string(),
             });
             let v = Validator { data, logger };
 
@@ -169,73 +256,9 @@ mod test {
             if let Err(errors) = &result {
                 assert_eq!(1, errors.len());
                 assert_eq!("password", errors[0].field);
-                assert_eq!(
-                    vec!["Must not overlap with username"],
-                    errors[0].messages
-                );
+                assert_eq!(vec![message.to_string()], errors[0].messages);
             } else {
                 panic!("must fail");
-            }
-        })
-    }
-
-    #[test]
-    fn test_validate_password_is_included_in_username() {
-        run(|_, _, logger| {
-            let data = &Json(RequestData {
-                username: "myPassw0rd".to_string(),
-                password: "Passw0rd".to_string(),
-            });
-            let v = Validator { data, logger };
-
-            let result = v.validate();
-            assert!(result.is_err());
-
-            if let Err(errors) = &result {
-                assert_eq!(1, errors.len());
-                assert_eq!("password", errors[0].field);
-                assert_eq!(
-                    vec!["Must not overlap with username"],
-                    errors[0].messages
-                );
-            } else {
-                panic!("must fail");
-            }
-        })
-    }
-
-    #[test]
-    fn test_validate_password_is_not_formatted_according_rules() {
-        run(|_, _, logger| {
-            let tests: [(&'static str, &'static str); 3] = [
-                ("passw0rd", "Must contain 'A-Z'"),
-                ("PASSW0RD", "Must contain 'a-z'"),
-                ("passworD", "Must contain '0-9'"),
-            ];
-
-            for (i, (value, message)) in tests.iter().enumerate() {
-                let data = &Json(RequestData {
-                    username: "username".to_string(),
-                    password: (*value).to_string(),
-                });
-                let v = Validator { data, logger };
-
-                let result = v.validate();
-                assert!(result.is_err());
-
-                if let Err(errors) = &result {
-                    assert_eq!(1, errors.len());
-                    assert_eq!("password", errors[0].field);
-                    assert_eq!(
-                        vec![(*message).to_string()],
-                        errors[0].messages,
-                        "#{} password: {}",
-                        i,
-                        value
-                    );
-                } else {
-                    panic!("must fail");
-                }
             }
         })
     }
