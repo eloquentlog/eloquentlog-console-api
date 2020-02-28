@@ -122,11 +122,13 @@ impl<'a> Validator<'a> {
     }
 }
 
+#[rustfmt::skip::attributes(rstest)]
 #[cfg(test)]
 mod test {
     use super::*;
 
     use rocket_contrib::json::Json;
+    use rstest::rstest;
 
     use crate::model::test::run;
 
@@ -414,99 +416,95 @@ mod test {
         })
     }
 
+    #[rstest(
+        username, message,
+        case("-invalid", "Must not contain '-'"),
+        case("@invalid", "Must not contain '@'"),
+        case("!(-$#@)%", "Must not contain '!'"),
+        ::trace
+    )]
     #[test]
-    fn test_validate_username_is_invalid() {
+    fn test_validate_username_is_invalid(
+        username: &'static str,
+        message: &'static str,
+    )
+    {
         run(|conn, _, logger| {
-            let tests: [(&'static str, &'static str); 3] = [
-                ("-invalid", "Must not contain '-'"),
-                ("@invalid", "Must not contain '@'"),
-                ("!(-$#@)%", "Must not contain '!'"),
-            ];
+            let data = &Json(RequestData {
+                email: "postmaster@example.org".to_string(),
+                username: username.to_string(),
+                password: "Passw0rd".to_string(),
 
-            for (i, (value, message)) in tests.iter().enumerate() {
-                let data = &Json(RequestData {
-                    email: "postmaster@example.org".to_string(),
-                    username: (*value).to_string(),
-                    password: "Passw0rd".to_string(),
+                ..Default::default()
+            });
+            let v = Validator { conn, data, logger };
 
-                    ..Default::default()
-                });
-                let v = Validator { conn, data, logger };
+            let result = v.validate();
+            assert!(result.is_err());
 
-                let result = v.validate();
-                assert!(result.is_err());
-
-                if let Err(errors) = &result {
-                    assert_eq!(1, errors.len());
-                    assert_eq!("username", errors[0].field);
-                    assert_eq!(
-                        vec![(*message).to_string()],
-                        errors[0].messages,
-                        "#{} username: {}",
-                        i,
-                        value
-                    );
-                } else {
-                    panic!("must fail");
-                }
+            if let Err(errors) = &result {
+                assert_eq!(1, errors.len());
+                assert_eq!("username", errors[0].field);
+                assert_eq!(vec![message.to_string()], errors[0].messages);
+            } else {
+                panic!("must fail");
             }
         })
     }
 
+    #[rstest(
+        username, messages,
+        case(
+            "98765432_",
+            vec![
+                "Must not contain only digits or underscore",
+                "Must not start with digits",
+            ]
+        ),
+        case(
+            "01234567890",
+            vec![
+                "Must not contain only digits or underscore",
+                "Must not start with digits",
+            ]
+        ),
+        case(
+            "122345",
+            vec![
+                "Must not contain only digits or underscore",
+                "Must not start with digits",
+            ]
+        ),
+        ::trace
+    )]
     #[test]
-    fn test_validate_username_contains_only_digits() {
+    fn test_validate_username_contains_only_digits(
+        username: &'static str,
+        messages: Vec<&'static str>,
+    )
+    {
         run(|conn, _, logger| {
-            let tests: [(&'static str, Vec<String>); 3] = [
-                (
-                    "98765432_",
-                    vec![
-                        "Must not contain only digits or underscore"
-                            .to_string(),
-                        "Must not start with digits".to_string(),
-                    ],
-                ),
-                (
-                    "01234567890",
-                    vec![
-                        "Must not contain only digits or underscore"
-                            .to_string(),
-                        "Must not start with digits".to_string(),
-                    ],
-                ),
-                (
-                    "122345",
-                    vec![
-                        "Must not contain only digits or underscore"
-                            .to_string(),
-                        "Must not start with digits".to_string(),
-                    ],
-                ),
-            ];
+            let data = &Json(RequestData {
+                email: "postmaster@example.org".to_string(),
+                username: username.to_string(),
+                password: "Passw0rd".to_string(),
 
-            for (i, (value, messages)) in tests.iter().enumerate() {
-                let data = &Json(RequestData {
-                    email: "postmaster@example.org".to_string(),
-                    username: (*value).to_string(),
-                    password: "Passw0rd".to_string(),
+                ..Default::default()
+            });
+            let v = Validator { conn, data, logger };
 
-                    ..Default::default()
-                });
-                let v = Validator { conn, data, logger };
+            let result = v.validate();
+            assert!(result.is_err());
 
-                let result = v.validate();
-                assert!(result.is_err());
+            if let Err(errors) = &result {
+                assert_eq!(1, errors.len());
+                assert_eq!("username", errors[0].field);
 
-                if let Err(errors) = &result {
-                    assert_eq!(1, errors.len());
-                    assert_eq!("username", errors[0].field);
-                    assert_eq!(
-                        messages, &errors[0].messages,
-                        "#{} username: {}",
-                        i, value
-                    );
-                } else {
-                    panic!("must fail");
-                }
+                let error_messages: Vec<_> =
+                    messages.iter().map(|m| (*m).to_string()).collect();
+                assert_eq!(error_messages, errors[0].messages);
+            } else {
+                panic!("must fail");
             }
         })
     }
@@ -542,59 +540,62 @@ mod test {
         })
     }
 
+    #[rstest(
+        username,
+        case("u123456789"),
+        case("under_score"),
+        case("username009"),
+        case("oO0"),
+        ::trace
+    )]
     #[test]
-    fn test_validate_username() {
+    fn test_validate_username(username: &'static str) {
         run(|conn, _, logger| {
-            let tests: [&str; 4] =
-                ["u123456789", "under_score", "username009", "oO0"];
+            let data = &Json(RequestData {
+                email: "postmaster@example.org".to_string(),
+                username: username.to_string(),
+                password: "Passw0rd".to_string(),
 
-            for value in tests.iter() {
-                let data = &Json(RequestData {
-                    email: "postmaster@example.org".to_string(),
-                    username: (*value).to_string(),
-                    password: "Passw0rd".to_string(),
+                ..Default::default()
+            });
+            let v = Validator { conn, data, logger };
 
-                    ..Default::default()
-                });
-                let v = Validator { conn, data, logger };
-
-                let result = v.validate();
-                assert!(result.is_ok());
-            }
+            let result = v.validate();
+            assert!(result.is_ok());
         })
     }
 
+    #[rstest(
+        username,
+        case("0name"),
+        case("123four"),
+        case("99999a"),
+        ::trace
+    )]
     #[test]
-    fn test_validate_username_starts_with_digits() {
+    fn test_validate_username_starts_with_digits(username: &'static str) {
         run(|conn, _, logger| {
-            let tests: [&'static str; 3] = ["0name", "123four", "99999a"];
+            let data = &Json(RequestData {
+                email: "postmaster@example.org".to_string(),
+                username: username.to_string(),
+                password: "Passw0rd".to_string(),
 
-            for (i, value) in tests.iter().enumerate() {
-                let data = &Json(RequestData {
-                    email: "postmaster@example.org".to_string(),
-                    username: (*value).to_string(),
-                    password: "Passw0rd".to_string(),
+                ..Default::default()
+            });
+            let v = Validator { conn, data, logger };
 
-                    ..Default::default()
-                });
-                let v = Validator { conn, data, logger };
+            let result = v.validate();
+            assert!(result.is_err());
 
-                let result = v.validate();
-                assert!(result.is_err());
-
-                if let Err(errors) = &result {
-                    assert_eq!(1, errors.len());
-                    assert_eq!("username", errors[0].field);
-                    assert_eq!(
-                        vec!["Must not start with digits"],
-                        errors[0].messages,
-                        "#{} username: {}",
-                        i,
-                        value
-                    );
-                } else {
-                    panic!("must fail");
-                }
+            if let Err(errors) = &result {
+                assert_eq!(1, errors.len());
+                assert_eq!("username", errors[0].field);
+                assert_eq!(
+                    vec!["Must not start with digits"],
+                    errors[0].messages,
+                );
+            } else {
+                panic!("must fail");
             }
         })
     }
@@ -739,41 +740,38 @@ mod test {
         })
     }
 
+    #[rstest(
+        password, message,
+        case("passw0rd", "Must contain 'A-Z'"),
+        case("PASSW0RD", "Must contain 'a-z'"),
+        case("passworD", "Must contain '0-9'"),
+        ::trace
+    )]
     #[test]
-    fn test_validate_password_is_not_formatted_according_rules() {
+    fn test_validate_password_is_not_formatted_according_rules(
+        password: &'static str,
+        message: &'static str,
+    )
+    {
         run(|conn, _, logger| {
-            let tests: [(&'static str, &'static str); 3] = [
-                ("passw0rd", "Must contain 'A-Z'"),
-                ("PASSW0RD", "Must contain 'a-z'"),
-                ("passworD", "Must contain '0-9'"),
-            ];
+            let data = &Json(RequestData {
+                email: "postmaster@example.org".to_string(),
+                username: "username".to_string(),
+                password: password.to_string(),
 
-            for (i, (value, message)) in tests.iter().enumerate() {
-                let data = &Json(RequestData {
-                    email: "postmaster@example.org".to_string(),
-                    username: "username".to_string(),
-                    password: (*value).to_string(),
+                ..Default::default()
+            });
+            let v = Validator { conn, data, logger };
 
-                    ..Default::default()
-                });
-                let v = Validator { conn, data, logger };
+            let result = v.validate();
+            assert!(result.is_err());
 
-                let result = v.validate();
-                assert!(result.is_err());
-
-                if let Err(errors) = &result {
-                    assert_eq!(1, errors.len());
-                    assert_eq!("password", errors[0].field);
-                    assert_eq!(
-                        vec![(*message).to_string()],
-                        errors[0].messages,
-                        "#{} password: {}",
-                        i,
-                        value
-                    );
-                } else {
-                    panic!("must fail");
-                }
+            if let Err(errors) = &result {
+                assert_eq!(1, errors.len());
+                assert_eq!("password", errors[0].field);
+                assert_eq!(vec![message.to_string()], errors[0].messages);
+            } else {
+                panic!("must fail");
             }
         })
     }
