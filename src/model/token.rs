@@ -248,6 +248,9 @@ impl Claims for AuthenticationClaims {
     }
 }
 
+pub type BrowserCookieTokenClaims = AuthenticationClaims;
+pub type PersonalAccessTokenClaims = AuthenticationClaims;
+
 #[cfg(test)]
 mod test {
     use super::*;
@@ -255,7 +258,6 @@ mod test {
     use base64::decode;
     use chrono::{DateTime, Duration, TimeZone, Utc};
     use rstest::rstest;
-    use serde_json;
 
     use crate::model::test::CONFIG;
 

@@ -64,11 +64,13 @@ table! {
 
 table! {
     use diesel::sql_types::*;
+    use diesel::pg::types::sql_types::Uuid;
 
     use crate::model::access_token::{EAccessTokenState, EAgentType};
 
     access_tokens (id) {
         id -> Int8,
+        uuid -> Uuid,
         agent_id -> Int8,
         agent_type -> EAgentType,
         name -> VarChar,

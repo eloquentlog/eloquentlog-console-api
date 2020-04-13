@@ -11,8 +11,13 @@ use uuid::Uuid;
 
 pub use crate::model::user_state::*;
 pub use crate::model::user_reset_password_state::*;
-pub use crate::model::access_token::{AccessToken, AgentType, NewAccessToken};
-pub use crate::model::token::{AuthenticationClaims, Claims, VerificationClaims};
+pub use crate::model::access_token::{
+    AccessToken, AccessTokenState, AgentType, NewAccessToken, access_tokens,
+};
+pub use crate::model::token::{
+    BrowserCookieTokenClaims, PersonalAccessTokenClaims, Claims,
+    VerificationClaims,
+};
 pub use crate::schema::users;
 pub use crate::schema::user_emails;
 
@@ -27,7 +32,7 @@ use crate::util::generate_random_hash;
 const BCRYPT_COST: u32 = 12;
 const RESET_PASSWORD_HASH_LENGTH: i32 = 128;
 const RESET_PASSWORD_HASH_SOURCE: &[u8] =
-    b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz01234567890";
+    b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
 
 /// Returns encrypted password hash as bytes using bcrypt.
 pub fn encrypt_password(password: &str) -> Option<Vec<u8>> {
@@ -296,15 +301,48 @@ impl User {
     {
         let t = T::decode(token, issuer, secret).expect("invalid value");
         let c = &t as &dyn Any;
-        if let Some(claims) = c.downcast_ref::<AuthenticationClaims>() {
+        if let Some(claims) = c.downcast_ref::<BrowserCookieTokenClaims>() {
             let uuid = claims.get_subject();
             return Self::find_by_uuid(&uuid, conn, logger);
+        } else if let Some(claims) =
+            c.downcast_ref::<PersonalAccessTokenClaims>()
+        {
+            let token = claims.get_subject();
+            return Self::find_by_access_token(&token, conn, logger);
         } else if let Some(claims) = c.downcast_ref::<VerificationClaims>() {
-            let concrete_token = claims.get_subject();
-            return Self::load_by_concrete_token(&concrete_token, conn, logger)
-                .ok();
+            let token = claims.get_subject();
+            return Self::load_by_concrete_token(&token, conn, logger).ok();
         }
         None
+    }
+
+    pub fn find_by_access_token(
+        token: &str,
+        conn: &PgConnection,
+        logger: &Logger,
+    ) -> Option<User>
+    {
+        let q = users::table
+            .inner_join(
+                access_tokens::table.on(users::id
+                    .eq(access_tokens::agent_id)
+                    .and(access_tokens::agent_type.eq(AgentType::Person))),
+            )
+            .filter(users::state.eq(UserState::Active))
+            .filter(access_tokens::token.eq(token.as_bytes()))
+            .filter(access_tokens::state.eq(AccessTokenState::Enabled))
+            .filter(access_tokens::revoked_at.is_null())
+            .limit(1);
+
+        info!(logger, "{}", debug_query::<Pg, _>(&q).to_string());
+
+        match q.first::<(Self, AccessToken)>(conn) {
+            Err(e) => {
+                error!(logger, "err: {}", e);
+                None
+            },
+            Ok(v) => Some(v.0),
+        }
     }
 
     /// Save a new user into users.
@@ -626,7 +664,9 @@ mod test {
     use super::*;
 
     use crate::model::test::run;
-    use crate::model::token::{AuthenticationClaims, Claims, TokenData};
+    use crate::model::token::{
+        AuthenticationClaims, BrowserCookieTokenClaims, Claims, TokenData,
+    };
     use crate::model::user::data::USERS;
     use crate::model::user_email::data::USER_EMAILS;
 
@@ -947,7 +987,7 @@ mod test {
                 &config.authentication_token_secret,
             );
 
-            let result = User::find_by_token::<AuthenticationClaims>(
+            let result = User::find_by_token::<BrowserCookieTokenClaims>(
                 &authentication_token,
                 &config.authentication_token_issuer,
                 &config.authentication_token_secret,

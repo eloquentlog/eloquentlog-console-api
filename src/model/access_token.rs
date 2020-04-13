@@ -2,11 +2,13 @@
 //!
 //! AccessToken belongs to User through agent_id and agent_type.
 use std::fmt;
+use std::str;
 
-use chrono::NaiveDateTime;
+use chrono::{NaiveDateTime, Utc};
 use diesel::{Identifiable, Queryable, debug_query, prelude::*};
+use diesel::dsl;
 use diesel::pg::{Pg, PgConnection};
-use serde::Serialize;
+use uuid::Uuid;
 
 pub use crate::model::token::Claims;
 pub use crate::model::access_token_state::*;
@@ -19,7 +21,7 @@ use crate::util::generate_random_hash;
 
 const HASH_LENGTH: i32 = 128;
 const HASH_SOURCE: &[u8] =
-    b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz01234567890";
+    b"+/ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
 
 /// NewAccessToken
 #[derive(Debug)]
@@ -50,6 +52,32 @@ impl<'a> From<&'a User> for NewAccessToken {
     }
 }
 
+type AllColumns = (
+    access_tokens::id,
+    access_tokens::uuid,
+    access_tokens::agent_id,
+    access_tokens::agent_type,
+    access_tokens::name,
+    access_tokens::token,
+    access_tokens::state,
+    access_tokens::revoked_at,
+    access_tokens::created_at,
+    access_tokens::updated_at,
+);
+
+const ALL_COLUMNS: AllColumns = (
+    access_tokens::id,
+    access_tokens::uuid,
+    access_tokens::agent_id,
+    access_tokens::agent_type,
+    access_tokens::name,
+    access_tokens::token,
+    access_tokens::state,
+    access_tokens::revoked_at,
+    access_tokens::created_at,
+    access_tokens::updated_at,
+);
+
 /// AccessToken
 #[derive(
     AsChangeset,
@@ -59,16 +87,18 @@ impl<'a> From<&'a User> for NewAccessToken {
     Insertable,
     PartialEq,
     Queryable,
-    Serialize,
 )]
 #[table_name = "access_tokens"]
+#[changeset_options(treat_none_as_null = "true")]
 pub struct AccessToken {
     pub id: i64,
+    pub uuid: Uuid,
     pub agent_id: i64,
     pub agent_type: AgentType,
     pub name: String,
     pub token: Option<Vec<u8>>,
     pub state: AccessTokenState,
+    // pub expired_at: Option<NaiveDateTime>,
     pub revoked_at: Option<NaiveDateTime>,
     pub created_at: NaiveDateTime,
     pub updated_at: NaiveDateTime,
@@ -76,9 +106,17 @@ pub struct AccessToken {
 
 impl fmt::Display for AccessToken {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "<AccessToken {state}>", state = &self.state)
+        write!(f, "<AccessToken {uuid}>", uuid = &self.uuid.to_string())
     }
 }
+
+type All = dsl::Select<access_tokens::table, AllColumns>;
+type WithType = dsl::Eq<access_tokens::agent_type, AgentType>;
+type WithUser = dsl::Eq<access_tokens::agent_id, i64>;
+type WithUuid = dsl::Eq<access_tokens::uuid, Uuid>;
+type Visible = dsl::IsNull<access_tokens::revoked_at>;
+type ByUser = dsl::Filter<All, WithUser>;
+type VisibleTo = dsl::Filter<All, dsl::And<WithUser, Visible>>;
 
 impl AccessToken {
     pub fn insert(
@@ -87,13 +125,12 @@ impl AccessToken {
         logger: &Logger,
     ) -> Option<Self>
     {
-        let token = Self::generate_token();
-
+        let uuid = Uuid::new_v4();
         let q = diesel::insert_into(access_tokens::table).values((
+            access_tokens::uuid.eq(uuid),
             access_tokens::agent_id.eq(access_token.agent_id),
             access_tokens::agent_type.eq(&access_token.agent_type),
             access_tokens::name.eq(&access_token.name),
-            Some(access_tokens::token.eq(token)),
             // default
             access_tokens::state.eq(AccessTokenState::Disabled),
         ));
@@ -109,23 +146,22 @@ impl AccessToken {
         }
     }
 
-    pub fn fetch_enabled_client_tokens_by_user_id(
-        user_id: i64,
+    pub fn owned_all_by_agent_type(
+        user: &User,
+        agent_type: AgentType,
         offset: i64,
         limit: i64,
         conn: &PgConnection,
         logger: &Logger,
     ) -> Option<Vec<Self>>
     {
-        if user_id < 1 || limit < 1 {
+        if user.id < 1 || limit < 1 {
             return None;
         }
 
-        let q = access_tokens::table
-            .filter(access_tokens::agent_id.eq(user_id))
-            .filter(access_tokens::agent_type.eq(AgentType::Client))
-            .filter(access_tokens::state.eq(AccessTokenState::Enabled))
-            .filter(access_tokens::revoked_at.is_null())
+        let with_type = Self::with_type(agent_type);
+        let q = Self::visible_to(user)
+            .filter(with_type)
             .offset(offset)
             .limit(limit);
 
@@ -140,28 +176,19 @@ impl AccessToken {
         }
     }
 
-    // Finds only personal agent typed access token in disabled state by its
-    // owner's user_id.
-    pub fn find_disabled_personal_token_by_user_id(
-        user_id: i64,
+    pub fn owned_by_uuid(
+        user: &User,
+        uuid: &str,
         conn: &PgConnection,
         logger: &Logger,
     ) -> Option<Self>
     {
-        if user_id < 1 {
-            return None;
-        }
-
-        let q = access_tokens::table
-            .filter(access_tokens::agent_id.eq(user_id))
-            .filter(access_tokens::agent_type.eq(AgentType::Person))
-            .filter(access_tokens::state.eq(AccessTokenState::Disabled))
-            .filter(access_tokens::revoked_at.is_null())
-            .limit(1);
+        let with_uuid = Self::with_uuid(&uuid);
+        let q = Self::visible_to(user).filter(with_uuid).limit(1);
 
         info!(logger, "{}", debug_query::<Pg, _>(&q).to_string());
 
-        match q.first::<AccessToken>(conn) {
+        match q.first::<Self>(conn) {
             Ok(v) => Some(v),
             Err(e) => {
                 error!(logger, "err: {}", e);
@@ -170,30 +197,33 @@ impl AccessToken {
         }
     }
 
-    pub fn find_by_id(
-        id: i64,
-        conn: &PgConnection,
-        logger: &Logger,
-    ) -> Option<Self>
-    {
-        if id < 1 {
-            return None;
-        }
-
-        let q = access_tokens::table
-            .filter(access_tokens::id.eq(id))
-            .limit(1);
-
-        info!(logger, "{}", debug_query::<Pg, _>(&q).to_string());
-
-        match q.first::<AccessToken>(conn) {
-            Ok(v) => Some(v),
-            _ => None,
-        }
+    pub fn generate_token() -> String {
+        generate_random_hash(HASH_SOURCE, HASH_LENGTH)
     }
 
-    pub fn generate_token() -> Vec<u8> {
-        generate_random_hash(HASH_SOURCE, HASH_LENGTH).into_bytes()
+    pub fn update_token(
+        &mut self,
+        token: &str,
+        conn: &PgConnection,
+        logger: &Logger,
+    ) -> Result<Self, &'static str>
+    {
+        let q = diesel::update(
+            access_tokens::table
+                .filter(access_tokens::id.eq(self.id))
+                .filter(access_tokens::state.eq(AccessTokenState::Enabled))
+                .filter(access_tokens::revoked_at.is_null()),
+        )
+        .set(Some(access_tokens::token.eq(token.as_bytes())));
+        info!(logger, "{}", debug_query::<Pg, _>(&q).to_string());
+
+        match q.get_result::<Self>(conn) {
+            Err(e) => {
+                error!(logger, "err: {}", e);
+                Err("failed to renovate token")
+            },
+            Ok(access_token) => Ok(access_token),
+        }
     }
 
     pub fn mark_as(
@@ -215,6 +245,69 @@ impl AccessToken {
             Ok(access_token) => Ok(access_token.state),
         }
     }
+
+    pub fn revoke(
+        &self,
+        conn: &PgConnection,
+        logger: &Logger,
+    ) -> Result<Self, &'static str>
+    {
+        let now = Utc::now().naive_utc();
+
+        // TODO: refactor
+        let a = &Self {
+            id: self.id,
+            uuid: self.uuid,
+            name: self.name.to_owned(),
+            agent_id: self.agent_id,
+            agent_type: AgentType::from(self.agent_type.to_string()),
+            state: AccessTokenState::Disabled,
+            token: None,
+            revoked_at: Some(now),
+            created_at: self.created_at,
+            updated_at: self.updated_at,
+        };
+        let q = diesel::update(self).set(a);
+
+        info!(logger, "{}", debug_query::<Pg, _>(&q).to_string());
+
+        match q.get_result::<Self>(conn) {
+            Err(e) => {
+                error!(logger, "err: {}", e);
+                Err("failed to change state")
+            },
+            Ok(access_token) => Ok(access_token),
+        }
+    }
+
+    pub fn all() -> All {
+        access_tokens::table.select(ALL_COLUMNS)
+    }
+
+    pub fn with_type(agent_type: AgentType) -> WithType {
+        access_tokens::agent_type.eq(agent_type)
+    }
+
+    pub fn with_user(user: &User) -> WithUser {
+        access_tokens::agent_id.eq(user.id)
+    }
+
+    pub fn with_uuid(s: &str) -> WithUuid {
+        let uuid = Uuid::parse_str(s).unwrap_or_else(|_| Uuid::nil());
+        access_tokens::uuid.eq(uuid)
+    }
+
+    pub fn visible() -> Visible {
+        access_tokens::revoked_at.is_null()
+    }
+
+    pub fn by_user(user: &User) -> ByUser {
+        Self::all().filter(Self::with_user(user))
+    }
+
+    pub fn visible_to(user: &User) -> VisibleTo {
+        Self::all().filter(Self::with_user(user).and(Self::visible()))
+    }
 }
 
 #[cfg(test)]
@@ -233,6 +326,7 @@ pub mod data {
         pub static ref ACCESS_TOKENS: AccessTokenFixture = fnvhashmap! {
             "oswald's personal token" => AccessToken {
                 id: 1,
+                uuid: Uuid::new_v4(),
                 agent_id: USERS.get("oswald").unwrap().id,
                 agent_type: AgentType::Person,
                 name: "personal access token".to_string(),
@@ -244,6 +338,7 @@ pub mod data {
             },
             "weenie's personal token" => AccessToken {
                 id: 2,
+                uuid: Uuid::new_v4(),
                 agent_id: USERS.get("weenie").unwrap().id,
                 agent_type: AgentType::Person,
                 name: "personal access token".to_string(),
@@ -255,6 +350,7 @@ pub mod data {
             },
             "hennry's personal token" => AccessToken {
                 id: 3,
+                uuid: Uuid::new_v4(),
                 agent_id: USERS.get("hennry").unwrap().id,
                 agent_type: AgentType::Person,
                 name: "personal access token".to_string(),
@@ -309,11 +405,11 @@ mod test {
     #[test]
     fn test_access_token_format() {
         let at = ACCESS_TOKENS.get("hennry's personal token").unwrap();
-        assert_eq!(format!("{}", at), format!("<AccessToken {}>", at.state));
+        assert_eq!(format!("{}", at), format!("<AccessToken {}>", at.uuid));
     }
 
     #[test]
-    fn test_find_disabled_personal_token_by_user_id_not_include_enabled() {
+    fn test_owned_by_uuid_does_not_return_if_not_match() {
         run(|conn, _, logger| {
             let u = USERS.get("oswald").unwrap();
             let user = diesel::insert_into(users::table)
@@ -326,16 +422,28 @@ mod test {
                     access_tokens::agent_id.eq(user.id),
                     access_tokens::agent_type.eq(AgentType::Person),
                     access_tokens::name.eq("name"),
-                    Some(
-                        access_tokens::token.eq(AccessToken::generate_token()),
-                    ),
                     access_tokens::state.eq(AccessTokenState::Enabled),
                 ))
                 .get_result::<AccessToken>(conn)
                 .unwrap_or_else(|e| panic!("Error at inserting: {}", e));
 
-            let result = AccessToken::find_disabled_personal_token_by_user_id(
-                access_token.agent_id,
+            let result = AccessToken::owned_by_uuid(
+                &user,
+                "invalid-uuid-value",
+                conn,
+                logger,
+            );
+            assert!(result.is_none());
+
+            let u = USERS.get("hennry").unwrap();
+            let another_user = diesel::insert_into(users::table)
+                .values(u)
+                .get_result::<User>(conn)
+                .unwrap_or_else(|e| panic!("Error at inserting: {}", e));
+
+            let result = AccessToken::owned_by_uuid(
+                &another_user,
+                &access_token.uuid.to_string(),
                 conn,
                 logger,
             );
@@ -344,7 +452,7 @@ mod test {
     }
 
     #[test]
-    fn test_find_disabled_personal_token_by_user_id_not_include_client_token() {
+    fn test_owned_by_uuid() {
         run(|conn, _, logger| {
             let u = USERS.get("oswald").unwrap();
             let user = diesel::insert_into(users::table)
@@ -354,212 +462,22 @@ mod test {
 
             let access_token = diesel::insert_into(access_tokens::table)
                 .values((
+                    access_tokens::uuid.eq(Uuid::new_v4()),
                     access_tokens::agent_id.eq(user.id),
                     access_tokens::agent_type.eq(AgentType::Client),
                     access_tokens::name.eq("name"),
-                    Some(
-                        access_tokens::token.eq(AccessToken::generate_token()),
-                    ),
-                    access_tokens::state.eq(AccessTokenState::Disabled),
-                ))
-                .get_result::<AccessToken>(conn)
-                .unwrap_or_else(|e| panic!("Error at inserting: {}", e));
-
-            let result = AccessToken::find_disabled_personal_token_by_user_id(
-                access_token.agent_id,
-                conn,
-                logger,
-            );
-            assert!(result.is_none());
-        });
-    }
-
-    #[test]
-    fn test_find_disabled_personal_token_by_user_id_not_found() {
-        run(|conn, _, logger| {
-            let u = USERS.get("oswald").unwrap();
-            let user = diesel::insert_into(users::table)
-                .values(u)
-                .get_result::<User>(conn)
-                .unwrap_or_else(|e| panic!("Error at inserting: {}", e));
-
-            let _access_token = diesel::insert_into(access_tokens::table)
-                .values((
-                    access_tokens::agent_id.eq(user.id),
-                    access_tokens::agent_type.eq(AgentType::Person),
-                    access_tokens::name.eq("name"),
-                    Some(
-                        access_tokens::token.eq(AccessToken::generate_token()),
-                    ),
                     access_tokens::state.eq(AccessTokenState::Enabled),
                 ))
                 .get_result::<AccessToken>(conn)
                 .unwrap_or_else(|e| panic!("Error at inserting: {}", e));
 
-            let result = AccessToken::find_disabled_personal_token_by_user_id(
-                0, conn, logger,
-            );
-            assert_eq!(result, None);
-        });
-    }
-
-    #[test]
-    fn test_find_disabled_personal_token_by_user_id_found() {
-        run(|conn, _, logger| {
-            let u = USERS.get("oswald").unwrap();
-            let user = diesel::insert_into(users::table)
-                .values(u)
-                .get_result::<User>(conn)
-                .unwrap_or_else(|e| panic!("Error at inserting: {}", e));
-
-            let access_token = diesel::insert_into(access_tokens::table)
-                .values((
-                    access_tokens::agent_id.eq(user.id),
-                    access_tokens::agent_type.eq(AgentType::Person),
-                    access_tokens::name.eq("name"),
-                    Some(
-                        access_tokens::token.eq(AccessToken::generate_token()),
-                    ),
-                    access_tokens::state.eq(AccessTokenState::Disabled),
-                ))
-                .get_result::<AccessToken>(conn)
-                .unwrap_or_else(|e| panic!("Error at inserting: {}", e));
-
-            let result = AccessToken::find_disabled_personal_token_by_user_id(
-                access_token.agent_id,
+            let result = AccessToken::owned_by_uuid(
+                &user,
+                &access_token.uuid.to_string(),
                 conn,
                 logger,
             );
-            assert_eq!(result, Some(access_token));
-        });
-    }
-
-    #[test]
-    fn test_fetch_enabled_client_tokens_by_user_id_not_include_disabled() {
-        run(|conn, _, logger| {
-            let u = USERS.get("oswald").unwrap();
-            let user = diesel::insert_into(users::table)
-                .values(u)
-                .get_result::<User>(conn)
-                .unwrap_or_else(|e| panic!("Error at inserting: {}", e));
-
-            let access_token = diesel::insert_into(access_tokens::table)
-                .values((
-                    access_tokens::agent_id.eq(user.id),
-                    access_tokens::agent_type.eq(AgentType::Client),
-                    access_tokens::name.eq("name"),
-                    Some(
-                        access_tokens::token.eq(AccessToken::generate_token()),
-                    ),
-                    access_tokens::state.eq(AccessTokenState::Disabled),
-                ))
-                .get_result::<AccessToken>(conn)
-                .unwrap_or_else(|e| panic!("Error at inserting: {}", e));
-
-            let result = AccessToken::fetch_enabled_client_tokens_by_user_id(
-                access_token.agent_id,
-                0,
-                1,
-                conn,
-                logger,
-            );
-            assert_eq!(result, Some(vec![]));
-        });
-    }
-
-    #[test]
-    fn test_fetch_enabled_client_tokens_by_user_id_not_include_personal_token()
-    {
-        run(|conn, _, logger| {
-            let u = USERS.get("oswald").unwrap();
-            let user = diesel::insert_into(users::table)
-                .values(u)
-                .get_result::<User>(conn)
-                .unwrap_or_else(|e| panic!("Error at inserting: {}", e));
-
-            let access_token = diesel::insert_into(access_tokens::table)
-                .values((
-                    access_tokens::agent_id.eq(user.id),
-                    access_tokens::agent_type.eq(AgentType::Person),
-                    access_tokens::name.eq("name"),
-                    Some(
-                        access_tokens::token.eq(AccessToken::generate_token()),
-                    ),
-                    access_tokens::state.eq(AccessTokenState::Enabled),
-                ))
-                .get_result::<AccessToken>(conn)
-                .unwrap_or_else(|e| panic!("Error at inserting: {}", e));
-
-            let result = AccessToken::fetch_enabled_client_tokens_by_user_id(
-                access_token.agent_id,
-                0,
-                1,
-                conn,
-                logger,
-            );
-            assert_eq!(result, Some(vec![]));
-        });
-    }
-
-    #[test]
-    fn test_fetch_enabled_client_tokens_by_user_id_not_found() {
-        run(|conn, _, logger| {
-            let u = USERS.get("oswald").unwrap();
-            let user = diesel::insert_into(users::table)
-                .values(u)
-                .get_result::<User>(conn)
-                .unwrap_or_else(|e| panic!("Error at inserting: {}", e));
-
-            let _access_token = diesel::insert_into(access_tokens::table)
-                .values((
-                    access_tokens::agent_id.eq(user.id),
-                    access_tokens::agent_type.eq(AgentType::Client),
-                    access_tokens::name.eq("name"),
-                    Some(
-                        access_tokens::token.eq(AccessToken::generate_token()),
-                    ),
-                    access_tokens::state.eq(AccessTokenState::Enabled),
-                ))
-                .get_result::<AccessToken>(conn)
-                .unwrap_or_else(|e| panic!("Error at inserting: {}", e));
-
-            let result = AccessToken::fetch_enabled_client_tokens_by_user_id(
-                0, 0, 1, conn, logger,
-            );
-            assert_eq!(result, None);
-        });
-    }
-
-    #[test]
-    fn test_fetch_enabled_client_tokens_by_user_id_found() {
-        run(|conn, _, logger| {
-            let u = USERS.get("oswald").unwrap();
-            let user = diesel::insert_into(users::table)
-                .values(u)
-                .get_result::<User>(conn)
-                .unwrap_or_else(|e| panic!("Error at inserting: {}", e));
-
-            let access_token = diesel::insert_into(access_tokens::table)
-                .values((
-                    access_tokens::agent_id.eq(user.id),
-                    access_tokens::agent_type.eq(AgentType::Client),
-                    access_tokens::name.eq("name"),
-                    Some(
-                        access_tokens::token.eq(AccessToken::generate_token()),
-                    ),
-                    access_tokens::state.eq(AccessTokenState::Enabled),
-                ))
-                .get_result::<AccessToken>(conn)
-                .unwrap_or_else(|e| panic!("Error at inserting: {}", e));
-
-            let result = AccessToken::fetch_enabled_client_tokens_by_user_id(
-                access_token.agent_id,
-                0,
-                1,
-                conn,
-                logger,
-            );
-            assert_eq!(result, Some(vec![access_token]));
+            assert_eq!(Some(access_token), result);
         });
     }
 
@@ -582,11 +500,13 @@ mod test {
             assert!(result.is_some());
 
             let access_token = result.unwrap();
+
             let result = access_tokens::table
                 .filter(access_tokens::id.eq(access_token.id))
                 .first::<AccessToken>(conn)
                 .expect("Failed to get a record");
-            assert!(result.token.is_some());
+
+            assert!(result.token.is_none());
             assert_eq!(result.state, AccessTokenState::Disabled);
         })
     }

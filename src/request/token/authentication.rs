@@ -7,7 +7,10 @@ use rocket_slog::SyncLogger;
 
 use crate::config::Config;
 use crate::model::token::AuthenticationClaims;
-use crate::request::token::{AUTHORIZATION_HEADER_PREFIX, verify_token};
+use crate::request::token::{
+    AUTHORIZATION_HEADER_PREFIX, AUTHORIZATION_HEADER_TOKEN_PREFIX, TokenType,
+    verify_token,
+};
 
 use crate::{bad_request_by, unprocessable_entity_by};
 
@@ -38,6 +41,10 @@ impl<'a, 'r> FromRequest<'a, 'r> for AuthenticationToken {
     fn from_request(req: &'a Request<'r>) -> Outcome<Self, Self::Error> {
         let logger = req.guard::<State<SyncLogger>>().unwrap();
 
+        let token_type = req
+            .guard::<TokenType>()
+            .failure_then(|v| Outcome::Failure((v.0, Self::Error::Invalid)))?;
+
         if req.headers().get_one("X-Requested-With") != Some("XMLHttpRequest") {
             error!(logger, "request: {}", req);
             return bad_request_by!(AuthenticationTokenError::Invalid);
@@ -47,37 +54,45 @@ impl<'a, 'r> FromRequest<'a, 'r> for AuthenticationToken {
         match headers.len() {
             1 => {
                 let h = &headers[0];
-                if !h.starts_with(AUTHORIZATION_HEADER_PREFIX) {
-                    return bad_request_by!(AuthenticationTokenError::Invalid);
-                }
+                let mut token = match token_type {
+                    TokenType::BrowserCookieToken => {
+                        let length = AUTHORIZATION_HEADER_PREFIX.len();
+                        h[length..].to_string()
+                    },
+                    TokenType::PersonalAccessToken => {
+                        let length = AUTHORIZATION_HEADER_TOKEN_PREFIX.len();
+                        h[length..].to_string()
+                    },
+                };
 
                 // TODO:
                 // * check Origin and Referer header
                 // * validate token format
 
-                let token = h[AUTHORIZATION_HEADER_PREFIX.len()..].to_string();
-                if !token.contains('.') {
+                if token.is_empty() || !token.contains('.') {
                     return bad_request_by!(AuthenticationTokenError::Invalid);
                 }
 
                 // NOTE:
                 // append signature taken by using session id to the parts
                 // extracted from authorization header.
-                // TOD: use get_private
-                let authentication_token: String = req
-                    .cookies()
-                    .get("sign")
-                    .map(|c| token + "." + c.value())
-                    .or_else(|| Some("".to_string()))
-                    .unwrap();
+                // TODO: use get_private
+                if token_type == TokenType::BrowserCookieToken {
+                    token = req
+                        .cookies()
+                        .get("sign")
+                        .map(|c| token + "." + c.value())
+                        .or_else(|| Some("".to_string()))
+                        .unwrap();
+                }
 
-                if authentication_token.is_empty() {
+                if token.is_empty() {
                     return bad_request_by!(AuthenticationTokenError::Invalid);
                 }
 
                 let config = req.guard::<State<Config>>().unwrap();
                 match verify_token::<AuthenticationClaims>(
-                    &authentication_token,
+                    &token,
                     &config.authentication_token_issuer,
                     &config.authentication_token_secret,
                 ) {
