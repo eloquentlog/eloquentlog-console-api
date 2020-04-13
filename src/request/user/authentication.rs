@@ -3,7 +3,6 @@ use std::io::{self, Read};
 use rocket::{Data, Outcome::*, Request};
 use rocket::data::{self, FromData, Transform, Transformed};
 use rocket::http::Status;
-use serde_json;
 
 /// UserAuthentication
 pub enum UserAuthenticationError {

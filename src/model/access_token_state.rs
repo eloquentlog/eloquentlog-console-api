@@ -74,6 +74,22 @@ impl AccessTokenState {
     pub fn as_vec() -> Vec<Self> {
         Self::iter().cloned().collect()
     }
+
+    pub fn reverse(&self) -> AccessTokenState {
+        if !self.is_disabled() {
+            AccessTokenState::Disabled
+        } else {
+            AccessTokenState::Enabled
+        }
+    }
+
+    pub fn is_disabled(&self) -> bool {
+        self == &AccessTokenState::Disabled
+    }
+
+    pub fn is_enabled(&self) -> bool {
+        self == &AccessTokenState::Enabled
+    }
 }
 
 #[cfg(test)]

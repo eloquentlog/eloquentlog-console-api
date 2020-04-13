@@ -1,3 +1,4 @@
+use diesel::prelude::*;
 use fourche::queue::Queue;
 use rocket::http::{ContentType, Header, Status};
 
@@ -214,10 +215,8 @@ fn test_user_activate() {
         let user = result.unwrap();
         assert_eq!(user.state, model::user::UserState::Active);
 
-        let result =
-            model::access_token::AccessToken::find_disabled_personal_token_by_user_id(
-                user.id, conn.db, logger,
-            );
-        assert!(result.is_some());
+        let result = model::access_token::AccessToken::by_user(&user)
+            .first::<model::access_token::AccessToken>(conn.db);
+        assert!(result.is_ok());
     });
 }

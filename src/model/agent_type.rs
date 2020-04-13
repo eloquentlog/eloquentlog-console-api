@@ -11,7 +11,7 @@ use serde::Serialize;
 
 static AGENT_TYPES: [AgentType; 2] = [AgentType::Client, AgentType::Person];
 
-#[derive(QueryId, SqlType)]
+#[derive(QueryId, SqlType, Clone)]
 #[postgres(type_name = "e_agent_type")]
 pub struct EAgentType;
 
@@ -69,6 +69,14 @@ impl AgentType {
     pub fn as_vec() -> Vec<AgentType> {
         AgentType::iter().cloned().collect()
     }
+
+    pub fn is_person(&self) -> bool {
+        self == &AgentType::Person
+    }
+
+    pub fn is_client(&self) -> bool {
+        self == &AgentType::Client
+    }
 }
 
 #[cfg(test)]
@@ -101,5 +109,17 @@ mod test {
             vec![AgentType::Client, AgentType::Person],
             AgentType::as_vec()
         );
+    }
+
+    #[test]
+    fn test_is_person() {
+        assert!(AgentType::Person.is_person());
+        assert!(!AgentType::Client.is_person());
+    }
+
+    #[test]
+    fn test_is_client() {
+        assert!(!AgentType::Person.is_client());
+        assert!(AgentType::Client.is_client());
     }
 }
