@@ -130,16 +130,14 @@ pub fn dump<'a>(
     let t = result.unwrap();
     let token = String::from_utf8(t.token.unwrap()).unwrap();
     res.format(json!({
-        "access_token": {
-            "uuid": t.uuid.to_string(),
-            "name": t.name,
-            "agent_type": t.agent_type.to_string(),
-            "state": t.state.to_string(),
-            "token": token,
-            "revoked_at": Value::Null,
-            "created_at": t.created_at,
-            "updated_at": t.updated_at,
-        }
+        "uuid": t.uuid.to_string(),
+        "name": t.name,
+        "agent_type": t.agent_type.to_string(),
+        "state": t.state.to_string(),
+        "token": token,
+        "revoked_at": Value::Null,
+        "created_at": t.created_at,
+        "updated_at": t.updated_at,
     }))
 }
 
@@ -182,7 +180,7 @@ pub fn del<'a>(
         return res.status(Status::NotFound);
     }
 
-    res.format(json!({"access_token": 1}))
+    res.format(json!(1))
 }
 
 #[patch("/access_token/hset/<uuid>/state/<access_token_state>")]
@@ -226,7 +224,7 @@ pub fn hset_state<'a>(
         return res.status(Status::NotFound);
     }
 
-    res.format(json!({"access_token": 1}))
+    res.format(json!(1))
 }
 
 #[put("/access_token/append/<agent_type>")]
@@ -287,16 +285,14 @@ pub fn lrange<'a>(
             a.iter()
                 .map(|t| {
                     json!({
-                        "access_token": {
-                            "uuid": t.uuid.to_string(),
-                            "name": t.name,
-                            "agent_type": t.agent_type.to_string(),
-                            "state": t.state.to_string(),
-                            "token": token,
-                            "revoked_at": Value::Null,
-                            "created_at": t.created_at,
-                            "updated_at": t.updated_at,
-                        }
+                        "uuid": t.uuid.to_string(),
+                        "name": t.name,
+                        "agent_type": t.agent_type.to_string(),
+                        "state": t.state.to_string(),
+                        "token": token,
+                        "revoked_at": Value::Null,
+                        "created_at": t.created_at,
+                        "updated_at": t.updated_at,
                     })
                 })
                 .collect()
