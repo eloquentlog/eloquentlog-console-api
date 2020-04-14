@@ -102,7 +102,7 @@ fn test_access_token_hset_state() {
         assert_eq!(res.status(), Status::Ok);
 
         let body = res.body_string().unwrap();
-        assert_eq!(body, minify(r#"{"access_token": 1}"#.to_string()));
+        assert_eq!(body, "1");
     });
 }
 
@@ -224,7 +224,6 @@ fn test_access_token_lrange_returns_a_list_contain_tokens() {
             body,
             minify(format!(
                 r#"[{{
-"access_token": {{
   "agent_type": "client",
   "created_at": "2019-08-07T06:05:04.333",
   "name": "client token 1",
@@ -233,9 +232,7 @@ fn test_access_token_lrange_returns_a_list_contain_tokens() {
   "token": "***",
   "updated_at": "2019-08-07T06:05:04.333",
   "uuid": "{}"
-}}
 }},{{
-"access_token": {{
   "agent_type": "client",
   "created_at": "2020-02-18T05:04:03.222",
   "name": "client token 2",
@@ -244,7 +241,6 @@ fn test_access_token_lrange_returns_a_list_contain_tokens() {
   "token": "***",
   "updated_at": "2020-02-18T05:04:03.222",
   "uuid": "{}"
-}}
 }}]"#,
                 access_token_1.uuid, access_token_2.uuid,
             ))
