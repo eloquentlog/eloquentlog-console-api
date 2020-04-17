@@ -1,4 +1,4 @@
-pub mod access_token_state;
+pub mod access_token;
 pub mod agent_type;
 pub mod message;
 pub mod password_reset;
