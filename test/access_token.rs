@@ -31,13 +31,20 @@ fn test_access_token_hset_state_failure() {
         let result: Value = serde_json::from_str(&body).unwrap();
         let token = result["token"].as_str().unwrap();
 
+        let state = model::access_token::AccessTokenState::Enabled;
         let res = client
-            .patch(format!(
-                "/_api/access_token/hset/{}/state/enabled",
-                Uuid::nil()
-            ))
+            .patch(format!("/_api/access_token/hset/{}/state", Uuid::nil()))
+            .header(ContentType::JSON)
             .header(Header::new("X-Requested-With", "XMLHttpRequest"))
             .header(Header::new("Authorization", format!("Bearer {}", token)))
+            .body(format!(
+                r#"{{
+                  "access_token": {{
+                    "state": "{}"
+                  }}
+                }}"#,
+                &state,
+            ))
             .dispatch();
 
         assert_eq!(res.status(), Status::NotFound);
@@ -90,19 +97,29 @@ fn test_access_token_hset_state() {
                 .get_result::<model::access_token::AccessToken>(conn.db)
                 .unwrap_or_else(|_| panic!("Error inserting: {}", t));
 
+        let state = model::access_token::AccessTokenState::Enabled;
         let mut res = client
             .patch(format!(
-                "/_api/access_token/hset/{}/state/enabled",
+                "/_api/access_token/hset/{}/state",
                 access_token.uuid,
             ))
+            .header(ContentType::JSON)
             .header(Header::new("X-Requested-With", "XMLHttpRequest"))
             .header(Header::new("Authorization", format!("Bearer {}", token)))
+            .body(format!(
+                r#"{{
+                  "access_token": {{
+                    "state": "{}"
+                  }}
+                }}"#,
+                &state,
+            ))
             .dispatch();
 
         assert_eq!(res.status(), Status::Ok);
 
         let body = res.body_string().unwrap();
-        assert_eq!(body, "1");
+        assert_eq!(body, "{\"access_token\":1}");
     });
 }
 
@@ -224,6 +241,7 @@ fn test_access_token_lrange_returns_a_list_contain_tokens() {
             body,
             minify(format!(
                 r#"[{{
+"access_token": {{
   "agent_type": "client",
   "created_at": "2019-08-07T06:05:04.333",
   "name": "client token 1",
@@ -232,7 +250,8 @@ fn test_access_token_lrange_returns_a_list_contain_tokens() {
   "token": "***",
   "updated_at": "2019-08-07T06:05:04.333",
   "uuid": "{}"
-}},{{
+}}}},{{
+"access_token": {{
   "agent_type": "client",
   "created_at": "2020-02-18T05:04:03.222",
   "name": "client token 2",
@@ -241,7 +260,7 @@ fn test_access_token_lrange_returns_a_list_contain_tokens() {
   "token": "***",
   "updated_at": "2020-02-18T05:04:03.222",
   "uuid": "{}"
-}}]"#,
+}}}}]"#,
                 access_token_1.uuid, access_token_2.uuid,
             ))
         );

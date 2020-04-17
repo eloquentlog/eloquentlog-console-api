@@ -6,16 +6,17 @@ use serde_json::Value;
 
 use crate::config::Config;
 use crate::db::DbConn;
-use crate::model::access_token::{AccessToken, AccessTokenState, AgentType};
+use crate::model::access_token::{AccessToken, AgentType};
 use crate::model::token::{AuthenticationClaims, Claims, TokenData};
 use crate::model::user::User;
+use crate::request::access_token::AccessTokenData as RequestData;
 use crate::response::Response;
 
 pub mod preflight {
     use rocket::response::Response as RawResponse;
     use rocket_slog::SyncLogger;
 
-    use crate::model::access_token::{AgentType, AccessTokenState};
+    use crate::model::access_token::AgentType;
     use crate::response::no_content_for;
 
     #[options("/access_token/del/<uuid>")]
@@ -30,14 +31,9 @@ pub mod preflight {
         no_content_for("PATCH")
     }
 
-    #[options("/access_token/hset/<uuid>/state/<access_token_state>")]
-    pub fn hset_state<'a>(
-        uuid: String,
-        access_token_state: AccessTokenState,
-        logger: SyncLogger,
-    ) -> RawResponse<'a>
-    {
-        info!(logger, "uuid: {}, state: {}", uuid, access_token_state);
+    #[options("/access_token/hset/<uuid>/state")]
+    pub fn hset_state<'a>(uuid: String, logger: SyncLogger) -> RawResponse<'a> {
+        info!(logger, "uuid: {}", uuid);
         no_content_for("PATCH")
     }
 
@@ -130,14 +126,16 @@ pub fn dump<'a>(
     let t = result.unwrap();
     let token = String::from_utf8(t.token.unwrap()).unwrap();
     res.format(json!({
-        "uuid": t.uuid.to_string(),
-        "name": t.name,
-        "agent_type": t.agent_type.to_string(),
-        "state": t.state.to_string(),
-        "token": token,
-        "revoked_at": Value::Null,
-        "created_at": t.created_at,
-        "updated_at": t.updated_at,
+        "access_token": {
+            "uuid": t.uuid.to_string(),
+            "name": t.name,
+            "agent_type": t.agent_type.to_string(),
+            "state": t.state.to_string(),
+            "token": token,
+            "revoked_at": Value::Null,
+            "created_at": t.created_at,
+            "updated_at": t.updated_at,
+        }
     }))
 }
 
@@ -180,13 +178,15 @@ pub fn del<'a>(
         return res.status(Status::NotFound);
     }
 
-    res.format(json!(1))
+    res.format(json!({
+        "access_token": 1,
+    }))
 }
 
-#[patch("/access_token/hset/<uuid>/state/<access_token_state>")]
+#[patch("/access_token/hset/<uuid>/state", data = "<data>", format = "json")]
 pub fn hset_state<'a>(
     uuid: String,
-    access_token_state: AccessTokenState,
+    data: RequestData,
     user: &User,
     conn: DbConn,
     logger: SyncLogger,
@@ -209,7 +209,7 @@ pub fn hset_state<'a>(
                 },
                 Some(t) => {
                     // this does not check old state
-                    match t.mark_as(access_token_state, &conn, &logger) {
+                    match t.mark_as(data.access_token.state, &conn, &logger) {
                         Err(e) => {
                             error!(logger, "err: {}", e);
                             Err(Error::RollbackTransaction)
@@ -224,7 +224,9 @@ pub fn hset_state<'a>(
         return res.status(Status::NotFound);
     }
 
-    res.format(json!(1))
+    res.format(json!({
+        "access_token": 1,
+    }))
 }
 
 #[put("/access_token/append/<agent_type>")]
@@ -285,14 +287,16 @@ pub fn lrange<'a>(
             a.iter()
                 .map(|t| {
                     json!({
-                        "uuid": t.uuid.to_string(),
-                        "name": t.name,
-                        "agent_type": t.agent_type.to_string(),
-                        "state": t.state.to_string(),
-                        "token": token,
-                        "revoked_at": Value::Null,
-                        "created_at": t.created_at,
-                        "updated_at": t.updated_at,
+                        "access_token": {
+                            "uuid": t.uuid.to_string(),
+                            "name": t.name,
+                            "agent_type": t.agent_type.to_string(),
+                            "state": t.state.to_string(),
+                            "token": token,
+                            "revoked_at": Value::Null,
+                            "created_at": t.created_at,
+                            "updated_at": t.updated_at,
+                        }
                     })
                 })
                 .collect()
