@@ -12,7 +12,7 @@ use crate::request::token::{
     verify_token,
 };
 
-use crate::{bad_request_by, unprocessable_entity_by};
+use crate::{bad_request_by, unauthorized_by};
 
 pub struct AuthenticationToken(pub String);
 
@@ -70,7 +70,7 @@ impl<'a, 'r> FromRequest<'a, 'r> for AuthenticationToken {
                 // * validate token format
 
                 if token.is_empty() || !token.contains('.') {
-                    return bad_request_by!(AuthenticationTokenError::Invalid);
+                    return unauthorized_by!(AuthenticationTokenError::Invalid);
                 }
 
                 // NOTE:
@@ -87,7 +87,7 @@ impl<'a, 'r> FromRequest<'a, 'r> for AuthenticationToken {
                 }
 
                 if token.is_empty() {
-                    return bad_request_by!(AuthenticationTokenError::Invalid);
+                    return unauthorized_by!(AuthenticationTokenError::Invalid);
                 }
 
                 let config = req.guard::<State<Config>>().unwrap();
@@ -99,14 +99,12 @@ impl<'a, 'r> FromRequest<'a, 'r> for AuthenticationToken {
                     Ok(t) => Outcome::Success(AuthenticationToken(t)),
                     Err(e) => {
                         error!(logger, "error: {}", e);
-                        unprocessable_entity_by!(
-                            AuthenticationTokenError::Invalid
-                        )
+                        unauthorized_by!(AuthenticationTokenError::Invalid)
                     },
                 }
             },
-            0 => bad_request_by!(AuthenticationTokenError::Missing),
-            _ => bad_request_by!(AuthenticationTokenError::BadCount),
+            0 => unauthorized_by!(AuthenticationTokenError::Missing),
+            _ => unauthorized_by!(AuthenticationTokenError::BadCount),
         }
     }
 }

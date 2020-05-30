@@ -18,6 +18,16 @@ macro_rules! bad_request_by {
 }
 
 #[macro_export]
+macro_rules! unauthorized_by {
+    ($reason:expr) => {
+        ::rocket::request::Outcome::Failure((
+            ::rocket::http::Status::Unauthorized,
+            $reason,
+        ))
+    };
+}
+
+#[macro_export]
 macro_rules! not_found_by {
     ($reason:expr) => {
         ::rocket::request::Outcome::Failure((

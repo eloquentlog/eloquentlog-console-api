@@ -188,7 +188,7 @@ impl Claims for AuthenticationClaims {
     ) -> Result<Self, jsonwebtoken::errors::Error>
     {
         // self check
-        let header = decode_header(&token).expect("Invalid token");
+        let header = decode_header(&token)?;
         if header.alg != Self::ALGORITHM {
             return Err(jsonwebtoken::errors::Error::from(
                 jsonwebtoken::errors::ErrorKind::InvalidToken,
