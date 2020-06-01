@@ -9,7 +9,7 @@ use crate::unprocessable_entity_by;
 use crate::model::token::Claims;
 
 const AUTHORIZATION_HEADER_PREFIX: &str = "Bearer ";
-const AUTHORIZATION_HEADER_TOKEN_PREFIX: &str = "Token ";
+const AUTHORIZATION_HEADER_TOKEN_PREFIX: &str = "Access-Token ";
 
 // NOTE: this function does not check value in database.
 fn verify_token<T>(
