@@ -16,6 +16,32 @@ pub fn bad_request<'a>(_req: &Request) -> Response<'a> {
     }
 }
 
+#[catch(401)]
+pub fn unauthorized<'a>(_req: &Request) -> Response<'a> {
+    Response {
+        cookies: vec![],
+        status: Status::Unauthorized,
+        data: json!({
+            "data": {
+                "message": "The request is not allowed".to_string(),
+            }
+        }),
+    }
+}
+
+#[catch(403)]
+pub fn forbidden<'a>(_req: &Request) -> Response<'a> {
+    Response {
+        cookies: vec![],
+        status: Status::Unauthorized,
+        data: json!({
+            "data": {
+                "message": "The request is not prohibited".to_string(),
+            }
+        }),
+    }
+}
+
 #[catch(404)]
 pub fn not_found<'a>(req: &Request) -> Response<'a> {
     Response {
@@ -37,6 +63,19 @@ pub fn unprocessable_entity<'a>(_req: &Request) -> Response<'a> {
         data: json!({
             "data": {
                 "message": "The input is invalid".to_string(),
+            }
+        }),
+    }
+}
+
+#[catch(500)]
+pub fn internal_server_error<'a>(_req: &Request) -> Response<'a> {
+    Response {
+        cookies: vec![],
+        status: Status::InternalServerError,
+        data: json!({
+            "data": {
+                "message": "Internal server error occured".to_string(),
             }
         }),
     }
