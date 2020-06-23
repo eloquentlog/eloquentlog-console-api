@@ -122,7 +122,9 @@ pub fn server() -> rocket::Rocket {
         .mount("/_api", r["/_api"].clone())
         .register(catchers![
             route::error::bad_request,
+            route::error::internal_server_error,
             route::error::not_found,
+            route::error::unauthorized,
             route::error::unprocessable_entity,
         ])
 }
