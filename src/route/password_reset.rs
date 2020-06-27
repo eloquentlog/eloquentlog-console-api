@@ -213,8 +213,9 @@ pub fn update<'a>(
                         },
                         Ok(_) if u.update(&new_password).is_ok() => {
                             // clear session
+                            let key = format!("pr-{}", session_id);
                             ss_conn
-                                .del(&session_id)
+                                .del(&key)
                                 .map(|r: i64| r.to_string())
                                 .map_err(|e| {
                                     error!(logger, "error: {}", e);
