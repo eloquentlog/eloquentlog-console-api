@@ -83,6 +83,11 @@ impl Default for Config {
 }
 
 impl Config {
+    pub const CSRF_HASH_DURATION: i64 = 10; // minutes
+    pub const CSRF_HASH_LENGTH: i32 = 32;
+    pub const CSRF_HASH_SOURCE: &'static [u8] =
+        b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz01234567890-_";
+
     pub fn from(config_name: &str) -> Result<Config, String> {
         match config_name {
             "production" => Ok(Config::production_config()),

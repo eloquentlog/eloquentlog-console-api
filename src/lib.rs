@@ -80,6 +80,7 @@ pub fn routes() -> Vec<(&'static str, Vec<rocket::Route>)> {
                 // foundation
                 route::authentication::preflight::login,
                 route::authentication::preflight::logout,
+                route::authentication::preignition::login,
                 route::authentication::login,
                 route::authentication::logout,
                 route::password_reset::preflight::request,

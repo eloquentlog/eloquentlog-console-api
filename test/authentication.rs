@@ -45,6 +45,13 @@ fn test_login_with_wrong_username() {
 
         assert_eq!(res.status(), Status::Ok);
 
+        let _ = client
+            .head("/_api/login/")
+            .header(ContentType::JSON)
+            .header(Header::new("X-Requested-With", "XMLHttpRequest"))
+            .body("{}")
+            .dispatch();
+
         let res = client
             .post("/_api/login")
             .header(ContentType::JSON)
@@ -100,6 +107,13 @@ fn test_login_with_wrong_password() {
             .dispatch();
 
         assert_eq!(res.status(), Status::Ok);
+
+        let _ = client
+            .head("/_api/login/")
+            .header(ContentType::JSON)
+            .header(Header::new("X-Requested-With", "XMLHttpRequest"))
+            .body("{}")
+            .dispatch();
 
         let res = client
             .post("/_api/login")
@@ -157,9 +171,17 @@ fn test_login() {
 
         assert_eq!(res.status(), Status::Ok);
 
+        let _ = client
+            .head("/_api/login/")
+            .header(ContentType::JSON)
+            .header(Header::new("X-Requested-With", "XMLHttpRequest"))
+            .body("{}")
+            .dispatch();
+
         let res = client
             .post("/_api/login")
             .header(ContentType::JSON)
+            .header(Header::new("X-Requested-With", "XMLHttpRequest"))
             .body(format!(
                 r#"{{
                   "username": "{}",
