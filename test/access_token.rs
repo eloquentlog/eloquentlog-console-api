@@ -15,9 +15,17 @@ fn test_access_token_hset_state_failure() {
         let password = make_raw_password(&u);
         let user = load_user(u, conn.db);
 
+        let _ = client
+            .head("/_api/login/")
+            .header(ContentType::JSON)
+            .header(Header::new("X-Requested-With", "XMLHttpRequest"))
+            .body("{}")
+            .dispatch();
+
         let mut res = client
             .post("/_api/login")
             .header(ContentType::JSON)
+            .header(Header::new("X-Requested-With", "XMLHttpRequest"))
             .body(format!(
                 r#"{{
                     "username": "{}",
@@ -35,8 +43,8 @@ fn test_access_token_hset_state_failure() {
         let res = client
             .patch(format!("/_api/access_token/hset/{}/state", Uuid::nil()))
             .header(ContentType::JSON)
-            .header(Header::new("X-Requested-With", "XMLHttpRequest"))
             .header(Header::new("Authorization", format!("Bearer {}", token)))
+            .header(Header::new("X-Requested-With", "XMLHttpRequest"))
             .body(format!(
                 r#"{{
                   "access_token": {{
@@ -58,9 +66,17 @@ fn test_access_token_hset_state() {
         let password = make_raw_password(&u);
         let user = load_user(u, conn.db);
 
+        let _ = client
+            .head("/_api/login/")
+            .header(ContentType::JSON)
+            .header(Header::new("X-Requested-With", "XMLHttpRequest"))
+            .body("{}")
+            .dispatch();
+
         let mut res = client
             .post("/_api/login")
             .header(ContentType::JSON)
+            .header(Header::new("X-Requested-With", "XMLHttpRequest"))
             .body(format!(
                 r#"{{
                     "username": "{}",
@@ -130,9 +146,17 @@ fn test_access_token_lrange_returns_empty_if_not_exist() {
         let password = make_raw_password(&u);
         let user = load_user(u, conn.db);
 
+        let _ = client
+            .head("/_api/login/")
+            .header(ContentType::JSON)
+            .header(Header::new("X-Requested-With", "XMLHttpRequest"))
+            .body("{}")
+            .dispatch();
+
         let mut res = client
             .post("/_api/login")
             .header(ContentType::JSON)
+            .header(Header::new("X-Requested-With", "XMLHttpRequest"))
             .body(format!(
                 r#"{{
                     "username": "{}",
@@ -148,8 +172,8 @@ fn test_access_token_lrange_returns_empty_if_not_exist() {
 
         let mut res = client
             .get("/_api/access_token/lrange/client/0/0")
-            .header(Header::new("X-Requested-With", "XMLHttpRequest"))
             .header(Header::new("Authorization", format!("Bearer {}", token)))
+            .header(Header::new("X-Requested-With", "XMLHttpRequest"))
             .dispatch();
 
         assert_eq!(res.status(), Status::Ok);
@@ -166,9 +190,17 @@ fn test_access_token_lrange_returns_a_list_contain_tokens() {
         let password = make_raw_password(&u);
         let user = load_user(u, conn.db);
 
+        let _ = client
+            .head("/_api/login/")
+            .header(ContentType::JSON)
+            .header(Header::new("X-Requested-With", "XMLHttpRequest"))
+            .body("{}")
+            .dispatch();
+
         let mut res = client
             .post("/_api/login")
             .header(ContentType::JSON)
+            .header(Header::new("X-Requested-With", "XMLHttpRequest"))
             .body(format!(
                 r#"{{
                     "username": "{}",
@@ -230,8 +262,8 @@ fn test_access_token_lrange_returns_a_list_contain_tokens() {
 
         let mut res = client
             .get("/_api/access_token/lrange/client/0/1")
-            .header(Header::new("X-Requested-With", "XMLHttpRequest"))
             .header(Header::new("Authorization", format!("Bearer {}", token)))
+            .header(Header::new("X-Requested-With", "XMLHttpRequest"))
             .dispatch();
 
         assert_eq!(res.status(), Status::Ok);

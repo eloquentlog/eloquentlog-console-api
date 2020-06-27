@@ -14,9 +14,17 @@ fn test_lrange_no_message() {
         let password = make_raw_password(&u);
         let user = load_user(u, conn.db);
 
+        let _ = client
+            .head("/_api/login/")
+            .header(ContentType::JSON)
+            .header(Header::new("X-Requested-With", "XMLHttpRequest"))
+            .body("{}")
+            .dispatch();
+
         let mut res = client
             .post("/_api/login")
             .header(ContentType::JSON)
+            .header(Header::new("X-Requested-With", "XMLHttpRequest"))
             .body(format!(
                 r#"{{
                     "username": "{}",
@@ -48,9 +56,17 @@ fn test_lrange_messages() {
         let password = make_raw_password(&u);
         let user = load_user(u, conn.db);
 
+        let _ = client
+            .head("/_api/login/")
+            .header(ContentType::JSON)
+            .header(Header::new("X-Requested-With", "XMLHttpRequest"))
+            .body("{}")
+            .dispatch();
+
         let mut res = client
             .post("/_api/login")
             .header(ContentType::JSON)
+            .header(Header::new("X-Requested-With", "XMLHttpRequest"))
             .body(format!(
                 r#"{{
                     "username": "{}",
@@ -123,9 +139,17 @@ fn test_append_with_validation_errors() {
         let password = make_raw_password(&u);
         let user = load_user(u, conn.db);
 
+        let _ = client
+            .head("/_api/login/")
+            .header(ContentType::JSON)
+            .header(Header::new("X-Requested-With", "XMLHttpRequest"))
+            .body("{}")
+            .dispatch();
+
         let mut res = client
             .post("/_api/login")
             .header(ContentType::JSON)
+            .header(Header::new("X-Requested-With", "XMLHttpRequest"))
             .body(format!(
                 r#"{{
                     "username": "{}",
@@ -142,8 +166,8 @@ fn test_append_with_validation_errors() {
         let mut res = client
             .post("/_api/message/append/namespace")
             .header(ContentType::JSON)
-            .header(Header::new("X-Requested-With", "XMLHttpRequest"))
             .header(Header::new("Authorization", format!("Bearer {}", token)))
+            .header(Header::new("X-Requested-With", "XMLHttpRequest"))
             .body(
                 r#"{
                     "code": "",
@@ -165,9 +189,17 @@ fn test_append() {
         let password = make_raw_password(&u);
         let user = load_user(u, conn.db);
 
+        let _ = client
+            .head("/_api/login/")
+            .header(ContentType::JSON)
+            .header(Header::new("X-Requested-With", "XMLHttpRequest"))
+            .body("{}")
+            .dispatch();
+
         let mut res = client
             .post("/_api/login")
             .header(ContentType::JSON)
+            .header(Header::new("X-Requested-With", "XMLHttpRequest"))
             .body(format!(
                 r#"{{
                     "username": "{}",
@@ -184,8 +216,8 @@ fn test_append() {
         let mut res = client
             .post("/_api/message/append/namespace")
             .header(ContentType::JSON)
-            .header(Header::new("X-Requested-With", "XMLHttpRequest"))
             .header(Header::new("Authorization", format!("Bearer {}", token)))
+            .header(Header::new("X-Requested-With", "XMLHttpRequest"))
             .body(
                 r#"{
                     "format": "toml",
