@@ -15,7 +15,7 @@ use crate::model::token::VerificationClaims;
 use crate::request::token::{AUTHORIZATION_HEADER_PREFIX, verify_token};
 use crate::ss::SsConn;
 
-use crate::{bad_request_by, not_found_by, unprocessable_entity_by};
+use crate::{bad_request_by, not_found_by};
 
 pub struct VerificationToken(pub String);
 
@@ -62,7 +62,7 @@ impl<'a, 'r> FromRequest<'a, 'r> for VerificationToken {
 
                 let token = h[AUTHORIZATION_HEADER_PREFIX.len()..].to_string();
                 if !token.contains('.') {
-                    return bad_request_by!(VerificationTokenError::Invalid);
+                    return not_found_by!(VerificationTokenError::Invalid);
                 }
                 // NOTE:
                 // append signature taken by using session id to the parts
@@ -88,7 +88,7 @@ impl<'a, 'r> FromRequest<'a, 'r> for VerificationToken {
                     .unwrap_or_else(|| "".to_string());
 
                 if key.is_empty() {
-                    return bad_request_by!(VerificationTokenError::Invalid);
+                    return not_found_by!(VerificationTokenError::Invalid);
                 }
 
                 let mut ss_conn = req.guard::<SsConn>().unwrap();
@@ -111,9 +111,7 @@ impl<'a, 'r> FromRequest<'a, 'r> for VerificationToken {
                     Ok(t) => Outcome::Success(VerificationToken(t)),
                     Err(e) => {
                         error!(logger, "error: {}", e);
-                        unprocessable_entity_by!(
-                            VerificationTokenError::Expired
-                        )
+                        not_found_by!(VerificationTokenError::Expired)
                     },
                 }
             },

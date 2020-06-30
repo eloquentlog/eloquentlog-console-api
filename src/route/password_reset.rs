@@ -3,7 +3,7 @@ use diesel::result::Error;
 use fourche::queue::Queue;
 use redis::{Commands, RedisError};
 use rocket::State;
-use rocket::http::Status;
+use rocket::http::{Cookies, Status};
 use rocket_contrib::json::Json;
 use rocket_slog::SyncLogger;
 
@@ -32,7 +32,7 @@ pub mod preflight {
 
     #[options("/password/reset")]
     pub fn request<'a>() -> RawResponse<'a> {
-        no_content_for("PUT")
+        no_content_for("HEAD,PUT")
     }
 
     #[options("/password/reset/<session_id>")]
@@ -42,22 +42,130 @@ pub mod preflight {
     ) -> RawResponse<'a>
     {
         info!(logger, "session_id: {}", session_id);
-        no_content_for("GET,PATCH")
+        no_content_for("GET,HEAD,PATCH")
+    }
+}
+
+pub mod preignition {
+    use chrono::{Duration, Utc};
+    use redis::{Commands, RedisError};
+    use rocket::http::{Cookie, Cookies, SameSite, Status};
+    use rocket_slog::SyncLogger;
+
+    use crate::config::Config;
+    use crate::response::Response;
+    use crate::ss::SsConn;
+    use crate::util::generate_random_hash;
+
+    #[head("/password/reset", format = "json")]
+    pub fn request<'a>(
+        logger: SyncLogger,
+        mut cookies: Cookies,
+        mut ss_conn: SsConn,
+    ) -> Response<'a>
+    {
+        // returns CSRF token
+        let res: Response = Default::default();
+        info!(logger, "preignition");
+
+        let duration = Duration::minutes(Config::CSRF_HASH_DURATION);
+        let expires_at = (Utc::now() + duration).timestamp();
+        let key_value = generate_random_hash(
+            Config::CSRF_HASH_SOURCE,
+            Config::CSRF_HASH_LENGTH,
+        );
+        let key = format!("xs-{}", key_value);
+        let value = "1";
+        let result: Result<String, RedisError> = ss_conn
+            .set_ex(&key, value, expires_at as usize)
+            .map_err(|e| {
+                error!(logger, "error: {}", e);
+                e
+            });
+        if result.is_ok() {
+            let mut cookie = Cookie::new("csrf_token", key);
+            cookie.set_http_only(true);
+            cookie.set_secure(false); // TODO
+            cookie.set_same_site(SameSite::Strict);
+            cookies.add_private(cookie);
+            return res.status(Status::Ok);
+        }
+        error!(logger, "something went wrong on login");
+        res.status(Status::InternalServerError)
+    }
+
+    #[head("/password/reset/<session_id>", format = "json")]
+    pub fn update<'a>(
+        logger: SyncLogger,
+        session_id: String,
+        mut cookies: Cookies,
+        mut ss_conn: SsConn,
+    ) -> Response<'a>
+    {
+        info!(logger, "session_id: {}", session_id);
+
+        // returns CSRF token
+        let res: Response = Default::default();
+        info!(logger, "preignition");
+
+        let duration = Duration::minutes(Config::CSRF_HASH_DURATION);
+        let expires_at = (Utc::now() + duration).timestamp();
+        let key_value = generate_random_hash(
+            Config::CSRF_HASH_SOURCE,
+            Config::CSRF_HASH_LENGTH,
+        );
+        let key = format!("xs-{}", key_value);
+        let value = "1";
+        let result: Result<String, RedisError> = ss_conn
+            .set_ex(&key, value, expires_at as usize)
+            .map_err(|e| {
+                error!(logger, "error: {}", e);
+                e
+            });
+        if result.is_ok() {
+            let mut cookie = Cookie::new("csrf_token", key);
+            cookie.set_http_only(true);
+            cookie.set_secure(false); // TODO
+            cookie.set_same_site(SameSite::Strict);
+            cookies.add_private(cookie);
+            return res.status(Status::Ok);
+        }
+        error!(logger, "something went wrong on login");
+        res.status(Status::InternalServerError)
     }
 }
 
 #[put("/password/reset", data = "<payload>", format = "json")]
 pub fn request<'a>(
-    payload: Json<PasswordResetRequest>,
-    db_conn: DbConn,
-    mut mq_conn: MqConn,
-    mut ss_conn: SsConn,
-    config: State<Config>,
     logger: SyncLogger,
+    mut cookies: Cookies,
+    config: State<Config>,
+    mut ss_conn: SsConn,
+    mut mq_conn: MqConn,
+    db_conn: DbConn,
+    payload: Json<PasswordResetRequest>,
 ) -> Response<'a>
 {
     // FIXME: create `password_renewer` service
     let res: Response = Default::default();
+
+    let cookie = cookies.get_private("csrf_token").ok_or("");
+    if cookie.is_err() {
+        info!(logger, "error: missing csrf_token");
+        return res.status(Status::Unauthorized).format(json!({
+            "message": "The CSRF token is required."
+        }));
+    }
+    let key = cookie.ok().unwrap().value().to_string();
+    let result: Result<i64, RedisError> = ss_conn.get(&key).map_err(|e| {
+        error!(logger, "error: {}", e);
+        e
+    });
+    if result.is_err() {
+        return res.status(Status::Unauthorized).format(json!({
+            "message": "The CSRF token has been expired. Reload the page."
+        }));
+    }
 
     if PasswordResetRequestValidator::new(&db_conn, &payload, &logger)
         .validate()
@@ -152,9 +260,9 @@ pub fn request<'a>(
 // https://github.com/SergioBenitez/Rocket/issues/2
 #[get("/password/reset/<session_id>", format = "json")]
 pub fn verify<'a>(
+    logger: SyncLogger,
     session_id: String,
     token: VerificationToken,
-    logger: SyncLogger,
 ) -> Response<'a>
 {
     info!(logger, "session_id: {}", session_id);
@@ -163,20 +271,40 @@ pub fn verify<'a>(
     res
 }
 
+// The arguments order is matter due to a spec of FromRequest
 #[patch("/password/reset/<session_id>", data = "<payload>", format = "json")]
 pub fn update<'a>(
-    session_id: String,
+    logger: SyncLogger,
+    mut cookies: Cookies,
     token: VerificationToken,
+    config: State<Config>,
+    session_id: String,
+    mut ss_conn: SsConn,
     payload: Json<PasswordResetUpdate>,
     db_conn: DbConn,
-    mut ss_conn: SsConn,
-    logger: SyncLogger,
-    config: State<Config>,
 ) -> Response<'a>
 {
     info!(logger, "session_id: {}", session_id);
 
     let res: Response = Default::default();
+
+    let cookie = cookies.get_private("csrf_token").ok_or("");
+    if cookie.is_err() {
+        info!(logger, "error: missing csrf_token");
+        return res.status(Status::Unauthorized).format(json!({
+            "message": "The CSRF token is required."
+        }));
+    }
+    let key = cookie.ok().unwrap().value().to_string();
+    let result: Result<i64, RedisError> = ss_conn.get(&key).map_err(|e| {
+        error!(logger, "error: {}", e);
+        e
+    });
+    if result.is_err() {
+        return res.status(Status::Unauthorized).format(json!({
+            "message": "The CSRF token has been expired. Reload the page."
+        }));
+    }
 
     let mut errors: Vec<ValidationError> = vec![];
     let result = db_conn
