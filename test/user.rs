@@ -42,7 +42,7 @@ fn test_user_activate_with_invalid_token() {
             .body("{}")
             .dispatch();
 
-        assert_eq!(res.status(), Status::BadRequest);
+        assert_eq!(res.status(), Status::NotFound);
 
         let result = model::user::User::find_by_email(email, conn.db, logger);
         assert!(result.is_none());

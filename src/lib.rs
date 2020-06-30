@@ -85,6 +85,8 @@ pub fn routes() -> Vec<(&'static str, Vec<rocket::Route>)> {
                 route::authentication::logout,
                 route::password_reset::preflight::request,
                 route::password_reset::preflight::verify_update,
+                route::password_reset::preignition::request,
+                route::password_reset::preignition::update,
                 route::password_reset::request,
                 route::password_reset::verify,
                 route::password_reset::update,
