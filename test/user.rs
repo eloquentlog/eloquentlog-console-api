@@ -11,9 +11,18 @@ use super::run_test;
 fn test_user_activate_with_invalid_token() {
     run_test(|client, conn, _, logger| {
         let email = "hennry@example.org";
+
+        let _ = client
+            .head("/_api/register")
+            .header(ContentType::JSON)
+            .header(Header::new("X-Requested-With", "XMLHttpRequest"))
+            .body("{}")
+            .dispatch();
+
         let res = client
             .post("/_api/register")
             .header(ContentType::JSON)
+            .header(Header::new("X-Requested-With", "XMLHttpRequest"))
             .body(format!(
                 r#"{{
                   "email": "{}",
@@ -53,9 +62,18 @@ fn test_user_activate_with_invalid_token() {
 fn test_user_activate_with_invalid_session_id() {
     run_test(|client, conn, _, logger| {
         let email = "hennry@example.org";
+
+        let _ = client
+            .head("/_api/register")
+            .header(ContentType::JSON)
+            .header(Header::new("X-Requested-With", "XMLHttpRequest"))
+            .body("{}")
+            .dispatch();
+
         let res = client
             .post("/_api/register")
             .header(ContentType::JSON)
+            .header(Header::new("X-Requested-With", "XMLHttpRequest"))
             .body(format!(
                 r#"{{
                   "email": "{}",
@@ -95,9 +113,18 @@ fn test_user_activate_with_invalid_session_id() {
 fn test_user_activate_without_authorization_header() {
     run_test(|client, conn, _, logger| {
         let email = "hennry@example.org";
+
+        let _ = client
+            .head("/_api/register")
+            .header(ContentType::JSON)
+            .header(Header::new("X-Requested-With", "XMLHttpRequest"))
+            .body("{}")
+            .dispatch();
+
         let res = client
             .post("/_api/register")
             .header(ContentType::JSON)
+            .header(Header::new("X-Requested-With", "XMLHttpRequest"))
             .body(format!(
                 r#"{{
                   "email": "{}",
@@ -135,6 +162,14 @@ fn test_user_activate_without_authorization_header() {
 fn test_user_activate_without_x_requested_with_header() {
     run_test(|client, conn, _, logger| {
         let email = "hennry@example.org";
+
+        let _ = client
+            .head("/_api/register")
+            .header(ContentType::JSON)
+            .header(Header::new("X-Requested-With", "XMLHttpRequest"))
+            .body("{}")
+            .dispatch();
+
         let res = client
             .post("/_api/register")
             .header(ContentType::JSON)
@@ -176,9 +211,18 @@ fn test_user_activate_without_x_requested_with_header() {
 fn test_user_activate() {
     run_test(|client, conn, _, logger| {
         let email = "hennry@example.org";
+
+        let _ = client
+            .head("/_api/register")
+            .header(ContentType::JSON)
+            .header(Header::new("X-Requested-With", "XMLHttpRequest"))
+            .body("{}")
+            .dispatch();
+
         let res = client
             .post("/_api/register")
             .header(ContentType::JSON)
+            .header(Header::new("X-Requested-With", "XMLHttpRequest"))
             .body(format!(
                 r#"{{
                   "email": "{}",
