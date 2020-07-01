@@ -11,9 +11,17 @@ fn test_login_with_wrong_username() {
         let email = "johnny@example.org";
         let password = "pa$$w0rD";
 
+        let _ = client
+            .head("/_api/register")
+            .header(ContentType::JSON)
+            .header(Header::new("X-Requested-With", "XMLHttpRequest"))
+            .body("{}")
+            .dispatch();
+
         let res = client
             .post("/_api/register")
             .header(ContentType::JSON)
+            .header(Header::new("X-Requested-With", "XMLHttpRequest"))
             .body(format!(
                 r#"{{
                   "email": "{}",
@@ -74,9 +82,17 @@ fn test_login_with_wrong_password() {
         let email = "johnny@example.org";
         let password = "pa$$w0rD";
 
+        let _ = client
+            .head("/_api/register")
+            .header(ContentType::JSON)
+            .header(Header::new("X-Requested-With", "XMLHttpRequest"))
+            .body("{}")
+            .dispatch();
+
         let res = client
             .post("/_api/register")
             .header(ContentType::JSON)
+            .header(Header::new("X-Requested-With", "XMLHttpRequest"))
             .body(format!(
                 r#"{{
                   "email": "{}",
@@ -137,9 +153,17 @@ fn test_login() {
         let email = "johnny@example.org";
         let password = "pa$$w0rD";
 
+        let _ = client
+            .head("/_api/register")
+            .header(ContentType::JSON)
+            .header(Header::new("X-Requested-With", "XMLHttpRequest"))
+            .body("{}")
+            .dispatch();
+
         let res = client
             .post("/_api/register")
             .header(ContentType::JSON)
+            .header(Header::new("X-Requested-With", "XMLHttpRequest"))
             .body(format!(
                 r#"{{
                   "email": "{}",

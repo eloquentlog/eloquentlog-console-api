@@ -11,6 +11,14 @@ use crate::run_test;
 fn test_register_with_validation_error() {
     run_test(|client, conn, _, logger| {
         let email = "postmaster@example.org";
+
+        let _ = client
+            .head("/_api/register")
+            .header(ContentType::JSON)
+            .header(Header::new("X-Requested-With", "XMLHttpRequest"))
+            .body("{}")
+            .dispatch();
+
         let res = client
             .post("/_api/register")
             .header(ContentType::JSON)
@@ -35,6 +43,14 @@ fn test_register_with_validation_error() {
 fn test_register() {
     run_test(|client, conn, _, logger| {
         let email = "postmaster@example.org";
+
+        let _ = client
+            .head("/_api/register")
+            .header(ContentType::JSON)
+            .header(Header::new("X-Requested-With", "XMLHttpRequest"))
+            .body("{}")
+            .dispatch();
+
         let res = client
             .post("/_api/register")
             .header(ContentType::JSON)
