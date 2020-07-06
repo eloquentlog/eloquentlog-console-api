@@ -1,3 +1,6 @@
+Mon 06 Jul 2020 Yasuhiro Яша Asaka <yasuhiro.asaka@grauwoelfchen.net>
+	* Add namespaces and streams
+
 Fri 28 Feb 2020 Yasuhiro Яша Asaka <yasuhiro.asaka@grauwoelfchen.net>
 	* Replace unit tests which take multiple inputs as parameterized tests using
 	 rstest
