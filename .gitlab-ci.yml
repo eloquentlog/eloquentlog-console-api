@@ -2,7 +2,7 @@ stages:
   - verify
   - test
   - build
-  - release
+  # - release
 
 .diesel:
   - &diesel
@@ -245,41 +245,41 @@ build-release:
       --quiet >$CLOUD_SDK_ARTIFACT/install.log 2>&1;
     cd ../
 
-release-development:
-  stage: release
-  <<: *gentoo
-  variables:
-    CLOUD_SDK_BASE_URL: https://dl.google.com/dl/cloudsdk/channels/rapid/downloads
-    CLOUD_SDK_CHECKSUM: f152815d05a2f9374c87be1325a7d3bdbf62720d8fad9acb42dc2312d2e33f4a
-    CLOUD_SDK_ARTIFACT: google-cloud-sdk
-    CLOUD_SDK_FILENAME: ${CLOUD_SDK_ARTIFACT}-269.0.0-linux-x86_64.tar.gz
-    # (e.g.) # additional secret variables
-    # GCP_CLOUD_BUILD_CREDENTIAL_JSON: /path/to/credential.json
-    # GCP_CLOUD_BUILD_SUBSTR_ENV_VARS: /path/to/.env.deploy
-    # GCP_CLOUD_RUN_SERVICE_NAME_BASE: eloquentlog-console-api
-    # GCP_CLOUD_SQL_POSTGRES_INSTANCE: foo-bar-baz-qux-quux
-    # GCP_CLOUD_STORAGE_LOG_DIRECTORY: eloquentlog_cloudbuild
-    # GCP_PROJECT_ID: eloquentlog
-  before_script:
-    - *sqlite
-    - *python
-    - *cloud-sdk
-  # environment:
-  #   name: development
-  script:
-    # NOTE: auth activate-service-account prints logs to $STDERR :'(
-    - . .tool/$CLOUD_SDK_ARTIFACT/path.bash.inc; make deploy:server
-  only:
-    # TODO
-    - master@eloquentlog/eloquentlog-console-api
-    # - /^v.*$/
-    # except:
-    #   - branches
-    #   - tags
-  cache:
-    key: release-development
-    paths:
-      - .cloud-sdk
-      - .python
-      - .sqlite
+# release-development:
+#   stage: release
+#   <<: *gentoo
+#   variables:
+#     CLOUD_SDK_BASE_URL: https://dl.google.com/dl/cloudsdk/channels/rapid/downloads
+#     CLOUD_SDK_CHECKSUM: f152815d05a2f9374c87be1325a7d3bdbf62720d8fad9acb42dc2312d2e33f4a
+#     CLOUD_SDK_ARTIFACT: google-cloud-sdk
+#     CLOUD_SDK_FILENAME: ${CLOUD_SDK_ARTIFACT}-269.0.0-linux-x86_64.tar.gz
+#     # (e.g.) # additional secret variables
+#     # GCP_CLOUD_BUILD_CREDENTIAL_JSON: /path/to/credential.json
+#     # GCP_CLOUD_BUILD_SUBSTR_ENV_VARS: /path/to/.env.deploy
+#     # GCP_CLOUD_RUN_SERVICE_NAME_BASE: eloquentlog-console-api
+#     # GCP_CLOUD_SQL_POSTGRES_INSTANCE: foo-bar-baz-qux-quux
+#     # GCP_CLOUD_STORAGE_LOG_DIRECTORY: eloquentlog_cloudbuild
+#     # GCP_PROJECT_ID: eloquentlog
+#   before_script:
+#     - *sqlite
+#     - *python
+#     - *cloud-sdk
+#   # environment:
+#   #   name: development
+#   script:
+#     # NOTE: auth activate-service-account prints logs to $STDERR :'(
+#     - . .tool/$CLOUD_SDK_ARTIFACT/path.bash.inc; make deploy:server
+#   only:
+#     # TODO
+#     - master@eloquentlog/eloquentlog-console-api
+#     # - /^v.*$/
+#     # except:
+#     #   - branches
+#     #   - tags
+#   cache:
+#     key: release-development
+#     paths:
+#       - .cloud-sdk
+#       - .python
+#       - .sqlite
 # }}}

@@ -1,6 +1,36 @@
 table! {
     use diesel::sql_types::*;
 
+    namespaces (id) {
+        id -> Int8,
+        uuid -> Uuid,
+        name -> Varchar,
+        description -> Nullable<VarChar>,
+        streams_count -> Int8,
+        archived_at -> Nullable<Timestamp>,
+        created_at -> Timestamp,
+        updated_at -> Timestamp,
+    }
+}
+
+table! {
+    use diesel::sql_types::*;
+
+    streams (id) {
+        id -> Int8,
+        uuid -> Uuid,
+        name -> Varchar,
+        namespace_id -> Int8,
+        description -> Nullable<VarChar>,
+        archived_at -> Nullable<Timestamp>,
+        created_at -> Timestamp,
+        updated_at -> Timestamp,
+    }
+}
+
+table! {
+    use diesel::sql_types::*;
+
     use crate::model::message::{ELogFormat, ELogLevel};
 
     messages (id) {
@@ -83,6 +113,7 @@ table! {
 }
 
 joinable!(user_emails -> users (user_id));
+joinable!(streams -> namespaces (namespace_id));
 allow_tables_to_appear_in_same_query!(users, user_emails);
-
 allow_tables_to_appear_in_same_query!(users, access_tokens);
+allow_tables_to_appear_in_same_query!(namespaces, streams);
