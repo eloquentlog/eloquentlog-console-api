@@ -12,6 +12,7 @@ use serde::Serialize;
 use crate::logger::Logger;
 use crate::request::message::Message as RequestData;
 
+pub use crate::model::agent_type::*;
 pub use crate::model::log_level::*;
 pub use crate::model::log_format::*;
 pub use crate::schema::messages;
@@ -27,6 +28,8 @@ pub struct NewMessage {
     pub title: Option<String>,
     pub content: Option<String>,
     pub user_id: i64,
+    pub agent_id: i64,
+    pub agent_type: AgentType,
 }
 
 impl fmt::Display for NewMessage {
@@ -48,12 +51,15 @@ impl Default for NewMessage {
             title: None, // validation error
             content: None,
             user_id: 0,
+            agent_id: 0, // validation error
+            agent_type: AgentType::Client,
         }
     }
 }
 
 impl From<RequestData> for NewMessage {
     fn from(data: RequestData) -> Self {
+        // TODO: set agent_type
         Self {
             code: data.code,
             lang: data.lang.unwrap_or_else(|| "en".to_string()),
@@ -66,6 +72,8 @@ impl From<RequestData> for NewMessage {
             title: data.title,
             content: data.content,
             user_id: 0,
+            agent_id: 0,
+            agent_type: AgentType::Client,
         }
     }
 }
@@ -92,10 +100,13 @@ pub struct Message {
     pub created_at: NaiveDateTime,
     pub updated_at: NaiveDateTime,
     pub user_id: i64,
+    pub agent_id: i64,
+    pub agent_type: AgentType,
 }
 
 impl Clone for Message {
     fn clone(&self) -> Self {
+        let agent_type = format!("{}", self.agent_type);
         let level = format!("{}", self.level);
         let format = format!("{}", self.format);
         Message {
@@ -105,6 +116,8 @@ impl Clone for Message {
             format: LogFormat::from(format),
             title: self.title.clone(),
             content: self.content.clone(),
+            agent_id: self.agent_id,
+            agent_type: AgentType::from(agent_type),
 
             ..*self
         }
@@ -243,6 +256,8 @@ mod data {
                 created_at: Utc.ymd(2019, 7, 7).and_hms(7, 20, 15).naive_utc(),
                 updated_at: Utc.ymd(2019, 7, 7).and_hms(7, 20, 15).naive_utc(),
                 user_id: 0, // dummy
+                agent_id: 0,
+                agent_type: AgentType::Person,
             }
         };
     }
@@ -275,6 +290,8 @@ mod test {
                 title: Some("title".to_string()),
                 content: None,
                 user_id: user.id,
+                agent_id: 1,
+                agent_type: AgentType::Person,
             };
             let result = Message::insert(&m, conn, logger);
             assert!(result.is_some());

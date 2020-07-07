@@ -93,6 +93,8 @@ fn test_lrange_messages() {
             created_at: dt.naive_utc(),
             updated_at: dt.naive_utc(),
             user_id: user.id,
+            agent_id: 1,
+            agent_type: model::message::AgentType::Client,
         };
 
         let id = diesel::insert_into(model::message::messages::table)

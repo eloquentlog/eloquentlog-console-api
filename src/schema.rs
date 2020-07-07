@@ -31,7 +31,7 @@ table! {
 table! {
     use diesel::sql_types::*;
 
-    use crate::model::message::{ELogFormat, ELogLevel};
+    use crate::model::message::{EAgentType, ELogFormat, ELogLevel};
 
     messages (id) {
         id -> Int8,
@@ -44,6 +44,8 @@ table! {
         created_at -> Timestamp,
         updated_at -> Timestamp,
         user_id -> Int8,
+        agent_id -> Int8,
+        agent_type -> EAgentType,
     }
 }
 
