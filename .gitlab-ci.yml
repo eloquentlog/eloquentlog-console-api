@@ -2,7 +2,7 @@ stages:
   - verify
   - test
   - build
-  - release
+  # - release
 
 .diesel:
   - &diesel
