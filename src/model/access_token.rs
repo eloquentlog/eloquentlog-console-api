@@ -10,9 +10,9 @@ use diesel::dsl;
 use diesel::pg::{Pg, PgConnection};
 use uuid::Uuid;
 
-pub use crate::model::token::Claims;
 pub use crate::model::access_token_state::*;
 pub use crate::model::agent_type::*;
+pub use crate::model::token::Claims;
 pub use crate::schema::access_tokens;
 
 use crate::logger::Logger;
