@@ -71,8 +71,7 @@ pub fn append(
             }))
         },
         Ok(_) => {
-            let mut m = NewMessage::from(data.0.clone());
-            m.user_id = user.id;
+            let m = NewMessage::from(data.0.clone());
             if let Some(id) = Message::insert(&m, &conn, &logger) {
                 info!(logger, "user: {}", user.uuid);
                 return res.format(json!({"message": {
@@ -110,8 +109,10 @@ pub fn lrange(
         limit = 1;
     }
 
-    let data = match Message::fetch_messages_by_user_id(
-        key, user.id, offset, limit, &conn, &logger,
+    // FIXME: by uuid
+    let stream_id = 1;
+    let data = match Message::fetch_messages_by_stream_id(
+        key, stream_id, offset, limit, &conn, &logger,
     ) {
         None => {
             error!(logger, "err: not found user.id {}", user.uuid);

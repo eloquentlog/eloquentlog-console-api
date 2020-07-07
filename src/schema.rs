@@ -13,7 +13,7 @@ table! {
         content -> Nullable<Text>,
         created_at -> Timestamp,
         updated_at -> Timestamp,
-        user_id -> Int8,
+        stream_id -> Int8,
     }
 }
 

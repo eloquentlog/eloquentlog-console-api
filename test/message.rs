@@ -92,7 +92,7 @@ fn test_lrange_messages() {
             content: None,
             created_at: dt.naive_utc(),
             updated_at: dt.naive_utc(),
-            user_id: user.id,
+            stream_id: 1,
         };
 
         let id = diesel::insert_into(model::message::messages::table)
@@ -123,10 +123,10 @@ fn test_lrange_messages() {
   "level": "Information",
   "title": "title",
   "updated_at": "2019-08-07T06:05:04.333",
-  "user_id": {}
+  "stream_id": 1
 }}
 }}]"#,
-                id, user.id
+                id,
             ))
         );
     });

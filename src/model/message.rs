@@ -26,7 +26,7 @@ pub struct NewMessage {
     pub format: LogFormat,
     pub title: Option<String>,
     pub content: Option<String>,
-    pub user_id: i64,
+    pub stream_id: i64,
 }
 
 impl fmt::Display for NewMessage {
@@ -47,13 +47,14 @@ impl Default for NewMessage {
             format: LogFormat::TOML,
             title: None, // validation error
             content: None,
-            user_id: 0,
+            stream_id: 0,
         }
     }
 }
 
 impl From<RequestData> for NewMessage {
     fn from(data: RequestData) -> Self {
+        // TODO: find stream by stream.uuid
         Self {
             code: data.code,
             lang: data.lang.unwrap_or_else(|| "en".to_string()),
@@ -65,7 +66,7 @@ impl From<RequestData> for NewMessage {
             ),
             title: data.title,
             content: data.content,
-            user_id: 0,
+            stream_id: 0,
         }
     }
 }
@@ -91,7 +92,7 @@ pub struct Message {
     pub content: Option<String>,
     pub created_at: NaiveDateTime,
     pub updated_at: NaiveDateTime,
-    pub user_id: i64,
+    pub stream_id: i64,
 }
 
 impl Clone for Message {
@@ -118,15 +119,15 @@ impl fmt::Display for Message {
 }
 
 impl Message {
-    pub fn first_by_user_id(
+    pub fn first_by_stream_id(
         id: i64,
-        user_id: i64,
+        stream_id: i64,
         conn: &PgConnection,
         logger: &Logger,
     ) -> Option<Self>
     {
         let q = messages::table
-            .filter(messages::user_id.eq(user_id))
+            .filter(messages::stream_id.eq(stream_id))
             .find(id);
         info!(logger, "{}", debug_query::<Pg, _>(&q).to_string());
 
@@ -163,23 +164,23 @@ impl Message {
         }
     }
 
-    pub fn fetch_messages_by_user_id(
+    pub fn fetch_messages_by_stream_id(
         _key: String,
-        user_id: i64,
+        stream_id: i64,
         offset: i64,
         limit: i64,
         conn: &PgConnection,
         logger: &Logger,
     ) -> Option<Vec<Self>>
     {
-        if user_id < 1 || limit < 1 {
+        if stream_id < 1 || limit < 1 {
             return None;
         }
 
         // FIXME: Add key (namespace) support
 
         let q = messages::table
-            .filter(messages::user_id.eq(user_id))
+            .filter(messages::stream_id.eq(stream_id))
             .order(messages::created_at.desc())
             .offset(offset)
             .limit(limit);
@@ -242,7 +243,7 @@ mod data {
                 content: None,
                 created_at: Utc.ymd(2019, 7, 7).and_hms(7, 20, 15).naive_utc(),
                 updated_at: Utc.ymd(2019, 7, 7).and_hms(7, 20, 15).naive_utc(),
-                user_id: 0, // dummy
+                stream_id: 0, // dummy
             }
         };
     }
@@ -274,7 +275,7 @@ mod test {
                 format: LogFormat::TOML,
                 title: Some("title".to_string()),
                 content: None,
-                user_id: user.id,
+                stream_id: 1,
             };
             let result = Message::insert(&m, conn, logger);
             assert!(result.is_some());
@@ -297,7 +298,7 @@ mod test {
                 .unwrap_or_else(|e| panic!("Error at inserting: {}", e));
 
             let mut m = MESSAGES.get("blank message").unwrap().clone();
-            m.user_id = user.id;
+            m.stream_id = 1;
             let message = diesel::insert_into(messages::table)
                 .values(m)
                 .get_result::<Message>(conn)
