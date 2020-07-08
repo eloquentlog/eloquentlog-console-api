@@ -5,8 +5,6 @@ pub mod password_reset;
 pub mod token;
 pub mod user;
 
-type ID = usize;
-
 #[macro_export]
 macro_rules! bad_request_by {
     ($reason:expr) => {

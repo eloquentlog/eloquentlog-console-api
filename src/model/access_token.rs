@@ -104,12 +104,6 @@ pub struct AccessToken {
     pub updated_at: NaiveDateTime,
 }
 
-impl fmt::Display for AccessToken {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "<AccessToken {uuid}>", uuid = &self.uuid.to_string())
-    }
-}
-
 type All = dsl::Select<access_tokens::table, AllColumns>;
 type WithType = dsl::Eq<access_tokens::agent_type, AgentType>;
 type WithUser = dsl::Eq<access_tokens::agent_id, i64>;
@@ -118,7 +112,21 @@ type Visible = dsl::IsNull<access_tokens::revoked_at>;
 type ByUser = dsl::Filter<All, WithUser>;
 type VisibleTo = dsl::Filter<All, dsl::And<WithUser, Visible>>;
 
+impl fmt::Display for AccessToken {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "<AccessToken {uuid}>", uuid = &self.uuid.to_string())
+    }
+}
+
 impl AccessToken {
+    pub fn all() -> All {
+        access_tokens::table.select(ALL_COLUMNS)
+    }
+
+    pub fn by_user(user: &User) -> ByUser {
+        Self::all().filter(Self::with_user(user))
+    }
+
     pub fn insert(
         access_token: &NewAccessToken,
         conn: &PgConnection,
@@ -280,8 +288,12 @@ impl AccessToken {
         }
     }
 
-    pub fn all() -> All {
-        access_tokens::table.select(ALL_COLUMNS)
+    pub fn visible() -> Visible {
+        access_tokens::revoked_at.is_null()
+    }
+
+    pub fn visible_to(user: &User) -> VisibleTo {
+        Self::all().filter(Self::with_user(user).and(Self::visible()))
     }
 
     pub fn with_type(agent_type: AgentType) -> WithType {
@@ -295,18 +307,6 @@ impl AccessToken {
     pub fn with_uuid(s: &str) -> WithUuid {
         let uuid = Uuid::parse_str(s).unwrap_or_else(|_| Uuid::nil());
         access_tokens::uuid.eq(uuid)
-    }
-
-    pub fn visible() -> Visible {
-        access_tokens::revoked_at.is_null()
-    }
-
-    pub fn by_user(user: &User) -> ByUser {
-        Self::all().filter(Self::with_user(user))
-    }
-
-    pub fn visible_to(user: &User) -> VisibleTo {
-        Self::all().filter(Self::with_user(user).and(Self::visible()))
     }
 }
 

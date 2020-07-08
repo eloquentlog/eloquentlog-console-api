@@ -142,6 +142,9 @@ Testing
 
     % ENV=test make schema:migration:commit
 
+    % cargo test model::namespace::test -- --nocapture
+
+    # or run all
     % make test
 
 

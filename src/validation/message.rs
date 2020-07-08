@@ -449,8 +449,9 @@ mod test {
     fn test_validate() {
         run(|logger| {
             let data = &Json(RequestData {
-                id: None,
-
+                agent_id: 1,
+                agent_type: Some("person".to_string()),
+                stream_id: 1,
                 code: Some("301".to_string()),
                 lang: Some("en".to_string()),
                 level: Some("warn".to_string()),

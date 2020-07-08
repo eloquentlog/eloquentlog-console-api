@@ -1,11 +1,16 @@
 //! # Message model for logging
 //!
-//! See diesel_tests' custom_types.rs
+//! This object describes a log message on a stream.
+//!
+//! ## Note
+//!
+//! See diesel_tests' custom_types.rs.
 use std::fmt;
 
 use chrono::{NaiveDateTime, Utc};
 use diesel::{self, Insertable, prelude::*};
 use diesel::debug_query;
+use diesel::dsl;
 use diesel::pg::{Pg, PgConnection};
 use serde::Serialize;
 
@@ -15,21 +20,23 @@ use crate::request::message::Message as RequestData;
 pub use crate::model::agent_type::*;
 pub use crate::model::log_level::*;
 pub use crate::model::log_format::*;
+pub use crate::model::stream::{Stream, streams};
+use crate::model::user::User;
 pub use crate::schema::messages;
 
 /// NewMessage
 #[derive(Debug, Insertable)]
 #[table_name = "messages"]
 pub struct NewMessage {
+    pub agent_id: i64,
+    pub agent_type: AgentType,
+    pub stream_id: i64,
     pub code: Option<String>,
     pub lang: String,
     pub level: LogLevel,
     pub format: LogFormat,
     pub title: Option<String>,
     pub content: Option<String>,
-    pub stream_id: i64,
-    pub agent_id: i64,
-    pub agent_type: AgentType,
 }
 
 impl fmt::Display for NewMessage {
@@ -42,25 +49,31 @@ impl fmt::Display for NewMessage {
 }
 
 impl Default for NewMessage {
+    // includes validation errors
     fn default() -> Self {
         Self {
+            agent_id: -1,
+            agent_type: AgentType::Person,
+            stream_id: -1,
             code: None,
             lang: "en".to_string(),
             level: LogLevel::Information,
             format: LogFormat::TOML,
-            title: None, // validation error
+            title: None,
             content: None,
-            stream_id: 0,
-            agent_id: 0, // validation error
-            agent_type: AgentType::Client,
         }
     }
 }
 
 impl From<RequestData> for NewMessage {
     fn from(data: RequestData) -> Self {
-        // TODO: find stream by stream.uuid
+        // TODO: get stream_id from data
         Self {
+            agent_id: data.agent_id,
+            agent_type: AgentType::from(
+                data.agent_type.unwrap_or_else(|| "".to_string()),
+            ),
+            stream_id: data.stream_id,
             code: data.code,
             lang: data.lang.unwrap_or_else(|| "en".to_string()),
             level: LogLevel::from(
@@ -71,12 +84,37 @@ impl From<RequestData> for NewMessage {
             ),
             title: data.title,
             content: data.content,
-            stream_id: 0,
-            agent_id: 0,
-            agent_type: AgentType::Client,
         }
     }
 }
+
+type AllColumns = (
+    messages::id,
+    messages::agent_id,
+    messages::agent_type,
+    messages::code,
+    messages::lang,
+    messages::level,
+    messages::format,
+    messages::title,
+    messages::content,
+    messages::created_at,
+    messages::updated_at,
+);
+
+const ALL_COLUMNS: AllColumns = (
+    messages::id,
+    messages::agent_id,
+    messages::agent_type,
+    messages::code,
+    messages::lang,
+    messages::level,
+    messages::format,
+    messages::title,
+    messages::content,
+    messages::created_at,
+    messages::updated_at,
+);
 
 /// Message
 #[derive(
@@ -91,6 +129,9 @@ impl From<RequestData> for NewMessage {
 #[table_name = "messages"]
 pub struct Message {
     pub id: i64,
+    pub agent_id: i64,
+    pub agent_type: AgentType,
+    pub stream_id: i64,
     pub code: Option<String>,
     pub lang: String,
     pub level: LogLevel,
@@ -99,10 +140,17 @@ pub struct Message {
     pub content: Option<String>,
     pub created_at: NaiveDateTime,
     pub updated_at: NaiveDateTime,
-    pub stream_id: i64,
-    pub agent_id: i64,
-    pub agent_type: AgentType,
 }
+
+type All = dsl::Select<messages::table, AllColumns>;
+type WithType = dsl::Eq<messages::agent_type, AgentType>;
+type WithUser = dsl::And<
+    dsl::Eq<messages::agent_id, i64>,
+    dsl::Eq<messages::agent_type, AgentType>,
+>;
+type Visible = dsl::IsNotNull<messages::content>;
+type ByUser = dsl::Filter<All, WithUser>;
+type VisibleTo = dsl::Filter<All, dsl::And<WithUser, Visible>>;
 
 impl Clone for Message {
     fn clone(&self) -> Self {
@@ -110,14 +158,15 @@ impl Clone for Message {
         let level = format!("{}", self.level);
         let format = format!("{}", self.format);
         Message {
+            agent_id: self.agent_id,
+            agent_type: AgentType::from(agent_type),
+            stream_id: self.stream_id,
             code: self.code.clone(),
             lang: self.lang.clone(),
             level: LogLevel::from(level),
             format: LogFormat::from(format),
             title: self.title.clone(),
             content: self.content.clone(),
-            agent_id: self.agent_id,
-            agent_type: AgentType::from(agent_type),
 
             ..*self
         }
@@ -131,6 +180,46 @@ impl fmt::Display for Message {
 }
 
 impl Message {
+    pub fn all() -> All {
+        messages::table.select(ALL_COLUMNS)
+    }
+
+    pub fn by_user(user: &User) -> ByUser {
+        Self::all().filter(Self::with_user(user))
+    }
+
+    pub fn fetch_by_stream_slug(
+        stream_slug: String,
+        offset: i64,
+        limit: i64,
+        conn: &PgConnection,
+        logger: &Logger,
+    ) -> Option<Vec<Self>>
+    {
+        if stream_slug.is_empty() {
+            return None;
+        }
+
+        // TODO: Fix clause id = slug
+        let stream_id = 1;
+        let q = messages::table
+            .inner_join(streams::table)
+            .filter(streams::id.eq(stream_id))
+            .order(messages::created_at.desc())
+            .offset(offset)
+            .limit(limit);
+
+        info!(logger, "{}", debug_query::<Pg, _>(&q).to_string());
+
+        match q.load::<(Self, Stream)>(conn) {
+            Ok(r) => Some(r.into_iter().map(|(m, _)| m).collect::<Vec<Self>>()),
+            Err(e) => {
+                println!("err: {}", e);
+                None
+            },
+        }
+    }
+
     pub fn first_by_stream_id(
         id: i64,
         stream_id: i64,
@@ -176,38 +265,6 @@ impl Message {
         }
     }
 
-    pub fn fetch_messages_by_stream_id(
-        _key: String,
-        stream_id: i64,
-        offset: i64,
-        limit: i64,
-        conn: &PgConnection,
-        logger: &Logger,
-    ) -> Option<Vec<Self>>
-    {
-        if stream_id < 1 || limit < 1 {
-            return None;
-        }
-
-        // FIXME: Add key (namespace) support
-
-        let q = messages::table
-            .filter(messages::stream_id.eq(stream_id))
-            .order(messages::created_at.desc())
-            .offset(offset)
-            .limit(limit);
-
-        info!(logger, "{}", debug_query::<Pg, _>(&q).to_string());
-
-        match q.load::<Message>(conn) {
-            Err(e) => {
-                println!("err: {}", e);
-                None
-            },
-            Ok(r) => Some(r),
-        }
-    }
-
     /// Update a message.
     pub fn update(
         message: &mut Message,
@@ -230,6 +287,26 @@ impl Message {
             Ok(id) => Some(id),
         }
     }
+
+    // FIXME: scope
+    pub fn visible() -> Visible {
+        messages::content.is_not_null()
+    }
+
+    // FIXME: scope
+    pub fn visible_to(user: &User) -> VisibleTo {
+        Self::all().filter(Self::with_user(user).and(Self::visible()))
+    }
+
+    pub fn with_type(agent_type: AgentType) -> WithType {
+        messages::agent_type.eq(agent_type)
+    }
+
+    pub fn with_user(user: &User) -> WithUser {
+        messages::agent_id
+            .eq(user.id)
+            .and(Self::with_type(AgentType::Person))
+    }
 }
 
 #[cfg(test)]
@@ -240,6 +317,7 @@ mod data {
     use fnv::FnvHashMap;
 
     use crate::fnvhashmap;
+    use crate::model::stream::data::STREAMS;
 
     type MessageFixture = FnvHashMap<&'static str, Message>;
 
@@ -247,6 +325,9 @@ mod data {
         pub static ref MESSAGES: MessageFixture = fnvhashmap! {
             "blank message" => Message {
                 id: 1,
+                agent_id: 0,
+                agent_type: AgentType::Person,
+                stream_id: STREAMS.get("weenie's stream").unwrap().id,
                 code: None,
                 lang: "en".to_string(),
                 level: LogLevel::Information,
@@ -255,9 +336,6 @@ mod data {
                 content: None,
                 created_at: Utc.ymd(2019, 7, 7).and_hms(7, 20, 15).naive_utc(),
                 updated_at: Utc.ymd(2019, 7, 7).and_hms(7, 20, 15).naive_utc(),
-                stream_id: 0, // dummy
-                agent_id: 0,
-                agent_type: AgentType::Person,
             }
         };
     }
@@ -267,31 +345,40 @@ mod data {
 mod test {
     use super::*;
 
-    use crate::model::user::{User, users};
-
     use crate::model::message::data::MESSAGES;
+    use crate::model::namespace::{Namespace, namespaces};
+    use crate::model::namespace::data::NAMESPACES;
+    use crate::model::stream::{Stream, streams};
+    use crate::model::stream::data::STREAMS;
     use crate::model::test::run;
-    use crate::model::user::data::USERS;
 
     #[test]
     fn test_insert() {
         run(|conn, _, logger| {
-            let u = USERS.get("weenie").unwrap();
-            let user = diesel::insert_into(users::table)
-                .values(u)
-                .get_result::<User>(conn)
+            let ns = NAMESPACES.get("ball").unwrap();
+            let _namespace = diesel::insert_into(namespaces::table)
+                .values(ns)
+                .get_result::<Namespace>(conn)
+                .unwrap_or_else(|e| panic!("Error at inserting: {}", e));
+
+            let s = STREAMS.get("weenie's stream").unwrap().clone();
+            // FIXME
+            // s.namespace_id = namespace.id;
+            let stream = diesel::insert_into(streams::table)
+                .values(s)
+                .get_result::<Stream>(conn)
                 .unwrap_or_else(|e| panic!("Error at inserting: {}", e));
 
             let m = NewMessage {
+                agent_id: 1,
+                agent_type: AgentType::Person,
+                stream_id: stream.id,
                 code: None,
                 lang: "en".to_string(),
                 level: LogLevel::Information,
                 format: LogFormat::TOML,
                 title: Some("title".to_string()),
                 content: None,
-                stream_id: 1,
-                agent_id: 1,
-                agent_type: AgentType::Person,
             };
             let result = Message::insert(&m, conn, logger);
             assert!(result.is_some());
@@ -307,14 +394,22 @@ mod test {
     #[test]
     fn test_update() {
         run(|conn, _, logger| {
-            let u = USERS.get("weenie").unwrap();
-            let user = diesel::insert_into(users::table)
-                .values(u)
-                .get_result::<User>(conn)
+            let ns = NAMESPACES.get("ball").unwrap();
+            let _namespace = diesel::insert_into(namespaces::table)
+                .values(ns)
+                .get_result::<Namespace>(conn)
+                .unwrap_or_else(|e| panic!("Error at inserting: {}", e));
+
+            let s = STREAMS.get("weenie's stream").unwrap().clone();
+            // FIXME
+            // s.namespace_id = namespace.id;
+            let stream = diesel::insert_into(streams::table)
+                .values(s)
+                .get_result::<Stream>(conn)
                 .unwrap_or_else(|e| panic!("Error at inserting: {}", e));
 
             let mut m = MESSAGES.get("blank message").unwrap().clone();
-            m.stream_id = 1;
+            m.stream_id = stream.id;
             let message = diesel::insert_into(messages::table)
                 .values(m)
                 .get_result::<Message>(conn)

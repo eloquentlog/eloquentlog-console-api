@@ -6,7 +6,7 @@ table! {
         uuid -> Uuid,
         name -> Varchar,
         description -> Nullable<VarChar>,
-        streams_count -> Int8,
+        streams_count -> Integer,
         archived_at -> Nullable<Timestamp>,
         created_at -> Timestamp,
         updated_at -> Timestamp,
@@ -19,8 +19,8 @@ table! {
     streams (id) {
         id -> Int8,
         uuid -> Uuid,
-        name -> Varchar,
         namespace_id -> Int8,
+        name -> Varchar,
         description -> Nullable<VarChar>,
         archived_at -> Nullable<Timestamp>,
         created_at -> Timestamp,
@@ -35,6 +35,9 @@ table! {
 
     messages (id) {
         id -> Int8,
+        agent_id -> Int8,
+        agent_type -> EAgentType,
+        stream_id -> Int8,
         code -> Nullable<Varchar>,
         lang -> Varchar,
         level -> ELogLevel,
@@ -43,9 +46,6 @@ table! {
         content -> Nullable<Text>,
         created_at -> Timestamp,
         updated_at -> Timestamp,
-        stream_id -> Int8,
-        agent_id -> Int8,
-        agent_type -> EAgentType,
     }
 }
 
@@ -116,6 +116,9 @@ table! {
 
 joinable!(user_emails -> users (user_id));
 joinable!(streams -> namespaces (namespace_id));
+joinable!(messages -> streams (stream_id));
+
 allow_tables_to_appear_in_same_query!(users, user_emails);
 allow_tables_to_appear_in_same_query!(users, access_tokens);
 allow_tables_to_appear_in_same_query!(namespaces, streams);
+allow_tables_to_appear_in_same_query!(streams, messages);
