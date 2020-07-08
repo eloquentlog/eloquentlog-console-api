@@ -64,12 +64,12 @@ where
                         "the user ({}) has been activated", &user
                     );
                 })
-                .or_else(|e| {
+                .map_err(|e| {
                     warn!(
                         self.logger,
                         "the user ({}) couldn't be activated", &user
                     );
-                    Err(e)
+                    e
                 });
         }
         Err("not found")

@@ -60,12 +60,12 @@ where T: Authenticatable + Clone + Verifiable<T> + fmt::Display
                         "the password of an user ({}) has been re-set", &user
                     );
                 })
-                .or_else(|e| {
+                .map_err(|e| {
                     warn!(
                         self.logger,
                         "the password of an user ({}) couldn't be set", &user
                     );
-                    Err(e)
+                    e
                 });
         }
         Err("not found")
