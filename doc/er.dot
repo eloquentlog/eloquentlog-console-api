@@ -1,0 +1,814 @@
+//! # ER
+//!
+//! ## Links
+//!
+//! * [Color Names | Graphviz](http://graphviz.org/content/color-names)
+//!
+//! ## How to make
+//!
+//! ```zsh
+//! % dot -T png er.dot > er.png; feh er.png -F
+//! ```
+
+digraph ER {
+  // Style
+  graph [fontname = "DejaVuSansMono"; fontsize = 9];
+  node  [fontname = "DejaVuSansMono"; fontsize = 9];
+  edge  [fontname = "DejaVuSansMono"; fontsize = 9];
+
+  // Node
+  node [ // object
+    shape   = record
+    rankdir = LR
+  ]
+
+  _Legend [
+    label = <<table border="0" cellspacing="0" cellpadding="3">
+      <tr>
+        <td border="1" align="center" bgcolor="lightgray"><b>HEADER COLOR</b></td>
+        <td border="1" align="center" bgcolor="lightgray"><b>TYPE</b></td>
+      </tr>
+      <tr>
+        <td border="1" align="center" bgcolor="whitesmoke">whitesmoke</td>
+        <td border="1" align="left" bgcolor="white">system master</td>
+      </tr>
+      <tr>
+        <td border="1" align="center" bgcolor="mistyrose1">mistyrose1</td>
+        <td border="1" align="left" bgcolor="white">relation</td>
+      </tr>
+      <tr>
+        <td border="1" align="center" bgcolor="lightcyan1">lightcyan1</td>
+        <td border="1" align="left" bgcolor="white">account related</td>
+      </tr>
+      <tr>
+        <td border="1" align="center" bgcolor="gray60">gray60</td>
+        <td border="1" align="left" bgcolor="white">user-land</td>
+      </tr>
+    </table>>
+    shape     = "none"
+    style     = "filled"
+    margin    = "0.13,0.13"
+    fontcolor = "black"
+    fillcolor = "honeydew3"
+  ]
+
+  User [
+    label = <<table border="0" cellspacing="0" cellpadding="3">
+      <tr><td border="1" colspan="5" align="center" bgcolor="lightcyan1">users</td></tr>
+      <tr>
+        <td border="1" colspan="5" align="left">
+«User»<br align="left"/>
+has_many: user_emails <br align="left"/>
+has_many: namespaces (via membership)<br align="left"/>
+has_many: access_tokens (as agent)<br align="left"/>
+        </td>
+      </tr>
+      <tr>
+        <td border="1" align="center"><b>FIELD</b></td>
+        <td border="1" align="center"><b>TYPE</b></td>
+        <td border="1" align="center"><b>MODIFIER</b></td>
+        <td border="1" align="center"><b>VALUE</b></td>
+        <td border="1" align="center"><b>DEFAULT</b></td>
+      </tr>
+      <tr>
+        <td border="1" align="left">id</td>
+        <td border="1" align="left">bigint</td>
+        <td border="1" align="left">not null</td>
+        <td border="1" align="left"></td>
+        <td border="1" align="left">nextval('users_id_seq'::regclass)</td>
+      </tr>
+      <tr>
+        <td border="1" align="left">uuid</td>
+        <td border="1" align="left">uuid</td>
+        <td border="1" align="left">not null</td>
+        <td border="1" align="left"></td>
+        <td border="1" align="left"></td>
+      </tr>
+      <tr>
+        <td border="1" align="left">name</td>
+        <td border="1" align="left">varchar(64)</td>
+        <td border="1" align="left"></td>
+        <td border="1" align="left"></td>
+        <td border="1" align="left"></td>
+      </tr>
+      <tr>
+        <td border="1" align="left">username</td>
+        <td border="1" align="left">varchar(32)</td>
+        <td border="1" align="left">not null</td>
+        <td border="1" align="left"></td>
+        <td border="1" align="left"></td>
+      </tr>
+      <tr>
+        <td border="1" align="left">email</td>
+        <td border="1" align="left">varchar(128)</td>
+        <td border="1" align="left">not null</td>
+        <td border="1" align="left"></td>
+        <td border="1" align="left"></td>
+      </tr>
+      <tr>
+        <td border="1" align="left">password</td>
+        <td border="1" align="left">bytea</td>
+        <td border="1" align="left">not null</td>
+        <td border="1" align="left"></td>
+        <td border="1" align="left"></td>
+      </tr>
+      <tr>
+        <td border="1" align="left">state</td>
+        <td border="1" align="left">e_user_state</td>
+        <td border="1" align="left">not null</td>
+        <td border="1" align="left">enum(pending, active)</td>
+        <td border="1" align="left">pending</td>
+      </tr>
+      <tr>
+        <td border="1" align="left">reset_password_state</td>
+        <td border="1" align="left">e_user_reset_password_state</td>
+        <td border="1" align="left">not null</td>
+        <td border="1" align="left">enum(never, pending, in-progress, done)</td>
+        <td border="1" align="left">never</td>
+      </tr>
+      <tr>
+        <td border="1" align="left">reset_password_token</td>
+        <td border="1" align="left">varchar(256)</td>
+        <td border="1" align="left"></td>
+        <td border="1" align="left"></td>
+        <td border="1" align="left"></td>
+      </tr>
+      <tr>
+        <td border="1" align="left">reset_password_token_expires_at</td>
+        <td border="1" align="left">timestamp without tz</td>
+        <td border="1" align="left"></td>
+        <td border="1" align="left"></td>
+        <td border="1" align="left">null</td>
+      </tr>
+      <tr>
+        <td border="1" align="left">reset_password_token_granted_at</td>
+        <td border="1" align="left">timestamp without tz</td>
+        <td border="1" align="left"></td>
+        <td border="1" align="left"></td>
+        <td border="1" align="left">null</td>
+      </tr>
+      <tr>
+        <td border="1" align="left">created_at</td>
+        <td border="1" align="left">timestamp without tz</td>
+        <td border="1" align="left">not null</td>
+        <td border="1" align="left"></td>
+        <td border="1" align="left">tz('utc'::text, now())</td>
+      </tr>
+      <tr>
+        <td border="1" align="left">updated_at</td>
+        <td border="1" align="left">timestamp without tz</td>
+        <td border="1" align="left">not null</td>
+        <td border="1" align="left"></td>
+        <td border="1" align="left">tz('utc'::text, now())</td>
+      </tr>
+    </table>>
+    shape     = "none"
+    style     = ""
+    margin    = "0"
+    fontcolor = "black"
+    fillcolor = ""
+  ]
+
+  UserEmail [
+    label = <<table border="0" cellspacing="0" cellpadding="3">
+      <tr><td border="1" colspan="5" align="center" bgcolor="lightcyan1">user_emails</td></tr>
+      <tr>
+        <td border="1" colspan="5" align="left">
+«UserEmail»<br align="left"/>
+belongs_to: user<br align="left"/>
+        </td>
+      </tr>
+      <tr>
+        <td border="1" align="center"><b>FIELD</b></td>
+        <td border="1" align="center"><b>TYPE</b></td>
+        <td border="1" align="center"><b>MODIFIER</b></td>
+        <td border="1" align="center"><b>VALUE</b></td>
+        <td border="1" align="center"><b>DEFAULT</b></td>
+      </tr>
+      <tr>
+        <td border="1" align="left">id</td>
+        <td border="1" align="left">bigint</td>
+        <td border="1" align="left">not null</td>
+        <td border="1" align="left"></td>
+        <td border="1" align="left">nextval('users_id_seq'::regclass)</td>
+      </tr>
+      <tr>
+        <td border="1" align="left">user_id</td>
+        <td border="1" align="left">bigint</td>
+        <td border="1" align="left">not null</td>
+        <td border="1" align="left"></td>
+        <td border="1" align="left"></td>
+      </tr>
+      <tr>
+        <td border="1" align="left">email</td>
+        <td border="1" align="left">varchar(64)</td>
+        <td border="1" align="left"></td>
+        <td border="1" align="left"></td>
+        <td border="1" align="left"></td>
+      </tr>
+      <tr>
+        <td border="1" align="left">role</td>
+        <td border="1" align="left">e_user_email_role</td>
+        <td border="1" align="left">not null</td>
+        <td border="1" align="left">enum(general, primary)</td>
+        <td border="1" align="left">general</td>
+      </tr>
+      <tr>
+        <td border="1" align="left">identification_state</td>
+        <td border="1" align="left">e_user_email_identification_state</td>
+        <td border="1" align="left">not null</td>
+        <td border="1" align="left">enum(pending, active)</td>
+        <td border="1" align="left">pending</td>
+      </tr>
+      <tr>
+        <td border="1" align="left">identification_token</td>
+        <td border="1" align="left">varchar(256)</td>
+        <td border="1" align="left"></td>
+        <td border="1" align="left"></td>
+        <td border="1" align="left"></td>
+      </tr>
+      <tr>
+        <td border="1" align="left">identification_token_expires_at</td>
+        <td border="1" align="left">timestamp without tz</td>
+        <td border="1" align="left"></td>
+        <td border="1" align="left"></td>
+        <td border="1" align="left"></td>
+      </tr>
+      <tr>
+        <td border="1" align="left">identification_token_granted_at</td>
+        <td border="1" align="left">timestamp without tz</td>
+        <td border="1" align="left"></td>
+        <td border="1" align="left"></td>
+        <td border="1" align="left"></td>
+      </tr>
+      <tr>
+        <td border="1" align="left">created_at</td>
+        <td border="1" align="left">timestamp without tz</td>
+        <td border="1" align="left">not null</td>
+        <td border="1" align="left"></td>
+        <td border="1" align="left">tz('utc'::text, now())</td>
+      </tr>
+      <tr>
+        <td border="1" align="left">updated_at</td>
+        <td border="1" align="left">timestamp without tz</td>
+        <td border="1" align="left">not null</td>
+        <td border="1" align="left"></td>
+        <td border="1" align="left">tz('utc'::text, now())</td>
+      </tr>
+    </table>>
+    shape     = "none"
+    style     = ""
+    margin    = "0"
+    fontcolor = "black"
+    fillcolor = ""
+  ]
+
+  Device [
+    label = <<table border="0" cellspacing="0" cellpadding="3">
+      <tr><td border="1" colspan="5" align="center" bgcolor="lightcyan1">devices</td></tr>
+      <tr>
+        <td border="1" colspan="5" align="left">
+<b>«</b>Device<b>»</b><br align="left"/>
+belongs_to: namespace<br align="left"/>
+has_many: access_tokens (as agent)<br align="left"/>
+        </td>
+      </tr>
+      <tr>
+        <td border="1" align="center"><b>FIELD</b></td>
+        <td border="1" align="center"><b>TYPE</b></td>
+        <td border="1" align="center"><b>MODIFIER</b></td>
+        <td border="1" align="center"><b>VALUE</b></td>
+        <td border="1" align="center"><b>DEFAULT</b></td>
+      </tr>
+      <tr>
+        <td border="1" align="left">namespace_id</td>
+        <td border="1" align="left">bigint</td>
+        <td border="1" align="left">not null</td>
+        <td border="1" align="left"></td>
+        <td border="1" align="left"></td>
+      </tr>
+      <tr>
+        <td border="1" align="left">name</td>
+        <td border="1" align="left">varchar(128)</td>
+        <td border="1" align="left">not null</td>
+        <td border="1" align="left"></td>
+        <td border="1" align="left"></td>
+      </tr>
+      <tr>
+        <td border="1" align="left">created_at</td>
+        <td border="1" align="left">timestamp without tz</td>
+        <td border="1" align="left">not null</td>
+        <td border="1" align="left"></td>
+        <td border="1" align="left">tz('utc'::text, now())</td>
+      </tr>
+      <tr>
+        <td border="1" align="left">updated_at</td>
+        <td border="1" align="left">timestamp without tz</td>
+        <td border="1" align="left">not null</td>
+        <td border="1" align="left"></td>
+        <td border="1" align="left">tz('utc'::text, now())</td>
+      </tr>
+    </table>>
+    shape     = "none"
+    style     = ""
+    margin    = "0"
+    fontcolor = "black"
+    fillcolor = ""
+  ]
+
+  AccessToken [
+    label = <<table border="0" cellspacing="0" cellpadding="3">
+      <tr><td border="1" colspan="5" align="center" bgcolor="lightcyan1">access_tokens</td></tr>
+      <tr>
+        <td border="1" colspan="5" align="left">
+<b>«</b>AccessToken<b>»</b><br align="left"/>
+belongs_to: user (as agent)<br align="left"/>
+belongs_to: machine (as agent)<br align="left"/>
+        </td>
+      </tr>
+      <tr>
+        <td border="1" align="center"><b>FIELD</b></td>
+        <td border="1" align="center"><b>TYPE</b></td>
+        <td border="1" align="center"><b>MODIFIER</b></td>
+        <td border="1" align="center"><b>VALUE</b></td>
+        <td border="1" align="center"><b>DEFAULT</b></td>
+      </tr>
+      <tr>
+        <td border="1" align="left">id</td>
+        <td border="1" align="left">bigint</td>
+        <td border="1" align="left">not null</td>
+        <td border="1" align="left"></td>
+        <td border="1" align="left">nextval('access_tokens_id_seq'::regclass)</td>
+      </tr>
+      <tr>
+        <td border="1" align="left">uuid</td>
+        <td border="1" align="left">uuid</td>
+        <td border="1" align="left">not null</td>
+        <td border="1" align="left"></td>
+        <td border="1" align="left">uuid_generate_v4()</td>
+      </tr>
+      <tr>
+        <td border="1" align="left">agent_id</td>
+        <td border="1" align="left">bigint</td>
+        <td border="1" align="left">not null</td>
+        <td border="1" align="left"></td>
+        <td border="1" align="left"></td>
+      </tr>
+      <tr>
+        <td border="1" align="left">agent_type</td>
+        <td border="1" align="left">e_agent_type</td>
+        <td border="1" align="left">not null</td>
+        <td border="1" align="left">enum(client, person)</td>
+        <td border="1" align="left">client</td>
+      </tr>
+      <tr>
+        <td border="1" align="left">token</td>
+        <td border="1" align="left">bytea</td>
+        <td border="1" align="left"></td>
+        <td border="1" align="left"></td>
+        <td border="1" align="left"></td>
+      </tr>
+      <tr>
+        <td border="1" align="left">state</td>
+        <td border="1" align="left">e_access_token_state</td>
+        <td border="1" align="left">not null</td>
+        <td border="1" align="left">enum(disabled, enabled)</td>
+        <td border="1" align="left">disabled</td>
+      </tr>
+      <tr>
+        <td border="1" align="left">revoked_at</td>
+        <td border="1" align="left">timestamp without tz</td>
+        <td border="1" align="left"></td>
+        <td border="1" align="left"></td>
+        <td border="1" align="left"></td>
+      </tr>
+      <tr>
+        <td border="1" align="left">created_at</td>
+        <td border="1" align="left">timestamp without tz</td>
+        <td border="1" align="left">not null</td>
+        <td border="1" align="left"></td>
+        <td border="1" align="left">tz('utc'::text, now())</td>
+      </tr>
+      <tr>
+        <td border="1" align="left">updated_at</td>
+        <td border="1" align="left">timestamp without tz</td>
+        <td border="1" align="left">not null</td>
+        <td border="1" align="left"></td>
+        <td border="1" align="left">tz('utc'::text, now())</td>
+      </tr>
+    </table>>
+    shape     = "none"
+    style     = ""
+    margin    = "0"
+    fontcolor = "black"
+    fillcolor = ""
+  ]
+
+  Membership [
+    label = <<table border="0" cellspacing="0" cellpadding="3">
+      <tr><td border="1" colspan="5" align="center" bgcolor="mistyrose1">memberships</td></tr>
+      <tr>
+        <td border="1" colspan="5" align="left">
+<b>«</b>Membership<b>»</b><br align="left"/>
+belongs_to: user<br align="left"/>
+belongs_to: namespace<br align="left"/>
+        </td>
+      </tr>
+      <tr>
+        <td border="1" align="center"><b>FIELD</b></td>
+        <td border="1" align="center"><b>TYPE</b></td>
+        <td border="1" align="center"><b>MODIFIER</b></td>
+        <td border="1" align="center"><b>VALUE</b></td>
+        <td border="1" align="center"><b>DEFAULT</b></td>
+      </tr>
+      <tr>
+        <td border="1" align="left">user_id</td>
+        <td border="1" align="left">bigint</td>
+        <td border="1" align="left">not null</td>
+        <td border="1" align="left"></td>
+        <td border="1" align="left"></td>
+      </tr>
+      <tr>
+        <td border="1" align="left">namespace_id</td>
+        <td border="1" align="left">bigint</td>
+        <td border="1" align="left">not null</td>
+        <td border="1" align="left"></td>
+        <td border="1" align="left"></td>
+      </tr>
+      <tr>
+        <td border="1" align="left">role</td>
+        <td border="1" align="left">e_membership_role</td>
+        <td border="1" align="left">not null</td>
+        <td border="1" align="left">enum(primary_owner, owner, member)</td>
+        <td border="1" align="left">member</td>
+      </tr>
+      <tr>
+        <td border="1" align="left">created_at</td>
+        <td border="1" align="left">timestamp without tz</td>
+        <td border="1" align="left">not null</td>
+        <td border="1" align="left"></td>
+        <td border="1" align="left">tz('utc'::text, now())</td>
+      </tr>
+      <tr>
+        <td border="1" align="left">updated_at</td>
+        <td border="1" align="left">timestamp without tz</td>
+        <td border="1" align="left">not null</td>
+        <td border="1" align="left"></td>
+        <td border="1" align="left">tz('utc'::text, now())</td>
+      </tr>
+    </table>>
+    shape     = "none"
+    style     = ""
+    margin    = "0"
+    fontcolor = "black"
+    fillcolor = ""
+  ]
+
+  Namespace [
+    label = <<table border="0" cellspacing="0" cellpadding="3">
+      <tr><td border="1" colspan="5" align="center" bgcolor="gray60">namespaces</td></tr>
+      <tr>
+        <td border="1" colspan="5" align="left">
+<b>«</b>Namespace<b>»</b><br align="left"/>
+has_many: users (via membership)<br align="left"/>
+has_many: streams<br align="left"/>
+        </td>
+      </tr>
+      <tr>
+        <td border="1" align="center"><b>FIELD</b></td>
+        <td border="1" align="center"><b>TYPE</b></td>
+        <td border="1" align="center"><b>MODIFIER</b></td>
+        <td border="1" align="center"><b>VALUE</b></td>
+        <td border="1" align="center"><b>DEFAULT</b></td>
+      </tr>
+      <tr>
+        <td border="1" align="left">id</td>
+        <td border="1" align="left">bigint</td>
+        <td border="1" align="left">not null</td>
+        <td border="1" align="left"></td>
+        <td border="1" align="left">nextval('namespaces_id_seq'::regclass)</td>
+      </tr>
+      <tr>
+        <td border="1" align="left">uuid</td>
+        <td border="1" align="left">uuid</td>
+        <td border="1" align="left">not null</td>
+        <td border="1" align="left"></td>
+        <td border="1" align="left">uuid_generate_v4()</td>
+      </tr>
+      <tr>
+        <td border="1" align="left">name</td>
+        <td border="1" align="left">varchar(64)</td>
+        <td border="1" align="left">not null</td>
+        <td border="1" align="left"></td>
+        <td border="1" align="left"></td>
+      </tr>
+      <tr>
+        <td border="1" align="left">description</td>
+        <td border="1" align="left">varchar(256)</td>
+        <td border="1" align="left"></td>
+        <td border="1" align="left"></td>
+        <td border="1" align="left"></td>
+      </tr>
+      <tr>
+        <td border="1" align="left">streams_count</td>
+        <td border="1" align="left">integer</td>
+        <td border="1" align="left">not null</td>
+        <td border="1" align="left"></td>
+        <td border="1" align="left">0</td>
+      </tr>
+      <tr>
+        <td border="1" align="left">archived_at</td>
+        <td border="1" align="left">timestamp without tz</td>
+        <td border="1" align="left"></td>
+        <td border="1" align="left"></td>
+        <td border="1" align="left"></td>
+      </tr>
+      <tr>
+        <td border="1" align="left">created_at</td>
+        <td border="1" align="left">timestamp without tz</td>
+        <td border="1" align="left">not null</td>
+        <td border="1" align="left"></td>
+        <td border="1" align="left">tz('utc'::text, now())</td>
+      </tr>
+      <tr>
+        <td border="1" align="left">updated_at</td>
+        <td border="1" align="left">timestamp without tz</td>
+        <td border="1" align="left">not null</td>
+        <td border="1" align="left"></td>
+        <td border="1" align="left">tz('utc'::text, now())</td>
+      </tr>
+    </table>>
+    shape     = "none"
+    style     = ""
+    margin    = "0"
+    fontcolor = "black"
+    fillcolor = ""
+  ]
+
+  Stream [
+    label = <<table border="0" cellspacing="0" cellpadding="3">
+      <tr><td border="1" colspan="5" align="center" bgcolor="gray60">streams</td></tr>
+      <tr>
+        <td border="1" colspan="5" align="left">
+<b>«</b>Stream<b>»</b><br align="left"/>
+belongs_to: namespace<br align="left"/>
+has_many: messages<br align="left"/>
+        </td>
+      </tr>
+      <tr>
+        <td border="1" align="center"><b>FIELD</b></td>
+        <td border="1" align="center"><b>TYPE</b></td>
+        <td border="1" align="center"><b>MODIFIER</b></td>
+        <td border="1" align="center"><b>VALUE</b></td>
+        <td border="1" align="center"><b>DEFAULT</b></td>
+      </tr>
+      <tr>
+        <td border="1" align="left">id</td>
+        <td border="1" align="left">bigint</td>
+        <td border="1" align="left">not null</td>
+        <td border="1" align="left"></td>
+        <td border="1" align="left">nextval('streams_id_seq'::regclass)</td>
+      </tr>
+      <tr>
+        <td border="1" align="left">uuid</td>
+        <td border="1" align="left">uuid</td>
+        <td border="1" align="left">not null</td>
+        <td border="1" align="left"></td>
+        <td border="1" align="left">uuid_generate_v4()</td>
+      </tr>
+      <tr>
+        <td border="1" align="left">namespace_id</td>
+        <td border="1" align="left">bigint</td>
+        <td border="1" align="left">not null</td>
+        <td border="1" align="left"></td>
+        <td border="1" align="left"></td>
+      </tr>
+      <tr>
+        <td border="1" align="left">name</td>
+        <td border="1" align="left">varchar(64)</td>
+        <td border="1" align="left">not null</td>
+        <td border="1" align="left"></td>
+        <td border="1" align="left"></td>
+      </tr>
+      <tr>
+        <td border="1" align="left">description</td>
+        <td border="1" align="left">varchar(128)</td>
+        <td border="1" align="left"></td>
+        <td border="1" align="left"></td>
+        <td border="1" align="left"></td>
+      </tr>
+      <tr>
+        <td border="1" align="left">archived_at</td>
+        <td border="1" align="left">timestamp without tz</td>
+        <td border="1" align="left"></td>
+        <td border="1" align="left"></td>
+        <td border="1" align="left"></td>
+      </tr>
+      <tr>
+        <td border="1" align="left">created_at</td>
+        <td border="1" align="left">timestamp without tz</td>
+        <td border="1" align="left">not null</td>
+        <td border="1" align="left"></td>
+        <td border="1" align="left">tz('utc'::text, now())</td>
+      </tr>
+      <tr>
+        <td border="1" align="left">updated_at</td>
+        <td border="1" align="left">timestamp without tz</td>
+        <td border="1" align="left">not null</td>
+        <td border="1" align="left"></td>
+        <td border="1" align="left">tz('utc'::text, now())</td>
+      </tr>
+    </table>>
+    shape     = "none"
+    style     = ""
+    margin    = "0"
+    fontcolor = "black"
+    fillcolor = ""
+  ]
+
+  Message [
+    label = <<table border="0" cellspacing="0" cellpadding="3">
+      <tr><td border="1" colspan="5" align="center" bgcolor="gray60">messages</td></tr>
+      <tr>
+        <td border="1" colspan="5" align="left">
+<b>«</b>Message<b>»</b><br align="left"/>
+belongs_to: stream<br align="left"/>
+belongs_to: user (as agent)<br align="left"/>
+belongs_to: device (as agent)<br align="left"/>
+        </td>
+      </tr>
+      <tr>
+        <td border="1" align="center"><b>FIELD</b></td>
+        <td border="1" align="center"><b>TYPE</b></td>
+        <td border="1" align="center"><b>MODIFIER</b></td>
+        <td border="1" align="center"><b>VALUE</b></td>
+        <td border="1" align="center"><b>DEFAULT</b></td>
+      </tr>
+      <tr>
+        <td border="1" align="left">id</td>
+        <td border="1" align="left">bigint</td>
+        <td border="1" align="left">not null</td>
+        <td border="1" align="left"></td>
+        <td border="1" align="left">nextval('messages_id_seq'::regclass)</td>
+      </tr>
+      <tr>
+        <td border="1" align="left">stream_id</td>
+        <td border="1" align="left">bigint</td>
+        <td border="1" align="left">not null</td>
+        <td border="1" align="left"></td>
+        <td border="1" align="left"></td>
+      </tr>
+      <tr>
+        <td border="1" align="left">agent_id</td>
+        <td border="1" align="left">bigint</td>
+        <td border="1" align="left">not null</td>
+        <td border="1" align="left"></td>
+        <td border="1" align="left"></td>
+      </tr>
+      <tr>
+        <td border="1" align="left">agent_type</td>
+        <td border="1" align="left">e_agent_type</td>
+        <td border="1" align="left">not null</td>
+        <td border="1" align="left"></td>
+        <td border="1" align="left"></td>
+      </tr>
+      <tr>
+        <td border="1" align="left">code</td>
+        <td border="1" align="left">varchar(128)</td>
+        <td border="1" align="left"></td>
+        <td border="1" align="left"></td>
+        <td border="1" align="left"></td>
+      </tr>
+      <tr>
+        <td border="1" align="left">lang</td>
+        <td border="1" align="left">varchar(8)</td>
+        <td border="1" align="left">not null</td>
+        <td border="1" align="left"></td>
+        <td border="1" align="left">en</td>
+      </tr>
+      <tr>
+        <td border="1" align="left">level</td>
+        <td border="1" align="left">e_log_level</td>
+        <td border="1" align="left">not null</td>
+        <td border="1" align="left">enum(debug, information, warning, error, critical)</td>
+        <td border="1" align="left">information</td>
+      </tr>
+      <tr>
+        <td border="1" align="left">format</td>
+        <td border="1" align="left">e_log_format</td>
+        <td border="1" align="left">not null</td>
+        <td border="1" align="left">enum('toml')</td>
+        <td border="1" align="left">toml</td>
+      </tr>
+      <tr>
+        <td border="1" align="left">title</td>
+        <td border="1" align="left">varchar(256)</td>
+        <td border="1" align="left">not null</td>
+        <td border="1" align="left"></td>
+        <td border="1" align="left"></td>
+      </tr>
+      <tr>
+        <td border="1" align="left">content</td>
+        <td border="1" align="left">text</td>
+        <td border="1" align="left"></td>
+        <td border="1" align="left"></td>
+        <td border="1" align="left"></td>
+      </tr>
+      <tr>
+        <td border="1" align="left">created_at</td>
+        <td border="1" align="left">timestamp without tz</td>
+        <td border="1" align="left">not null</td>
+        <td border="1" align="left"></td>
+        <td border="1" align="left">tz('utc'::text, now())</td>
+      </tr>
+      <tr>
+        <td border="1" align="left">updated_at</td>
+        <td border="1" align="left">timestamp without tz</td>
+        <td border="1" align="left">not null</td>
+        <td border="1" align="left"></td>
+        <td border="1" align="left">tz('utc'::text, now())</td>
+      </tr>
+    </table>>
+    shape     = "none"
+    style     = ""
+    margin    = "0"
+    fontcolor = "black"
+    fillcolor = ""
+  ]
+
+  edge [ // table
+    shape   = record
+    rankdir = LR
+  ]
+
+  // Relation
+  edge [ // belongs_to -> has_many
+    arrowhead = empty
+    arrowtail = odiamond
+    headlabel = "1"
+    taillabel = "0..n"
+    dir       = both
+  ]
+
+  UserEmail -> User
+
+  Membership -> User
+  Membership -> Namespace
+
+  Stream  -> Namespace
+  Message -> Stream
+
+  AccessToken -> User
+  AccessToken -> Device
+
+  edge [ // belongs_to -> has_one
+    arrowhead = empty
+    arrowtail = none
+    headlabel = "1"
+    taillabel = "1"
+    dir       = both
+  ]
+
+  AccessToken -> User
+
+  edge [ // has_many <-> has_many
+    arrowhead = odiamond
+    arrowtail = odiamond
+    headlabel = ""
+    taillabel = ""
+    dir       = both
+  ]
+
+  User -> Namespace
+
+  edge [ // has_many
+    arrowhead = odiamond
+    arrowtail = none
+    headlabel = ""
+    taillabel = ""
+    dir       = both
+  ]
+
+  edge [ // belongs_to
+    arrowhead = empty
+    arrowtail = none
+    headlabel = "1"
+    taillabel = ""
+    dir       = both
+  ]
+
+  edge [ // has_one
+    arrowhead = normal
+    arrowtail = none
+    headlabel = ""
+    taillabel = ""
+    dir       = both
+  ]
+
+  // Layout
+  {rank = same; _Legend};
+  {rank = same; User, UserEmail};
+  {rank = same; Namespace, Stream, AccessToken};
+  {rank = same; Message};
+  {rank = same; Membership};
+}
