@@ -269,7 +269,7 @@ mod test {
 
     // TODO: set HashMap as an arg
     fn with<T>(keys: &'static str, test: T)
-    where T: FnOnce() -> () + panic::UnwindSafe {
+    where T: FnOnce() + panic::UnwindSafe {
         lazy_static! {
             static ref ENV_LOCK: Mutex<()> = Mutex::new(());
             static ref TESTS: HashMap<&'static str, &'static str> = hashmap! {

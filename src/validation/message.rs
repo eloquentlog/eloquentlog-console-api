@@ -69,7 +69,7 @@ mod test {
     use crate::logger::{Logger, get_logger};
 
     pub fn run<T>(test: T)
-    where T: FnOnce(&Logger) -> () + panic::UnwindSafe {
+    where T: FnOnce(&Logger) + panic::UnwindSafe {
         // TODO: remove dotenv from here
         dotenv().ok();
         let config = Config::from("testing").unwrap();

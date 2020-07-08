@@ -111,8 +111,7 @@ pub mod test {
 
     /// A test runner
     pub fn run<T>(test: T)
-    where T: FnOnce(&PgConnection, &Config, &Logger) -> () + panic::UnwindSafe
-    {
+    where T: FnOnce(&PgConnection, &Config, &Logger) + panic::UnwindSafe {
         let conn = DB_POOL_HOLDER.get().expect("database connection");
         let logger = get_logger(&CONFIG);
 

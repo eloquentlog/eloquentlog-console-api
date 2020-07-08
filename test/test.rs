@@ -97,7 +97,7 @@ pub fn minify(s: String) -> String {
 
 /// A test runner for integration tests
 pub fn run_test<T>(test: T)
-where T: FnOnce(&Client, &mut Connection, &config::Config, &logger::Logger) -> ()
+where T: FnOnce(&Client, &mut Connection, &config::Config, &logger::Logger)
         + panic::UnwindSafe {
     let _lock = DB_LOCK.lock();
 
