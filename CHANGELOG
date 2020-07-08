@@ -1,4 +1,5 @@
 Tue 07 Jul 2020 Yasuhiro Яша Asaka <yasuhiro.asaka@grauwoelfchen.net>
+	* Add stream and namespace
 	* Disable experimental release stage in CI
 
 Mon 06 Jul 2020 Yasuhiro Яша Asaka <yasuhiro.asaka@grauwoelfchen.net>

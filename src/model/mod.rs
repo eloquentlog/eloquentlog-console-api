@@ -18,6 +18,8 @@ pub mod token;
 // models
 pub mod access_token;
 pub mod message;
+pub mod namespace;
+pub mod stream;
 pub mod user;
 pub mod user_email;
 
@@ -109,8 +111,7 @@ pub mod test {
 
     /// A test runner
     pub fn run<T>(test: T)
-    where T: FnOnce(&PgConnection, &Config, &Logger) -> () + panic::UnwindSafe
-    {
+    where T: FnOnce(&PgConnection, &Config, &Logger) + panic::UnwindSafe {
         let conn = DB_POOL_HOLDER.get().expect("database connection");
         let logger = get_logger(&CONFIG);
 
@@ -143,8 +144,15 @@ pub mod test {
     }
 
     pub fn clean(conn: &PgConnection) {
-        let tables =
-            ["users", "user_emails", "access_tokens", "messages"].join(", ");
+        let tables = [
+            "users",
+            "user_emails",
+            "access_tokens",
+            "messages",
+            "namespaces",
+            "streams",
+        ]
+        .join(", ");
         let q = format!("TRUNCATE TABLE {} RESTART IDENTITY CASCADE;", tables);
         let _ = diesel::sql_query(q)
             .execute(conn)

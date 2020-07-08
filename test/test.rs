@@ -97,7 +97,7 @@ pub fn minify(s: String) -> String {
 
 /// A test runner for integration tests
 pub fn run_test<T>(test: T)
-where T: FnOnce(&Client, &mut Connection, &config::Config, &logger::Logger) -> ()
+where T: FnOnce(&Client, &mut Connection, &config::Config, &logger::Logger)
         + panic::UnwindSafe {
     let _lock = DB_LOCK.lock();
 
@@ -185,9 +185,35 @@ pub fn get_ss_conn(holder: &ss::SsPoolHolder) -> ss::SsConn {
 
 // test data fixtures
 
+type NamespaceFixture = FnvHashMap<&'static str, model::namespace::Namespace>;
+type StreamFixture = FnvHashMap<&'static str, model::stream::Stream>;
 type UserFixture = FnvHashMap<&'static str, model::user::User>;
 
 lazy_static! {
+    pub static ref STREAMS: StreamFixture = fnvhashmap! {
+        "oswald's stream" => model::stream::Stream {
+            id: 1,
+            uuid: Uuid::new_v4(),
+            namespace_id: NAMESPACES.get("piano").unwrap().id,
+            name: "oswald's stream".to_string(),
+            description: Some("description".to_string()),
+            archived_at: None,
+            created_at: Utc.ymd(2019, 7, 7).and_hms(7, 20, 15).naive_utc(),
+            updated_at: Utc.ymd(2019, 7, 7).and_hms(7, 20, 15).naive_utc(),
+        }
+    };
+    pub static ref NAMESPACES: NamespaceFixture = fnvhashmap! {
+        "piano" => model::namespace::Namespace {
+            id: 1,
+            uuid: Uuid::new_v4(),
+            name: "oswald".to_string(),
+            description: Some("description".to_string()),
+            streams_count: 0,
+            archived_at: None,
+            created_at: Utc.ymd(2019, 7, 7).and_hms(7, 20, 15).naive_utc(),
+            updated_at: Utc.ymd(2019, 7, 7).and_hms(7, 20, 15).naive_utc(),
+        }
+    };
     pub static ref USERS: UserFixture = fnvhashmap! {
         "oswald" => model::user::User {
             id: 1,

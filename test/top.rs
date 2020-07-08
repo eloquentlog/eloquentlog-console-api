@@ -35,7 +35,7 @@ fn test_index() {
         let token = result["token"].as_str().unwrap();
 
         let mut res = client
-            .get("/")
+            .get("/v1/")
             .header(ContentType::JSON)
             .header(Header::new("Authorization", format!("Bearer {}", token)))
             .header(Header::new("X-Requested-With", "XMLHttpRequest"))

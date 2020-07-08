@@ -2,10 +2,13 @@ use diesel::{self, prelude::*};
 use chrono::{Utc, TimeZone};
 use rocket::http::{ContentType, Header, Status};
 use serde_json::Value;
+use uuid::Uuid;
 
 use eloquentlog_console_api::model;
 
-use crate::{minify, run_test, load_user, make_raw_password, USERS};
+use crate::{
+    minify, run_test, load_user, make_raw_password, NAMESPACES, STREAMS, USERS,
+};
 
 #[test]
 fn test_lrange_no_message() {
@@ -38,8 +41,14 @@ fn test_lrange_no_message() {
         let result: Value = serde_json::from_str(&body).unwrap();
         let token = result["token"].as_str().unwrap();
 
+        let namespace_key = "key";
+        let stream_slug = "slug";
+
         let mut res = client
-            .get("/_api/message/lrange/namespace/0/2")
+            .get(format!(
+                "/v1/message/{}/lrange/{}/0/2",
+                namespace_key, stream_slug
+            ))
             .header(Header::new("X-Requested-With", "XMLHttpRequest"))
             .header(Header::new("Authorization", format!("Bearer {}", token)))
             .dispatch();
@@ -80,10 +89,29 @@ fn test_lrange_messages() {
         let result: Value = serde_json::from_str(&body).unwrap();
         let token = result["token"].as_str().unwrap();
 
+        let ns = NAMESPACES.get("piano").unwrap();
+        let namespace_id =
+            diesel::insert_into(model::namespace::namespaces::table)
+                .values(ns)
+                .returning(model::namespace::namespaces::id)
+                .get_result::<i64>(conn.db)
+                .unwrap_or_else(|_| panic!("Error inserting: {}", ns));
+
+        let mut s = STREAMS.get("oswald's stream").unwrap().clone();
+        s.namespace_id = namespace_id;
+        let stream_id = diesel::insert_into(model::stream::streams::table)
+            .values(&s)
+            .returning(model::stream::streams::id)
+            .get_result::<i64>(conn.db)
+            .unwrap_or_else(|_| panic!("Error inserting: {}", s));
+
         // 2019-08-07T06:05:04.333
         let dt = Utc.ymd(2019, 8, 7).and_hms_milli(6, 5, 4, 333);
         let m = model::message::Message {
             id: 1,
+            agent_id: user.id,
+            agent_type: model::message::AgentType::Person,
+            stream_id,
             code: None,
             lang: "en".to_string(),
             level: model::message::LogLevel::Information,
@@ -92,9 +120,6 @@ fn test_lrange_messages() {
             content: None,
             created_at: dt.naive_utc(),
             updated_at: dt.naive_utc(),
-            stream_id: 1,
-            agent_id: 1,
-            agent_type: model::message::AgentType::Client,
         };
 
         let id = diesel::insert_into(model::message::messages::table)
@@ -103,8 +128,14 @@ fn test_lrange_messages() {
             .get_result::<i64>(conn.db)
             .unwrap_or_else(|_| panic!("Error inserting: {}", m));
 
+        let namespace_key = "key";
+        let stream_slug = "slug"; // FIXME
+
         let mut res = client
-            .get("/_api/message/lrange/namespace/0/2")
+            .get(format!(
+                "/v1/message/{}/lrange/{}/0/2",
+                namespace_key, stream_slug
+            ))
             .header(Header::new("X-Requested-With", "XMLHttpRequest"))
             .header(Header::new("Authorization", format!("Bearer {}", token)))
             .dispatch();
@@ -116,6 +147,8 @@ fn test_lrange_messages() {
             minify(format!(
                 r#"[{{
 "message": {{
+  "agent_id": 1,
+  "agent_type": "Person",
   "code": null,
   "content": null,
   "created_at": "2019-08-07T06:05:04.333",
@@ -123,9 +156,9 @@ fn test_lrange_messages() {
   "id": {},
   "lang": "en",
   "level": "Information",
+  "stream_id": 1,
   "title": "title",
-  "updated_at": "2019-08-07T06:05:04.333",
-  "stream_id": 1
+  "updated_at": "2019-08-07T06:05:04.333"
 }}
 }}]"#,
                 id,
@@ -165,13 +198,22 @@ fn test_append_with_validation_errors() {
         let result: Value = serde_json::from_str(&body).unwrap();
         let token = result["token"].as_str().unwrap();
 
+        let namespace_key = "key";
+        let stream_slug = "slug";
+
         let mut res = client
-            .post("/_api/message/append/namespace")
+            .post(format!(
+                "/v1/message/{}/append/{}",
+                namespace_key, stream_slug
+            ))
             .header(ContentType::JSON)
             .header(Header::new("Authorization", format!("Bearer {}", token)))
             .header(Header::new("X-Requested-With", "XMLHttpRequest"))
             .body(
                 r#"{
+                    "agent_id": 1,
+                    "agent_type": "person",
+                    "stream_id": 1,
                     "code": "",
                     "title": "New Message",
                     "content": "Hello, world!"
@@ -215,19 +257,46 @@ fn test_append() {
         let result: Value = serde_json::from_str(&body).unwrap();
         let token = result["token"].as_str().unwrap();
 
+        let namespace_key = "key";
+        let stream_slug = "slug";
+
+        let ns = NAMESPACES.get("piano").unwrap();
+        let namespace_id =
+            diesel::insert_into(model::namespace::namespaces::table)
+                .values(ns)
+                .returning(model::namespace::namespaces::id)
+                .get_result::<i64>(conn.db)
+                .unwrap_or_else(|_| panic!("Error inserting: {}", ns));
+
+        let mut s = STREAMS.get("oswald's stream").unwrap().clone();
+        s.namespace_id = namespace_id;
+        let stream_uuid = diesel::insert_into(model::stream::streams::table)
+            .values(&s)
+            .returning(model::stream::streams::uuid)
+            .get_result::<Uuid>(conn.db)
+            .unwrap_or_else(|_| panic!("Error inserting: {}", s));
+
         let mut res = client
-            .post("/_api/message/append/namespace")
+            .post(format!(
+                "/v1/message/{}/append/{}",
+                namespace_key, stream_slug
+            ))
             .header(ContentType::JSON)
             .header(Header::new("Authorization", format!("Bearer {}", token)))
             .header(Header::new("X-Requested-With", "XMLHttpRequest"))
-            .body(
-                r#"{
-                    "format": "toml",
+            .body(format!(
+                r#"{{
+                    "agent_id": 1,
+                    "agent_type": "person",
+                    "stream_id": 1,
                     "code": "200",
+                    "format": "toml",
+                    "stream": "{}",
                     "title": "New message",
                     "content": "Hello, world!"
-                }"#,
-            )
+                }}"#,
+                stream_uuid
+            ))
             .dispatch();
 
         assert_eq!(res.status(), Status::Ok);

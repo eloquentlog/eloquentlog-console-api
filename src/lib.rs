@@ -1,8 +1,7 @@
-#![feature(proc_macro_hygiene, decl_macro)]
-
 //! Eloquentlog Backend API
 //!
 //! This is an API for a web frontend of Eloquentlog.
+#![feature(proc_macro_hygiene, decl_macro)]
 
 #[macro_use]
 extern crate accord;
@@ -73,7 +72,16 @@ macro_rules! fnvhashmap(
 // returns a sorted vec by namespace.
 pub fn routes() -> Vec<(&'static str, Vec<rocket::Route>)> {
     let mut r = vec![
-        ("/", routes![route::top::index]),
+        (
+            "/v1",
+            routes![
+                route::top::index,
+                route::message::preflight::append,
+                route::message::preflight::lrange,
+                route::message::append,
+                route::message::lrange,
+            ],
+        ),
         (
             "/_api",
             routes![
@@ -109,10 +117,6 @@ pub fn routes() -> Vec<(&'static str, Vec<rocket::Route>)> {
                 route::access_token::hset_state,
                 route::access_token::append,
                 route::access_token::lrange,
-                route::message::preflight::append,
-                route::message::preflight::lrange,
-                route::message::append,
-                route::message::lrange,
             ],
         ),
     ];
@@ -123,7 +127,7 @@ pub fn routes() -> Vec<(&'static str, Vec<rocket::Route>)> {
 pub fn server() -> rocket::Rocket {
     let r: HashMap<&str, Vec<_>> = routes().iter().cloned().collect();
     rocket::ignite()
-        .mount("/", r["/"].clone())
+        .mount("/v1", r["/v1"].clone())
         .mount("/_api", r["/_api"].clone())
         .register(catchers![
             route::error::bad_request,

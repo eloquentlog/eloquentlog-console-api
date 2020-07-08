@@ -442,9 +442,9 @@ impl Activatable for User {
                 let user_email = q
                     .load::<(Self, UserEmail)>(conn)
                     .map(|mut v| v.pop().unwrap().1)
-                    .or_else(|e| {
+                    .map_err(|e| {
                         error!(logger, "error: {}", e);
-                        Err(e)
+                        e
                     })
                     .unwrap();
 

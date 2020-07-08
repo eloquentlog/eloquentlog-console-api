@@ -42,9 +42,9 @@ pub fn activate(
     let activation =
         AccountActivator::<User, UserEmail>::new(&db_conn, &config, &logger)
             .load(&token)
-            .and_then(|a| {
+            .map(|a| {
                 let _ = a.activate();
-                Ok(a)
+                a
             });
     if activation.is_ok() {
         return res.status(Status::Ok);

@@ -1,59 +1,59 @@
-//! # Namespace
+//! # Stream
 use std::fmt;
 use std::str;
 
 use chrono::NaiveDateTime;
-use diesel::{Identifiable, Insertable, Queryable, debug_query, prelude::*};
+use diesel::{Identifiable, Queryable, debug_query, prelude::*};
 use diesel::dsl;
 use diesel::pg::{Pg, PgConnection};
 use uuid::Uuid;
 
 use crate::logger::Logger;
 
-pub use crate::schema::namespaces;
+pub use crate::schema::streams;
 
-/// NewNamespace
+/// NewStream
 #[derive(Debug)]
-pub struct NewNamespace {
+pub struct NewStream {
+    pub namespace_id: i64,
     pub name: String,
     pub description: Option<String>,
-    pub streams_count: i64,
 }
 
-impl Default for NewNamespace {
+impl Default for NewStream {
     // includes validation errors
     fn default() -> Self {
         Self {
+            namespace_id: -1,
             name: "".to_string(),
             description: None,
-            streams_count: 0,
         }
     }
 }
 
 type AllColumns = (
-    namespaces::id,
-    namespaces::uuid,
-    namespaces::name,
-    namespaces::description,
-    namespaces::streams_count,
-    namespaces::archived_at,
-    namespaces::created_at,
-    namespaces::updated_at,
+    streams::id,
+    streams::uuid,
+    streams::namespace_id,
+    streams::name,
+    streams::description,
+    streams::archived_at,
+    streams::created_at,
+    streams::updated_at,
 );
 
 const ALL_COLUMNS: AllColumns = (
-    namespaces::id,
-    namespaces::uuid,
-    namespaces::name,
-    namespaces::description,
-    namespaces::streams_count,
-    namespaces::archived_at,
-    namespaces::created_at,
-    namespaces::updated_at,
+    streams::id,
+    streams::uuid,
+    streams::namespace_id,
+    streams::name,
+    streams::description,
+    streams::archived_at,
+    streams::created_at,
+    streams::updated_at,
 );
 
-/// Namespace
+/// Stream
 #[derive(
     AsChangeset,
     AsExpression,
@@ -63,26 +63,26 @@ const ALL_COLUMNS: AllColumns = (
     PartialEq,
     Queryable,
 )]
-#[table_name = "namespaces"]
+#[table_name = "streams"]
 #[changeset_options(treat_none_as_null = "true")]
-pub struct Namespace {
+pub struct Stream {
     pub id: i64,
     pub uuid: Uuid,
+    pub namespace_id: i64,
     pub name: String,
     pub description: Option<String>,
-    pub streams_count: i32,
     pub archived_at: Option<NaiveDateTime>,
     pub created_at: NaiveDateTime,
     pub updated_at: NaiveDateTime,
 }
 
-impl Clone for Namespace {
+impl Clone for Stream {
     fn clone(&self) -> Self {
         Self {
             uuid: self.uuid,
+            namespace_id: self.namespace_id,
             name: self.name.clone(),
             description: self.description.clone(),
-            streams_count: self.streams_count,
             archived_at: None,
 
             ..*self
@@ -90,20 +90,20 @@ impl Clone for Namespace {
     }
 }
 
-impl fmt::Display for Namespace {
+impl fmt::Display for Stream {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "<Namespace {uuid}>", uuid = &self.uuid.to_string())
+        write!(f, "<Stream {uuid}>", uuid = &self.uuid.to_string())
     }
 }
 
-type All = dsl::Select<namespaces::table, AllColumns>;
-type WithUuid = dsl::Eq<namespaces::uuid, Uuid>;
-type Visible = dsl::IsNull<namespaces::archived_at>;
+type All = dsl::Select<streams::table, AllColumns>;
+type WithUuid = dsl::Eq<streams::uuid, Uuid>;
+type Visible = dsl::IsNull<streams::archived_at>;
 type ByUuid = dsl::Filter<All, WithUuid>;
 
-impl Namespace {
+impl Stream {
     pub fn all() -> All {
-        namespaces::table.select(ALL_COLUMNS)
+        streams::table.select(ALL_COLUMNS)
     }
 
     pub fn by_uuid(uuid: &str) -> ByUuid {
@@ -130,16 +130,17 @@ impl Namespace {
     }
 
     pub fn insert(
-        namespace: &NewNamespace,
+        stream: &NewStream,
         conn: &PgConnection,
         logger: &Logger,
     ) -> Option<Self>
     {
         let uuid = Uuid::new_v4();
-        let q = diesel::insert_into(namespaces::table).values((
-            namespaces::uuid.eq(uuid),
-            namespaces::name.eq(&namespace.name),
-            namespaces::description.eq(&namespace.description),
+        let q = diesel::insert_into(streams::table).values((
+            streams::uuid.eq(uuid),
+            streams::namespace_id.eq(stream.namespace_id),
+            streams::name.eq(&stream.name),
+            streams::description.eq(&stream.description),
         ));
 
         info!(logger, "{}", debug_query::<Pg, _>(&q).to_string());
@@ -155,11 +156,11 @@ impl Namespace {
 
     pub fn with_uuid(s: &str) -> WithUuid {
         let uuid = Uuid::parse_str(s).unwrap_or_else(|_| Uuid::nil());
-        namespaces::uuid.eq(uuid)
+        streams::uuid.eq(uuid)
     }
 
     pub fn visible() -> Visible {
-        namespaces::archived_at.is_null()
+        streams::archived_at.is_null()
     }
 }
 
@@ -171,37 +172,38 @@ pub mod data {
     use fnv::FnvHashMap;
 
     use crate::fnvhashmap;
+    use crate::model::namespace::data::NAMESPACES;
 
-    type NamespaceFixture = FnvHashMap<&'static str, Namespace>;
+    type StreamFixture = FnvHashMap<&'static str, Stream>;
 
     lazy_static! {
-        pub static ref NAMESPACES: NamespaceFixture = fnvhashmap! {
-            "piano" => Namespace {
+        pub static ref STREAMS: StreamFixture = fnvhashmap! {
+            "oswald's stream" => Stream {
                 id: 1,
                 uuid: Uuid::new_v4(),
-                name: "oswald".to_string(),
+                namespace_id: NAMESPACES.get("piano").unwrap().id,
+                name: "oswald's stream".to_string(),
                 description: Some("description".to_string()),
-                streams_count: 0,
                 archived_at: None,
                 created_at: Utc.ymd(2019, 7, 7).and_hms(7, 20, 15).naive_utc(),
                 updated_at: Utc.ymd(2019, 7, 7).and_hms(7, 20, 15).naive_utc(),
             },
-            "ball" => Namespace {
+            "weenie's stream" => Stream {
                 id: 2,
                 uuid: Uuid::new_v4(),
-                name: "weenie".to_string(),
+                namespace_id: NAMESPACES.get("ball").unwrap().id,
+                name: "weenie's stream".to_string(),
                 description: Some("description".to_string()),
-                streams_count: 0,
                 archived_at: None,
                 created_at: Utc.ymd(2019, 7, 7).and_hms(7, 20, 15).naive_utc(),
                 updated_at: Utc.ymd(2019, 7, 7).and_hms(7, 20, 15).naive_utc(),
             },
-            "fish" => Namespace {
+            "henry's stream" => Stream {
                 id: 3,
                 uuid: Uuid::new_v4(),
-                name: "henry".to_string(),
+                namespace_id: NAMESPACES.get("fish").unwrap().id,
+                name: "personal access token".to_string(),
                 description: Some("description".to_string()),
-                streams_count: 0,
                 archived_at: None,
                 created_at: Utc.ymd(2019, 7, 7).and_hms(7, 20, 15).naive_utc(),
                 updated_at: Utc.ymd(2019, 7, 7).and_hms(7, 20, 15).naive_utc(),
@@ -214,63 +216,85 @@ pub mod data {
 mod test {
     use super::*;
 
+    use crate::model::namespace::{Namespace, namespaces};
     use crate::model::namespace::data::NAMESPACES;
+    use crate::model::stream::data::STREAMS;
     use crate::model::test::run;
 
     #[test]
-    fn test_new_namespaces_default() {
-        let ns = NewNamespace {
+    fn test_new_streams_default() {
+        let at = NewStream {
             ..Default::default()
         };
 
-        assert_eq!(ns.name, "".to_string());
-        assert_eq!(ns.description, None);
-        assert_eq!(ns.streams_count, 0);
+        assert_eq!(at.namespace_id, -1);
+        assert_eq!(at.name, "".to_string());
+        assert_eq!(at.description, None);
     }
 
     #[test]
-    fn test_namespace_format() {
-        let ns = NAMESPACES.get("fish").unwrap();
-        assert_eq!(format!("{}", ns), format!("<Namespace {}>", ns.uuid));
+    fn test_stream_format() {
+        let s = STREAMS.get("henry's stream").unwrap();
+        assert_eq!(format!("{}", s), format!("<Stream {}>", s.uuid));
     }
 
     #[test]
     fn test_find_by_uuid() {
         run(|conn, _, logger| {
+            let ns = NAMESPACES.get("piano").unwrap();
             let namespace = diesel::insert_into(namespaces::table)
-                .values((namespaces::name.eq("name"),))
+                .values(ns)
                 .get_result::<Namespace>(conn)
                 .unwrap_or_else(|e| panic!("Error at inserting: {}", e));
 
-            let result = Namespace::find_by_uuid(
-                &namespace.uuid.to_string(),
-                conn,
-                logger,
-            );
-            assert_eq!(result, Some(namespace));
+            let stream = diesel::insert_into(streams::table)
+                .values((
+                    streams::uuid.eq(Uuid::new_v4()),
+                    streams::name.eq("name"),
+                    streams::namespace_id.eq(namespace.id),
+                ))
+                .get_result::<Stream>(conn)
+                .unwrap_or_else(|e| panic!("Error at inserting: {}", e));
+
+            let result =
+                Stream::find_by_uuid(&stream.uuid.to_string(), conn, logger);
+            assert_eq!(result, Some(stream));
         });
     }
 
     #[test]
     fn test_insert() {
         run(|conn, _, logger| {
-            let ns = NewNamespace {
+            let ns = NAMESPACES.get("piano").unwrap();
+            let namespace = diesel::insert_into(namespaces::table)
+                .values(ns)
+                .get_result::<Namespace>(conn)
+                .unwrap_or_else(|e| panic!("Error at inserting: {}", e));
+
+            let s = NewStream {
+                namespace_id: namespace.id,
                 name: "".to_string(),
                 description: None,
-                streams_count: 0,
             };
 
-            let result = Namespace::insert(&ns, conn, logger);
+            let result = Stream::insert(&s, conn, logger);
             assert!(result.is_some());
 
-            let namespace = result.unwrap();
+            let stream = result.unwrap();
 
-            let result = namespaces::table
-                .filter(namespaces::id.eq(namespace.id))
-                .first::<Namespace>(conn)
+            let result = streams::table
+                .filter(streams::id.eq(stream.id))
+                .first::<Stream>(conn)
                 .expect("Failed to get a record");
 
-            assert_eq!(result.streams_count, 0);
+            assert!(result.description.is_none());
+            assert_eq!(result.namespace_id, namespace.id);
+
+            let rows_count: i64 = streams::table
+                .count()
+                .first(conn)
+                .expect("Failed to count rows");
+            assert_eq!(1, rows_count);
         })
     }
 }

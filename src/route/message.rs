@@ -3,7 +3,7 @@ use rocket_contrib::json::Json;
 use rocket_slog::SyncLogger;
 
 use crate::db::DbConn;
-use crate::model::message::{Message, NewMessage};
+use crate::model::message::{AgentType, Message, NewMessage};
 use crate::model::user::User;
 use crate::response::Response;
 use crate::request::message::Message as RequestData;
@@ -15,28 +15,53 @@ pub mod preflight {
     use rocket::response::Response as RawResponse;
     use rocket_slog::SyncLogger;
 
+    use crate::model::user::User;
     use crate::response::no_content_for;
 
-    #[options("/message/append/<key>")]
-    pub fn append<'a>(key: String, logger: SyncLogger) -> RawResponse<'a> {
-        info!(logger, "key: {}", key);
+    #[options("/message/<namespace_key>/append/<stream_slug>")]
+    pub fn append<'a>(
+        user: &User,
+        namespace_key: String,
+        stream_slug: String,
+        logger: SyncLogger,
+    ) -> RawResponse<'a>
+    {
+        info!(
+            logger,
+            "user: {}, namespace: {}, stream: {}",
+            user.uuid,
+            namespace_key,
+            stream_slug
+        );
         no_content_for("POST")
     }
 
-    #[options("/message/lrange/<key>/<start>/<stop>")]
+    #[options("/message/<namespace_key>/lrange/<stream_slug>/<start>/<stop>")]
     pub fn lrange<'a>(
-        key: String,
+        user: &User,
+        namespace_key: String,
+        stream_slug: String,
         start: i64,
         stop: i64,
         logger: SyncLogger,
     ) -> RawResponse<'a>
     {
-        info!(logger, "key: {}, start: {}, stop: {}", key, start, stop);
+        info!(
+            logger,
+            "user: {}, namespace: {}, stream: {}, start: {}, stop: {}",
+            user.uuid,
+            namespace_key,
+            stream_slug,
+            start,
+            stop
+        );
         no_content_for("GET")
     }
 }
 
 // Save a new log message.
+//
+// ## TODO: Move ingest API
 //
 // The value looks like this:
 //
@@ -48,10 +73,15 @@ pub mod preflight {
 //    ...
 // }
 // ```
-#[post("/message/append/<key>", format = "json", data = "<data>")]
+#[post(
+    "/message/<namespace_key>/append/<stream_slug>",
+    format = "json",
+    data = "<data>"
+)]
 pub fn append(
     user: &User,
-    key: String,
+    namespace_key: String,
+    stream_slug: String,
     data: Json<RequestData>,
     conn: DbConn,
     logger: SyncLogger,
@@ -59,10 +89,17 @@ pub fn append(
 {
     let res: Response = Default::default();
 
-    // TODO
-    info!(logger, "user: {}", user.uuid);
-    info!(logger, "key: {}", key);
+    info!(
+        logger,
+        "user: {}, namespace: {}, stream: {}",
+        user.uuid,
+        namespace_key,
+        stream_slug
+    );
 
+    // FIXME
+    // * namespace
+    // * validations for stream_id (slug) and agent_* fields
     let v = Validator::new(&data, &logger);
     match v.validate() {
         Err(errors) => {
@@ -71,7 +108,12 @@ pub fn append(
             }))
         },
         Ok(_) => {
-            let m = NewMessage::from(data.0.clone());
+            // FIXME
+            let stream_id = 1;
+            let mut m = NewMessage::from(data.0.clone());
+            m.stream_id = stream_id;
+            m.agent_id = user.id;
+            m.agent_type = AgentType::Person;
             if let Some(id) = Message::insert(&m, &conn, &logger) {
                 info!(logger, "user: {}", user.uuid);
                 return res.format(json!({"message": {
@@ -83,36 +125,45 @@ pub fn append(
     }
 }
 
-#[get("/message/lrange/<key>/<start>/<stop>")]
+#[get("/message/<namespace_key>/lrange/<stream_slug>/<start>/<stop>")]
 pub fn lrange(
     user: &User,
-    key: String,
-    start: i64,
-    stop: i64,
+    namespace_key: String,
+    stream_slug: String,
+    start: u64,
+    stop: u64,
     conn: DbConn,
     logger: SyncLogger,
 ) -> Response
 {
     let res: Response = Default::default();
 
-    info!(logger, "user: {}", user.uuid);
-    info!(logger, "key: {}, start: {}, stop: {}", key, start, stop);
+    info!(
+        logger,
+        "user: {}, namespace: {}, stream: {}, start: {}, stop: {}",
+        user.uuid,
+        namespace_key,
+        stream_slug,
+        start,
+        stop
+    );
 
     // TODO
-    let mut offset = start;
-    if offset < 1 {
-        offset = 0;
-    }
-
-    let mut limit = stop - start + 2;
+    let offset = start as i64;
+    let mut limit = (stop - start + 2) as i64;
     if limit < 1 {
         limit = 1;
     }
 
-    // FIXME: by uuid
-    let stream_id = 1;
-    let data = match Message::fetch_messages_by_stream_id(
-        key, stream_id, offset, limit, &conn, &logger,
+    // FIXME
+    // * visible to user (and use namespace_key)
+
+    let data = match Message::fetch_by_stream_slug(
+        stream_slug,
+        offset,
+        limit,
+        &conn,
+        &logger,
     ) {
         None => {
             error!(logger, "err: not found user.id {}", user.uuid);

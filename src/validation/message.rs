@@ -69,7 +69,7 @@ mod test {
     use crate::logger::{Logger, get_logger};
 
     pub fn run<T>(test: T)
-    where T: FnOnce(&Logger) -> () + panic::UnwindSafe {
+    where T: FnOnce(&Logger) + panic::UnwindSafe {
         // TODO: remove dotenv from here
         dotenv().ok();
         let config = Config::from("testing").unwrap();
@@ -449,8 +449,9 @@ mod test {
     fn test_validate() {
         run(|logger| {
             let data = &Json(RequestData {
-                id: None,
-
+                agent_id: 1,
+                agent_type: Some("person".to_string()),
+                stream_id: 1,
                 code: Some("301".to_string()),
                 lang: Some("en".to_string()),
                 level: Some("warn".to_string()),
