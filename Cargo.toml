@@ -49,18 +49,19 @@ rand = "0.6"
 redis = "0.11.0"
 regex = "0.2"
 rocket = "0.4.2"
+rocket_http = "0.4.2"
 rocket_codegen = "*"
-rocket-slog = "0.4"
+rocket-slog = "0.4.0-rc2"
 rusty-fork = "0.2"
 serde = { version = "1.0", features = ["derive"] }
 serde_derive = "1.0"
 serde_json = "1.0"
 slog = "2.4"
 sloggers = "0.3"
-uuid = { version = "0.7", features = ["v4"] }
+uuid = { version = "0.7.0", features = ["v4"] }
 
 [dependencies.diesel]
-version = "1.4.2"
+version = "1.4.5"
 default-features = false
 features = ["chrono", "postgres", "r2d2", "uuidv07"]
 
