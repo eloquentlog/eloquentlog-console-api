@@ -285,8 +285,15 @@ clean:  ## Tidy up
 	@cargo clean
 .PHONY: clean
 
-doc:  ## Generate doc for lib
+doc\:er:  ## Generate & display an ER diagram
+	@dot -T png doc/er.dot > doc/er.png; feh doc/er.png
+.PHONY: doc\:er
+
+doc\:lib:  ## Generate doc for lib [alias: doc]
 	@cargo doc --lib --no-deps
+.PHONY: doc\:lib
+
+doc: | doc\:lib
 .PHONY: doc
 
 route:  ## Print all routes using router
