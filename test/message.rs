@@ -90,17 +90,17 @@ fn test_lrange_messages() {
         let token = result["token"].as_str().unwrap();
 
         let ns = NAMESPACES.get("piano").unwrap();
-        let _namespace_id =
+        let namespace_id =
             diesel::insert_into(model::namespace::namespaces::table)
                 .values(ns)
                 .returning(model::namespace::namespaces::id)
                 .get_result::<i64>(conn.db)
                 .unwrap_or_else(|_| panic!("Error inserting: {}", ns));
 
-        let s = STREAMS.get("oswald's stream").unwrap().clone();
-        // s.namespace_id = namespace_id;
+        let mut s = STREAMS.get("oswald's stream").unwrap().clone();
+        s.namespace_id = namespace_id;
         let stream_id = diesel::insert_into(model::stream::streams::table)
-            .values(s)
+            .values(&s)
             .returning(model::stream::streams::id)
             .get_result::<i64>(conn.db)
             .unwrap_or_else(|_| panic!("Error inserting: {}", s));
@@ -260,18 +260,18 @@ fn test_append() {
         let namespace_key = "key";
         let stream_slug = "slug";
 
-        let ns = NAMESPACES.get("piano").unwrap().clone();
-        let _namespace_id =
+        let ns = NAMESPACES.get("piano").unwrap();
+        let namespace_id =
             diesel::insert_into(model::namespace::namespaces::table)
                 .values(ns)
                 .returning(model::namespace::namespaces::id)
                 .get_result::<i64>(conn.db)
                 .unwrap_or_else(|_| panic!("Error inserting: {}", ns));
 
-        let s = STREAMS.get("oswald's stream").unwrap().clone();
-        // s.namespace_id = namespace_id;
+        let mut s = STREAMS.get("oswald's stream").unwrap().clone();
+        s.namespace_id = namespace_id;
         let stream_uuid = diesel::insert_into(model::stream::streams::table)
-            .values(s)
+            .values(&s)
             .returning(model::stream::streams::uuid)
             .get_result::<Uuid>(conn.db)
             .unwrap_or_else(|_| panic!("Error inserting: {}", s));

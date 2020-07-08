@@ -76,6 +76,20 @@ pub struct Stream {
     pub updated_at: NaiveDateTime,
 }
 
+impl Clone for Stream {
+    fn clone(&self) -> Self {
+        Self {
+            uuid: self.uuid,
+            namespace_id: self.namespace_id,
+            name: self.name.clone(),
+            description: self.description.clone(),
+            archived_at: None,
+
+            ..*self
+        }
+    }
+}
+
 impl fmt::Display for Stream {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "<Stream {uuid}>", uuid = &self.uuid.to_string())

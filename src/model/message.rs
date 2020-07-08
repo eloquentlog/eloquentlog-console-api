@@ -142,22 +142,13 @@ pub struct Message {
     pub updated_at: NaiveDateTime,
 }
 
-type All = dsl::Select<messages::table, AllColumns>;
-type WithType = dsl::Eq<messages::agent_type, AgentType>;
-type WithUser = dsl::And<
-    dsl::Eq<messages::agent_id, i64>,
-    dsl::Eq<messages::agent_type, AgentType>,
->;
-type Visible = dsl::IsNotNull<messages::content>;
-type ByUser = dsl::Filter<All, WithUser>;
-type VisibleTo = dsl::Filter<All, dsl::And<WithUser, Visible>>;
-
 impl Clone for Message {
     fn clone(&self) -> Self {
         let agent_type = format!("{}", self.agent_type);
         let level = format!("{}", self.level);
         let format = format!("{}", self.format);
-        Message {
+
+        Self {
             agent_id: self.agent_id,
             agent_type: AgentType::from(agent_type),
             stream_id: self.stream_id,
@@ -178,6 +169,16 @@ impl fmt::Display for Message {
         write!(f, "<Message {title}>", title = self.title)
     }
 }
+
+type All = dsl::Select<messages::table, AllColumns>;
+type WithType = dsl::Eq<messages::agent_type, AgentType>;
+type WithUser = dsl::And<
+    dsl::Eq<messages::agent_id, i64>,
+    dsl::Eq<messages::agent_type, AgentType>,
+>;
+type Visible = dsl::IsNotNull<messages::content>;
+type ByUser = dsl::Filter<All, WithUser>;
+type VisibleTo = dsl::Filter<All, dsl::And<WithUser, Visible>>;
 
 impl Message {
     pub fn all() -> All {
@@ -327,7 +328,7 @@ mod data {
                 id: 1,
                 agent_id: 0,
                 agent_type: AgentType::Person,
-                stream_id: STREAMS.get("weenie's stream").unwrap().id,
+                stream_id: STREAMS.clone().get("weenie's stream").unwrap().id,
                 code: None,
                 lang: "en".to_string(),
                 level: LogLevel::Information,
@@ -356,16 +357,15 @@ mod test {
     fn test_insert() {
         run(|conn, _, logger| {
             let ns = NAMESPACES.get("ball").unwrap();
-            let _namespace = diesel::insert_into(namespaces::table)
+            let namespace = diesel::insert_into(namespaces::table)
                 .values(ns)
                 .get_result::<Namespace>(conn)
                 .unwrap_or_else(|e| panic!("Error at inserting: {}", e));
 
-            let s = STREAMS.get("weenie's stream").unwrap().clone();
-            // FIXME
-            // s.namespace_id = namespace.id;
+            let mut s = STREAMS.get("weenie's stream").unwrap().clone();
+            s.namespace_id = namespace.id;
             let stream = diesel::insert_into(streams::table)
-                .values(s)
+                .values(&s)
                 .get_result::<Stream>(conn)
                 .unwrap_or_else(|e| panic!("Error at inserting: {}", e));
 
@@ -395,14 +395,13 @@ mod test {
     fn test_update() {
         run(|conn, _, logger| {
             let ns = NAMESPACES.get("ball").unwrap();
-            let _namespace = diesel::insert_into(namespaces::table)
+            let namespace = diesel::insert_into(namespaces::table)
                 .values(ns)
                 .get_result::<Namespace>(conn)
                 .unwrap_or_else(|e| panic!("Error at inserting: {}", e));
 
-            let s = STREAMS.get("weenie's stream").unwrap().clone();
-            // FIXME
-            // s.namespace_id = namespace.id;
+            let mut s = STREAMS.get("weenie's stream").unwrap().clone();
+            s.namespace_id = namespace.id;
             let stream = diesel::insert_into(streams::table)
                 .values(s)
                 .get_result::<Stream>(conn)

@@ -76,6 +76,20 @@ pub struct Namespace {
     pub updated_at: NaiveDateTime,
 }
 
+impl Clone for Namespace {
+    fn clone(&self) -> Self {
+        Self {
+            uuid: self.uuid,
+            name: self.name.clone(),
+            description: self.description.clone(),
+            streams_count: self.streams_count,
+            archived_at: None,
+
+            ..*self
+        }
+    }
+}
+
 impl fmt::Display for Namespace {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "<Namespace {uuid}>", uuid = &self.uuid.to_string())
