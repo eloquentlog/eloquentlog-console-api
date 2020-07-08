@@ -272,6 +272,7 @@ pub fn verify<'a>(
 }
 
 // The arguments order is matter due to a spec of FromRequest
+#[allow(clippy::too_many_arguments)]
 #[patch("/password/reset/<session_id>", data = "<payload>", format = "json")]
 pub fn update<'a>(
     logger: SyncLogger,
