@@ -59,28 +59,25 @@ pub fn extract_session_key<'r>(req: &Request<'r>) -> String {
     // NOTE: The part of `/_/` (empty segment) will be ignored in routed path
     // within Segments. See below:
     // https://api.rocket.rs/v0.4/rocket/http/uri/struct.Segments.html
-    let word = req
+    let s0 = req
         .raw_segment_str(0)
         .map(|s| s.to_string())
         .unwrap_or_else(|| "".to_string());
-    if word == "password" {
-        let s = req
-            .raw_segment_str(2)
-            .map(|s| s.to_string())
-            .unwrap_or_else(|| "".to_string());
-        if !s.is_empty() {
-            return format!("pr-{}", s);
-        }
-    } else if word == "activate" {
-        let s = req
-            .raw_segment_str(1)
-            .map(|s| s.to_string())
-            .unwrap_or_else(|| "".to_string());
-        if !s.is_empty() {
-            return format!("ua-{}", s);
-        }
+    let (idx, pfx) = if s0 == "password" {
+        (2, "pr")
+    } else if s0 == "activate" {
+        (1, "ua")
+    } else {
+        return "".to_string();
+    };
+    let sn = req
+        .raw_segment_str(idx)
+        .map(|s| s.to_string())
+        .unwrap_or_else(|| "".to_string());
+    if sn.is_empty() {
+        return "".to_string();
     }
-    "".to_string()
+    format!("{}-{}", pfx, sn)
 }
 
 #[cfg(test)]
@@ -122,6 +119,10 @@ mod test {
         let mut req = local.inner().clone();
 
         let uri = Origin::parse("/").unwrap();
+        req.set_uri(uri);
+        assert_eq!(extract_session_key(&req), "");
+
+        let uri = Origin::parse("/unkonwn").unwrap();
         req.set_uri(uri);
         assert_eq!(extract_session_key(&req), "");
 
