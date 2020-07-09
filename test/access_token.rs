@@ -16,14 +16,14 @@ fn test_access_token_hset_state_failure() {
         let user = load_user(u, conn.db);
 
         let _ = client
-            .head("/_api/login/")
+            .head("/_/login/")
             .header(ContentType::JSON)
             .header(Header::new("X-Requested-With", "XMLHttpRequest"))
             .body("{}")
             .dispatch();
 
         let mut res = client
-            .post("/_api/login")
+            .post("/_/login")
             .header(ContentType::JSON)
             .header(Header::new("X-Requested-With", "XMLHttpRequest"))
             .body(format!(
@@ -41,7 +41,7 @@ fn test_access_token_hset_state_failure() {
 
         let state = model::access_token::AccessTokenState::Enabled;
         let res = client
-            .patch(format!("/_api/access_token/hset/{}/state", Uuid::nil()))
+            .patch(format!("/v1/access_token/hset/{}/state", Uuid::nil()))
             .header(ContentType::JSON)
             .header(Header::new("Authorization", format!("Bearer {}", token)))
             .header(Header::new("X-Requested-With", "XMLHttpRequest"))
@@ -67,14 +67,14 @@ fn test_access_token_hset_state() {
         let user = load_user(u, conn.db);
 
         let _ = client
-            .head("/_api/login/")
+            .head("/_/login/")
             .header(ContentType::JSON)
             .header(Header::new("X-Requested-With", "XMLHttpRequest"))
             .body("{}")
             .dispatch();
 
         let mut res = client
-            .post("/_api/login")
+            .post("/_/login")
             .header(ContentType::JSON)
             .header(Header::new("X-Requested-With", "XMLHttpRequest"))
             .body(format!(
@@ -115,10 +115,7 @@ fn test_access_token_hset_state() {
 
         let state = model::access_token::AccessTokenState::Enabled;
         let mut res = client
-            .patch(format!(
-                "/_api/access_token/hset/{}/state",
-                access_token.uuid,
-            ))
+            .patch(format!("/v1/access_token/hset/{}/state", access_token.uuid))
             .header(ContentType::JSON)
             .header(Header::new("X-Requested-With", "XMLHttpRequest"))
             .header(Header::new("Authorization", format!("Bearer {}", token)))
@@ -147,14 +144,14 @@ fn test_access_token_lrange_returns_empty_if_not_exist() {
         let user = load_user(u, conn.db);
 
         let _ = client
-            .head("/_api/login/")
+            .head("/_/login/")
             .header(ContentType::JSON)
             .header(Header::new("X-Requested-With", "XMLHttpRequest"))
             .body("{}")
             .dispatch();
 
         let mut res = client
-            .post("/_api/login")
+            .post("/_/login")
             .header(ContentType::JSON)
             .header(Header::new("X-Requested-With", "XMLHttpRequest"))
             .body(format!(
@@ -171,7 +168,7 @@ fn test_access_token_lrange_returns_empty_if_not_exist() {
         let token = result["token"].as_str().unwrap();
 
         let mut res = client
-            .get("/_api/access_token/lrange/client/0/0")
+            .get("/v1/access_token/lrange/client/0/0")
             .header(Header::new("Authorization", format!("Bearer {}", token)))
             .header(Header::new("X-Requested-With", "XMLHttpRequest"))
             .dispatch();
@@ -191,14 +188,14 @@ fn test_access_token_lrange_returns_a_list_contain_tokens() {
         let user = load_user(u, conn.db);
 
         let _ = client
-            .head("/_api/login/")
+            .head("/_/login/")
             .header(ContentType::JSON)
             .header(Header::new("X-Requested-With", "XMLHttpRequest"))
             .body("{}")
             .dispatch();
 
         let mut res = client
-            .post("/_api/login")
+            .post("/_/login")
             .header(ContentType::JSON)
             .header(Header::new("X-Requested-With", "XMLHttpRequest"))
             .body(format!(
@@ -261,7 +258,7 @@ fn test_access_token_lrange_returns_a_list_contain_tokens() {
                 });
 
         let mut res = client
-            .get("/_api/access_token/lrange/client/0/1")
+            .get("/v1/access_token/lrange/client/0/1")
             .header(Header::new("Authorization", format!("Bearer {}", token)))
             .header(Header::new("X-Requested-With", "XMLHttpRequest"))
             .dispatch();

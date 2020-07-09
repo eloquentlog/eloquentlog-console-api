@@ -14,11 +14,11 @@ fn test_404_not_found() {
     });
 
     run_test(|client, _, _, _| {
-        let mut res = client.get("/_api/unknown-path").dispatch();
+        let mut res = client.get("/_/unknown-path").dispatch();
         assert_eq!(res.status(), Status::NotFound);
         assert!(res
             .body_string()
             .unwrap()
-            .contains("'/_api/unknown-path' is not found"));
+            .contains("'/_/unknown-path' is not found"));
     });
 }

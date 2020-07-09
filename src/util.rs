@@ -1,5 +1,6 @@
 use rand::prelude::*;
 use rocket::http::{Cookie, SameSite};
+use rocket::Request;
 
 // Creates random hash based on source characters
 pub fn generate_random_hash(source: &[u8], length: i32) -> String {
@@ -49,9 +50,46 @@ pub fn make_cookie<'a>(sign: String) -> Cookie<'a> {
     signature
 }
 
+/// Extract session key with a prefix from path
+///
+/// The URI path should look like:
+/// * /_/password/reset/<...>
+/// * /_/activate/<...>
+pub fn extract_session_key<'r>(req: &Request<'r>) -> String {
+    // NOTE: The part of `/_/` (empty segment) will be ignored in routed path
+    // within Segments. See below:
+    // https://api.rocket.rs/v0.4/rocket/http/uri/struct.Segments.html
+    let word = req
+        .raw_segment_str(0)
+        .map(|s| s.to_string())
+        .unwrap_or_else(|| "".to_string());
+    if word == "password" {
+        let s = req
+            .raw_segment_str(2)
+            .map(|s| s.to_string())
+            .unwrap_or_else(|| "".to_string());
+        if !s.is_empty() {
+            return format!("pr-{}", s);
+        }
+    } else if word == "activate" {
+        let s = req
+            .raw_segment_str(1)
+            .map(|s| s.to_string())
+            .unwrap_or_else(|| "".to_string());
+        if !s.is_empty() {
+            return format!("ua-{}", s);
+        }
+    }
+    "".to_string()
+}
+
 #[cfg(test)]
 mod test {
     use super::*;
+
+    use rocket::http::Method;
+    use rocket::http::uri::Origin;
+    use rocket::local::Client;
 
     #[test]
     fn test_generate_random_hash_length() {
@@ -74,5 +112,57 @@ mod test {
         for v in value.chars() {
             assert!(t.contains(v));
         }
+    }
+
+    #[test]
+    fn test_extract_session_key() {
+        let client = Client::new(rocket::ignite()).expect("valid rocket");
+
+        let local = client.req(Method::Get, "/");
+        let mut req = local.inner().clone();
+
+        let uri = Origin::parse("/").unwrap();
+        req.set_uri(uri);
+        assert_eq!(extract_session_key(&req), "");
+
+        let uri = Origin::parse("/password/reset").unwrap();
+        req.set_uri(uri);
+        assert_eq!(extract_session_key(&req), "");
+
+        let uri = Origin::parse("/password/reset/").unwrap();
+        req.set_uri(uri);
+        assert_eq!(extract_session_key(&req), "");
+
+        let uri = Origin::parse("/password/reset/123").unwrap();
+        req.set_uri(uri);
+        assert_eq!(extract_session_key(&req), "pr-123");
+
+        let uri = Origin::parse("/password/reset/123/").unwrap();
+        req.set_uri(uri);
+        assert_eq!(extract_session_key(&req), "pr-123");
+
+        let uri = Origin::parse("/password/reset/123/456").unwrap();
+        req.set_uri(uri);
+        assert_eq!(extract_session_key(&req), "pr-123");
+
+        let uri = Origin::parse("/activate").unwrap();
+        req.set_uri(uri);
+        assert_eq!(extract_session_key(&req), "");
+
+        let uri = Origin::parse("/activate/").unwrap();
+        req.set_uri(uri);
+        assert_eq!(extract_session_key(&req), "");
+
+        let uri = Origin::parse("/activate/456").unwrap();
+        req.set_uri(uri);
+        assert_eq!(extract_session_key(&req), "ua-456");
+
+        let uri = Origin::parse("/activate/456/").unwrap();
+        req.set_uri(uri);
+        assert_eq!(extract_session_key(&req), "ua-456");
+
+        let uri = Origin::parse("/activate/456/789").unwrap();
+        req.set_uri(uri);
+        assert_eq!(extract_session_key(&req), "ua-456");
     }
 }

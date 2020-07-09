@@ -13,14 +13,14 @@ fn test_register_with_validation_error() {
         let email = "postmaster@example.org";
 
         let _ = client
-            .head("/_api/register")
+            .head("/_/register")
             .header(ContentType::JSON)
             .header(Header::new("X-Requested-With", "XMLHttpRequest"))
             .body("{}")
             .dispatch();
 
         let res = client
-            .post("/_api/register")
+            .post("/_/register")
             .header(ContentType::JSON)
             .header(Header::new("X-Requested-With", "XMLHttpRequest"))
             .body(format!(
@@ -45,14 +45,14 @@ fn test_register() {
         let email = "postmaster@example.org";
 
         let _ = client
-            .head("/_api/register")
+            .head("/_/register")
             .header(ContentType::JSON)
             .header(Header::new("X-Requested-With", "XMLHttpRequest"))
             .body("{}")
             .dispatch();
 
         let res = client
-            .post("/_api/register")
+            .post("/_/register")
             .header(ContentType::JSON)
             .header(Header::new("X-Requested-With", "XMLHttpRequest"))
             .body(format!(
@@ -77,7 +77,7 @@ fn test_register() {
         assert!(!job.args.is_empty());
 
         let session_id = job.args[1].to_string();
-        let key = format!("ur-{}", session_id);
+        let key = format!("ua-{}", session_id);
 
         let result: Result<String, RedisError> = conn.ss.get(key);
         assert!(result.is_ok());

@@ -212,7 +212,7 @@ pub fn register<'a>(
                 if let Some((token, sign)) = split_token(raw_token) {
                     // TODO: use general value
                     let session_id = UserEmail::generate_token();
-                    let key = format!("ur-{}", session_id);
+                    let key = format!("ua-{}", session_id);
 
                     // Instead of saving the signature into a cookie,
                     // putting it in session store.

@@ -107,9 +107,11 @@ Vet
 Route
 ~~~~~
 
+To check current routes, run `make route`.
+
 .. code:: zsh
 
-    # check current routes
+    # print all routes
     % make route
     ...
 

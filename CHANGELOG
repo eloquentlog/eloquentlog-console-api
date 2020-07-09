@@ -1,3 +1,10 @@
+Thu 09 Jul 2020 Yasuhiro Яша Asaka <yasuhiro.asaka@grauwoelfchen.net>
+	* Separate v1 routes from internal endpoint
+	* Rename `/user/activate` to `/activate`
+	* Add health check routes
+	* Remove top
+	* Change activation token prefix as `ua-`
+
 Tue 07 Jul 2020 Yasuhiro Яша Asaka <yasuhiro.asaka@grauwoelfchen.net>
 	* Add stream and namespace
 	* Disable experimental release stage in CI

@@ -8,19 +8,19 @@ use eloquentlog_console_api::job;
 use super::run_test;
 
 #[test]
-fn test_user_activate_with_invalid_token() {
+fn test_activate_with_invalid_token() {
     run_test(|client, conn, _, logger| {
         let email = "hennry@example.org";
 
         let _ = client
-            .head("/_api/register")
+            .head("/_/register")
             .header(ContentType::JSON)
             .header(Header::new("X-Requested-With", "XMLHttpRequest"))
             .body("{}")
             .dispatch();
 
         let res = client
-            .post("/_api/register")
+            .post("/_/register")
             .header(ContentType::JSON)
             .header(Header::new("X-Requested-With", "XMLHttpRequest"))
             .body(format!(
@@ -44,7 +44,7 @@ fn test_user_activate_with_invalid_token() {
         let token = "invalid-token";
 
         let res = client
-            .patch(format!("/_api/user/activate/{}", session_id))
+            .patch(format!("/_/activate/{}", session_id))
             .header(ContentType::JSON)
             .header(Header::new("Authorization", format!("Bearer {}", token)))
             .header(Header::new("X-Requested-With", "XMLHttpRequest"))
@@ -59,19 +59,19 @@ fn test_user_activate_with_invalid_token() {
 }
 
 #[test]
-fn test_user_activate_with_invalid_session_id() {
+fn test_activate_with_invalid_session_id() {
     run_test(|client, conn, _, logger| {
         let email = "hennry@example.org";
 
         let _ = client
-            .head("/_api/register")
+            .head("/_/register")
             .header(ContentType::JSON)
             .header(Header::new("X-Requested-With", "XMLHttpRequest"))
             .body("{}")
             .dispatch();
 
         let res = client
-            .post("/_api/register")
+            .post("/_/register")
             .header(ContentType::JSON)
             .header(Header::new("X-Requested-With", "XMLHttpRequest"))
             .body(format!(
@@ -95,7 +95,7 @@ fn test_user_activate_with_invalid_session_id() {
         let token = job.args[2].to_string();
 
         let res = client
-            .patch(format!("/_api/user/activate/{}", session_id))
+            .patch(format!("/_/activate/{}", session_id))
             .header(ContentType::JSON)
             .header(Header::new("Authorization", format!("Bearer {}", token)))
             .header(Header::new("X-Requested-With", "XMLHttpRequest"))
@@ -110,19 +110,19 @@ fn test_user_activate_with_invalid_session_id() {
 }
 
 #[test]
-fn test_user_activate_without_authorization_header() {
+fn test_activate_without_authorization_header() {
     run_test(|client, conn, _, logger| {
         let email = "hennry@example.org";
 
         let _ = client
-            .head("/_api/register")
+            .head("/_/register")
             .header(ContentType::JSON)
             .header(Header::new("X-Requested-With", "XMLHttpRequest"))
             .body("{}")
             .dispatch();
 
         let res = client
-            .post("/_api/register")
+            .post("/_/register")
             .header(ContentType::JSON)
             .header(Header::new("X-Requested-With", "XMLHttpRequest"))
             .body(format!(
@@ -145,7 +145,7 @@ fn test_user_activate_without_authorization_header() {
         let session_id = job.args[1].to_string();
 
         let res = client
-            .patch(format!("/_api/user/activate/{}", session_id))
+            .patch(format!("/_/activate/{}", session_id))
             .header(ContentType::JSON)
             .header(Header::new("X-Requested-With", "XMLHttpRequest"))
             .body("{}")
@@ -159,19 +159,19 @@ fn test_user_activate_without_authorization_header() {
 }
 
 #[test]
-fn test_user_activate_without_x_requested_with_header() {
+fn test_activate_without_x_requested_with_header() {
     run_test(|client, conn, _, logger| {
         let email = "hennry@example.org";
 
         let _ = client
-            .head("/_api/register")
+            .head("/_/register")
             .header(ContentType::JSON)
             .header(Header::new("X-Requested-With", "XMLHttpRequest"))
             .body("{}")
             .dispatch();
 
         let res = client
-            .post("/_api/register")
+            .post("/_/register")
             .header(ContentType::JSON)
             .body(format!(
                 r#"{{
@@ -194,7 +194,7 @@ fn test_user_activate_without_x_requested_with_header() {
         let token = job.args[2].to_string();
 
         let res = client
-            .patch(format!("/_api/user/activate/{}", session_id))
+            .patch(format!("/_/activate/{}", session_id))
             .header(ContentType::JSON)
             .header(Header::new("Authorization", format!("Bearer {}", token)))
             .body("{}")
@@ -208,19 +208,19 @@ fn test_user_activate_without_x_requested_with_header() {
 }
 
 #[test]
-fn test_user_activate() {
+fn test_activate() {
     run_test(|client, conn, _, logger| {
         let email = "hennry@example.org";
 
         let _ = client
-            .head("/_api/register")
+            .head("/_/register")
             .header(ContentType::JSON)
             .header(Header::new("X-Requested-With", "XMLHttpRequest"))
             .body("{}")
             .dispatch();
 
         let res = client
-            .post("/_api/register")
+            .post("/_/register")
             .header(ContentType::JSON)
             .header(Header::new("X-Requested-With", "XMLHttpRequest"))
             .body(format!(
@@ -244,7 +244,7 @@ fn test_user_activate() {
         let token = job.args[2].to_string();
 
         let res = client
-            .patch(format!("/_api/user/activate/{}", session_id))
+            .patch(format!("/_/activate/{}", session_id))
             .header(ContentType::JSON)
             .header(Header::new("Authorization", format!("Bearer {}", token)))
             .header(Header::new("X-Requested-With", "XMLHttpRequest"))

@@ -18,15 +18,16 @@ extern crate uuid;
 #[macro_use]
 extern crate eloquentlog_console_api;
 
-mod access_token;
+mod activation;
 mod authentication;
-mod message;
 mod error;
+mod health;
 mod registration;
-mod top;
-mod user;
 mod password_reset;
 mod password_reset_request;
+
+mod access_token;
+mod message;
 
 use std::panic::{self, AssertUnwindSafe};
 use regex::Regex;

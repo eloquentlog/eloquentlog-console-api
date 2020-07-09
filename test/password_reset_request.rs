@@ -16,14 +16,14 @@ fn test_password_reset_request_with_validation_error() {
         let email = "invalid";
 
         let _ = client
-            .head("/_api/password/reset/")
+            .head("/_/password/reset/")
             .header(ContentType::JSON)
             .header(Header::new("X-Requested-With", "XMLHttpRequest"))
             .body("{}")
             .dispatch();
 
         let res = client
-            .put("/_api/passord/reset")
+            .put("/_/passord/reset")
             .header(ContentType::JSON)
             .header(Header::new("X-Requested-With", "XMLHttpRequest"))
             .body(format!(
@@ -50,14 +50,14 @@ fn test_password_reset_request() {
         let email = user.email;
 
         let _ = client
-            .head("/_api/password/reset/")
+            .head("/_/password/reset/")
             .header(ContentType::JSON)
             .header(Header::new("X-Requested-With", "XMLHttpRequest"))
             .body("{}")
             .dispatch();
 
         let res = client
-            .put("/_api/password/reset")
+            .put("/_/password/reset")
             .header(ContentType::JSON)
             .header(Header::new("X-Requested-With", "XMLHttpRequest"))
             .body(format!(

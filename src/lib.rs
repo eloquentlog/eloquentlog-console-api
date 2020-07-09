@@ -73,19 +73,10 @@ macro_rules! fnvhashmap(
 pub fn routes() -> Vec<(&'static str, Vec<rocket::Route>)> {
     let mut r = vec![
         (
-            "/v1",
+            "/_", // only for web-console
             routes![
-                route::top::index,
-                route::message::preflight::append,
-                route::message::preflight::lrange,
-                route::message::append,
-                route::message::lrange,
-            ],
-        ),
-        (
-            "/_api",
-            routes![
-                // foundation
+                route::activation::preflight::activate,
+                route::activation::activate,
                 route::authentication::preflight::login,
                 route::authentication::preflight::logout,
                 route::authentication::preignition::login,
@@ -104,9 +95,12 @@ pub fn routes() -> Vec<(&'static str, Vec<rocket::Route>)> {
                 route::registration::preignition::deregister,
                 route::registration::deregister,
                 route::registration::register,
-                route::user::preflight::activate,
-                route::user::activate,
-                // resource
+                route::health::check,
+            ],
+        ),
+        (
+            "/v1", // public console api
+            routes![
                 route::access_token::preflight::del,
                 route::access_token::preflight::dump,
                 route::access_token::preflight::hset_state,
@@ -117,6 +111,11 @@ pub fn routes() -> Vec<(&'static str, Vec<rocket::Route>)> {
                 route::access_token::hset_state,
                 route::access_token::append,
                 route::access_token::lrange,
+                route::message::preflight::append,
+                route::message::preflight::lrange,
+                route::message::append,
+                route::message::lrange,
+                route::health::check,
             ],
         ),
     ];
@@ -127,8 +126,8 @@ pub fn routes() -> Vec<(&'static str, Vec<rocket::Route>)> {
 pub fn server() -> rocket::Rocket {
     let r: HashMap<&str, Vec<_>> = routes().iter().cloned().collect();
     rocket::ignite()
+        .mount("/_", r["/_"].clone())
         .mount("/v1", r["/v1"].clone())
-        .mount("/_api", r["/_api"].clone())
         .register(catchers![
             route::error::bad_request,
             route::error::internal_server_error,
