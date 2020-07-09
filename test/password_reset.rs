@@ -13,14 +13,14 @@ fn password_reset_request_by(
 ) -> Result<(), ()>
 {
     let _ = client
-        .head("/_api/password/reset")
+        .head("/_/password/reset")
         .header(ContentType::JSON)
         .header(Header::new("X-Requested-With", "XMLHttpRequest"))
         .body("{}")
         .dispatch();
 
     let res = client
-        .put("/_api/password/reset")
+        .put("/_/password/reset")
         .header(ContentType::JSON)
         .header(Header::new("X-Requested-With", "XMLHttpRequest"))
         .body(format!(
@@ -54,7 +54,7 @@ fn test_password_reset_with_invalid_token() {
         let token = "invalid-token";
 
         let res = client
-            .get(format!("/_api/password/reset/{}", session_id))
+            .get(format!("/_/password/reset/{}", session_id))
             .header(ContentType::JSON)
             .header(Header::new("Authorization", format!("Bearer {}", token)))
             .header(Header::new("X-Requested-With", "XMLHttpRequest"))
@@ -62,7 +62,7 @@ fn test_password_reset_with_invalid_token() {
         assert_eq!(res.status(), Status::NotFound);
 
         let _ = client
-            .head(format!("/_api/password/reset/{}", session_id))
+            .head(format!("/_/password/reset/{}", session_id))
             .header(ContentType::JSON)
             .header(Header::new("Authorization", format!("Bearer {}", token)))
             .header(Header::new("X-Requested-With", "XMLHttpRequest"))
@@ -70,7 +70,7 @@ fn test_password_reset_with_invalid_token() {
             .dispatch();
 
         let res = client
-            .patch(format!("/_api/password/reset/{}", session_id))
+            .patch(format!("/_/password/reset/{}", session_id))
             .header(ContentType::JSON)
             .header(Header::new("Authorization", format!("Bearer {}", token)))
             .header(Header::new("X-Requested-With", "XMLHttpRequest"))
@@ -106,7 +106,7 @@ fn test_password_reset_with_invalid_session_id() {
         let token = job.args[2].to_string();
 
         let res = client
-            .get(format!("/_api/password/reset/{}", session_id))
+            .get(format!("/_/password/reset/{}", session_id))
             .header(ContentType::JSON)
             .header(Header::new("Authorization", format!("Bearer {}", token)))
             .header(Header::new("X-Requested-With", "XMLHttpRequest"))
@@ -114,7 +114,7 @@ fn test_password_reset_with_invalid_session_id() {
         assert_eq!(res.status(), Status::NotFound);
 
         let _ = client
-            .head(format!("/_api/password/reset/{}", session_id))
+            .head(format!("/_/password/reset/{}", session_id))
             .header(ContentType::JSON)
             .header(Header::new("Authorization", format!("Bearer {}", token)))
             .header(Header::new("X-Requested-With", "XMLHttpRequest"))
@@ -122,7 +122,7 @@ fn test_password_reset_with_invalid_session_id() {
             .dispatch();
 
         let res = client
-            .patch(format!("/_api/password/reset/{}", session_id))
+            .patch(format!("/_/password/reset/{}", session_id))
             .header(ContentType::JSON)
             .header(Header::new("Authorization", format!("Bearer {}", token)))
             .header(Header::new("X-Requested-With", "XMLHttpRequest"))
@@ -158,21 +158,21 @@ fn test_password_reset_without_authorization_header() {
         let session_id = job.args[1].to_string();
 
         let res = client
-            .get(format!("/_api/password/reset/{}", session_id))
+            .get(format!("/_/password/reset/{}", session_id))
             .header(ContentType::JSON)
             .header(Header::new("X-Requested-With", "XMLHttpRequest"))
             .dispatch();
         assert_eq!(res.status(), Status::BadRequest);
 
         let _ = client
-            .head(format!("/_api/password/reset/{}", session_id))
+            .head(format!("/_/password/reset/{}", session_id))
             .header(ContentType::JSON)
             .header(Header::new("X-Requested-With", "XMLHttpRequest"))
             .body("{}")
             .dispatch();
 
         let res = client
-            .patch(format!("/_api/password/reset/{}", session_id))
+            .patch(format!("/_/password/reset/{}", session_id))
             .header(ContentType::JSON)
             .header(Header::new("X-Requested-With", "XMLHttpRequest"))
             .body(
@@ -208,21 +208,21 @@ fn test_password_reset_without_x_requested_with_header() {
         let token = job.args[1].to_string();
 
         let res = client
-            .get(format!("/_api/password/reset/{}", session_id))
+            .get(format!("/_/password/reset/{}", session_id))
             .header(ContentType::JSON)
             .header(Header::new("Authorization", format!("Bearer {}", token)))
             .dispatch();
         assert_eq!(res.status(), Status::BadRequest);
 
         let _ = client
-            .head(format!("/_api/password/reset/{}", session_id))
+            .head(format!("/_/password/reset/{}", session_id))
             .header(ContentType::JSON)
             .header(Header::new("Authorization", format!("Bearer {}", token)))
             .body("{}")
             .dispatch();
 
         let res = client
-            .patch(format!("/_api/password/reset/{}", session_id))
+            .patch(format!("/_/password/reset/{}", session_id))
             .header(ContentType::JSON)
             .header(Header::new("Authorization", format!("Bearer {}", token)))
             .body(
@@ -258,7 +258,7 @@ fn test_password_reset() {
         let token = job.args[2].to_string();
 
         let res = client
-            .get(format!("/_api/password/reset/{}", session_id))
+            .get(format!("/_/password/reset/{}", session_id))
             .header(ContentType::JSON)
             .header(Header::new("Authorization", format!("Bearer {}", token)))
             .header(Header::new("X-Requested-With", "XMLHttpRequest"))
@@ -266,7 +266,7 @@ fn test_password_reset() {
         assert_eq!(res.status(), Status::Ok);
 
         let _ = client
-            .head(format!("/_api/password/reset/{}", session_id))
+            .head(format!("/_/password/reset/{}", session_id))
             .header(ContentType::JSON)
             .header(Header::new("Authorization", format!("Bearer {}", token)))
             .header(Header::new("X-Requested-With", "XMLHttpRequest"))
@@ -274,7 +274,7 @@ fn test_password_reset() {
             .dispatch();
 
         let res = client
-            .patch(format!("/_api/password/reset/{}", session_id))
+            .patch(format!("/_/password/reset/{}", session_id))
             .header(ContentType::JSON)
             .header(Header::new("Authorization", format!("Bearer {}", token)))
             .header(Header::new("X-Requested-With", "XMLHttpRequest"))

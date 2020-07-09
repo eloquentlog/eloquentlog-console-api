@@ -18,14 +18,14 @@ fn test_lrange_no_message() {
         let user = load_user(u, conn.db);
 
         let _ = client
-            .head("/_api/login/")
+            .head("/_/login/")
             .header(ContentType::JSON)
             .header(Header::new("X-Requested-With", "XMLHttpRequest"))
             .body("{}")
             .dispatch();
 
         let mut res = client
-            .post("/_api/login")
+            .post("/_/login")
             .header(ContentType::JSON)
             .header(Header::new("X-Requested-With", "XMLHttpRequest"))
             .body(format!(
@@ -66,14 +66,14 @@ fn test_lrange_messages() {
         let user = load_user(u, conn.db);
 
         let _ = client
-            .head("/_api/login/")
+            .head("/_/login/")
             .header(ContentType::JSON)
             .header(Header::new("X-Requested-With", "XMLHttpRequest"))
             .body("{}")
             .dispatch();
 
         let mut res = client
-            .post("/_api/login")
+            .post("/_/login")
             .header(ContentType::JSON)
             .header(Header::new("X-Requested-With", "XMLHttpRequest"))
             .body(format!(
@@ -175,14 +175,14 @@ fn test_append_with_validation_errors() {
         let user = load_user(u, conn.db);
 
         let _ = client
-            .head("/_api/login/")
+            .head("/_/login/")
             .header(ContentType::JSON)
             .header(Header::new("X-Requested-With", "XMLHttpRequest"))
             .body("{}")
             .dispatch();
 
         let mut res = client
-            .post("/_api/login")
+            .post("/_/login")
             .header(ContentType::JSON)
             .header(Header::new("X-Requested-With", "XMLHttpRequest"))
             .body(format!(
@@ -234,14 +234,14 @@ fn test_append() {
         let user = load_user(u, conn.db);
 
         let _ = client
-            .head("/_api/login/")
+            .head("/_/login/")
             .header(ContentType::JSON)
             .header(Header::new("X-Requested-With", "XMLHttpRequest"))
             .body("{}")
             .dispatch();
 
         let mut res = client
-            .post("/_api/login")
+            .post("/_/login")
             .header(ContentType::JSON)
             .header(Header::new("X-Requested-With", "XMLHttpRequest"))
             .body(format!(

@@ -15,7 +15,7 @@ pub mod preflight {
     use rocket_slog::SyncLogger;
     use crate::response::no_content_for;
 
-    #[options("/user/activate/<session_id>")]
+    #[options("/activate/<session_id>")]
     pub fn activate<'a>(
         session_id: String,
         logger: SyncLogger,
@@ -26,7 +26,7 @@ pub mod preflight {
     }
 }
 
-#[patch("/user/activate/<session_id>")]
+#[patch("/activate/<session_id>")]
 pub fn activate(
     session_id: String,
     token: VerificationToken,

@@ -6,7 +6,6 @@ use std::ops::Deref;
 
 use redis::{Commands, RedisError};
 use rocket::{Request, State};
-use rocket::http::RawStr;
 use rocket::request::{FromRequest, Outcome};
 use rocket_slog::SyncLogger;
 
@@ -14,6 +13,7 @@ use crate::config::Config;
 use crate::model::token::VerificationClaims;
 use crate::request::token::{AUTHORIZATION_HEADER_PREFIX, verify_token};
 use crate::ss::SsConn;
+use crate::util::extract_session_key;
 
 use crate::{bad_request_by, not_found_by};
 
@@ -67,26 +67,7 @@ impl<'a, 'r> FromRequest<'a, 'r> for VerificationToken {
                 // NOTE:
                 // append signature taken by using session id to the parts
                 // extracted from authorization header.
-                //
-                // URL looks like:
-                // * /_api/password/reset/<...>
-                // * /_api/user/activate/<...>
-                let key: String = req
-                    .get_param(2)
-                    .and_then(|r: Result<&'a RawStr, _>| {
-                        let session_id = r.ok().unwrap();
-
-                        let path = req.uri().path();
-                        if path.starts_with("/_api/password/reset/") {
-                            Some(format!("pr-{}", session_id))
-                        } else if path.starts_with("/_api/user/activate/") {
-                            Some(format!("ur-{}", session_id))
-                        } else {
-                            None
-                        }
-                    })
-                    .unwrap_or_else(|| "".to_string());
-
+                let key = extract_session_key(req);
                 if key.is_empty() {
                     return not_found_by!(VerificationTokenError::Invalid);
                 }

@@ -1,11 +1,11 @@
 pub mod access_token;
+pub mod activation;
 pub mod authentication;
 pub mod error;
+pub mod health;
 pub mod message;
 pub mod password_reset;
 pub mod registration;
-pub mod top;
-pub mod user;
 
 // TODO
 pub const MAX_AGE: &str = "10800"; // 3 hours

@@ -12,14 +12,14 @@ fn test_login_with_wrong_username() {
         let password = "pa$$w0rD";
 
         let _ = client
-            .head("/_api/register")
+            .head("/_/register")
             .header(ContentType::JSON)
             .header(Header::new("X-Requested-With", "XMLHttpRequest"))
             .body("{}")
             .dispatch();
 
         let res = client
-            .post("/_api/register")
+            .post("/_/register")
             .header(ContentType::JSON)
             .header(Header::new("X-Requested-With", "XMLHttpRequest"))
             .body(format!(
@@ -44,7 +44,7 @@ fn test_login_with_wrong_username() {
         let token = job.args[2].to_string();
 
         let res = client
-            .patch(format!("/_api/user/activate/{}", session_id))
+            .patch(format!("/_/activate/{}", session_id))
             .header(ContentType::JSON)
             .header(Header::new("Authorization", format!("Bearer {}", token)))
             .header(Header::new("X-Requested-With", "XMLHttpRequest"))
@@ -54,14 +54,14 @@ fn test_login_with_wrong_username() {
         assert_eq!(res.status(), Status::Ok);
 
         let _ = client
-            .head("/_api/login/")
+            .head("/_/login/")
             .header(ContentType::JSON)
             .header(Header::new("X-Requested-With", "XMLHttpRequest"))
             .body("{}")
             .dispatch();
 
         let res = client
-            .post("/_api/login")
+            .post("/_/login")
             .header(ContentType::JSON)
             .body(format!(
                 r#"{{
@@ -83,14 +83,14 @@ fn test_login_with_wrong_password() {
         let password = "pa$$w0rD";
 
         let _ = client
-            .head("/_api/register")
+            .head("/_/register")
             .header(ContentType::JSON)
             .header(Header::new("X-Requested-With", "XMLHttpRequest"))
             .body("{}")
             .dispatch();
 
         let res = client
-            .post("/_api/register")
+            .post("/_/register")
             .header(ContentType::JSON)
             .header(Header::new("X-Requested-With", "XMLHttpRequest"))
             .body(format!(
@@ -115,7 +115,7 @@ fn test_login_with_wrong_password() {
         let token = job.args[2].to_string();
 
         let res = client
-            .patch(format!("/_api/user/activate/{}", session_id))
+            .patch(format!("/_/activate/{}", session_id))
             .header(ContentType::JSON)
             .header(Header::new("Authorization", format!("Bearer {}", token)))
             .header(Header::new("X-Requested-With", "XMLHttpRequest"))
@@ -125,14 +125,14 @@ fn test_login_with_wrong_password() {
         assert_eq!(res.status(), Status::Ok);
 
         let _ = client
-            .head("/_api/login/")
+            .head("/_/login/")
             .header(ContentType::JSON)
             .header(Header::new("X-Requested-With", "XMLHttpRequest"))
             .body("{}")
             .dispatch();
 
         let res = client
-            .post("/_api/login")
+            .post("/_/login")
             .header(ContentType::JSON)
             .body(format!(
                 r#"{{
@@ -154,14 +154,14 @@ fn test_login() {
         let password = "pa$$w0rD";
 
         let _ = client
-            .head("/_api/register")
+            .head("/_/register")
             .header(ContentType::JSON)
             .header(Header::new("X-Requested-With", "XMLHttpRequest"))
             .body("{}")
             .dispatch();
 
         let res = client
-            .post("/_api/register")
+            .post("/_/register")
             .header(ContentType::JSON)
             .header(Header::new("X-Requested-With", "XMLHttpRequest"))
             .body(format!(
@@ -186,7 +186,7 @@ fn test_login() {
         let token = job.args[2].to_string();
 
         let res = client
-            .patch(format!("/_api/user/activate/{}", session_id))
+            .patch(format!("/_/activate/{}", session_id))
             .header(ContentType::JSON)
             .header(Header::new("Authorization", format!("Bearer {}", token)))
             .header(Header::new("X-Requested-With", "XMLHttpRequest"))
@@ -196,14 +196,14 @@ fn test_login() {
         assert_eq!(res.status(), Status::Ok);
 
         let _ = client
-            .head("/_api/login/")
+            .head("/_/login/")
             .header(ContentType::JSON)
             .header(Header::new("X-Requested-With", "XMLHttpRequest"))
             .body("{}")
             .dispatch();
 
         let res = client
-            .post("/_api/login")
+            .post("/_/login")
             .header(ContentType::JSON)
             .header(Header::new("X-Requested-With", "XMLHttpRequest"))
             .body(format!(
