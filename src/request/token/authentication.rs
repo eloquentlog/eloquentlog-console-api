@@ -87,6 +87,7 @@ impl<'a, 'r> FromRequest<'a, 'r> for AuthenticationToken {
                 }
 
                 if token.is_empty() {
+                    error!(logger, "cookie is empty");
                     return unauthorized_by!(AuthenticationTokenError::Invalid);
                 }
 

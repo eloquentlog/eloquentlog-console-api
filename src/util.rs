@@ -42,12 +42,13 @@ pub fn split_token(token: String) -> Option<(String, String)> {
 pub fn make_cookie<'a>(sign: String) -> Cookie<'a> {
     // TODO:
     // consider about extension (re-set it again?)
-    let mut signature = Cookie::new("sign", sign);
-    signature.set_domain("127.0.0.1");
-    signature.set_same_site(SameSite::Strict);
-    signature.set_secure(false); // FIXME
-    signature.set_http_only(true);
-    signature
+    let mut sig = Cookie::new("sign", sign);
+    sig.set_domain("127.0.0.1");
+    sig.set_path("/");
+    sig.set_same_site(SameSite::Strict);
+    sig.set_secure(false); // FIXME
+    sig.set_http_only(true);
+    sig
 }
 
 /// Extract session key with a prefix from path
