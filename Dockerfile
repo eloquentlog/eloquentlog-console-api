@@ -16,7 +16,7 @@ RUN set -eux; \
   libssl-dev \
   pkg-config \
   \
-  libpq-dev=11.5-1+deb10u1
+  libpq-dev=11.7-0+deb10u1
 
 COPY . .
 
@@ -36,7 +36,7 @@ RUN set -eux; \
   DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
   ca-certificates \
   \
-  libpq5=11.5-1+deb10u1
+  libpq5=11.7-0+deb10u1
 
 COPY --from=builder /build/target/release/${BINARY} .
 
