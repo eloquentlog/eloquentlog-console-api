@@ -96,6 +96,22 @@ table! {
 
 table! {
     use diesel::sql_types::*;
+
+    use crate::model::membership::EMembershipRole;
+
+    memberships (id) {
+        id -> Int8,
+        namespace_id -> Int8,
+        user_id -> Int8,
+        role -> EMembershipRole,
+        revoked_at -> Nullable<Timestamp>,
+        created_at -> Timestamp,
+        updated_at -> Timestamp,
+    }
+}
+
+table! {
+    use diesel::sql_types::*;
     use diesel::pg::types::sql_types::Uuid;
 
     use crate::model::access_token::{EAccessTokenState, EAgentType};
@@ -117,8 +133,14 @@ table! {
 joinable!(user_emails -> users (user_id));
 joinable!(streams -> namespaces (namespace_id));
 joinable!(messages -> streams (stream_id));
+joinable!(memberships -> namespaces (namespace_id));
+joinable!(memberships -> users (user_id));
 
-allow_tables_to_appear_in_same_query!(users, user_emails);
 allow_tables_to_appear_in_same_query!(users, access_tokens);
+allow_tables_to_appear_in_same_query!(users, memberships);
+allow_tables_to_appear_in_same_query!(users, user_emails);
+
+allow_tables_to_appear_in_same_query!(namespaces, memberships);
 allow_tables_to_appear_in_same_query!(namespaces, streams);
+
 allow_tables_to_appear_in_same_query!(streams, messages);
