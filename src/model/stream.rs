@@ -228,7 +228,7 @@ mod test {
         };
 
         assert_eq!(at.namespace_id, -1);
-        assert_eq!(at.name, "".to_string());
+        assert_eq!(at.name, "main".to_string());
         assert_eq!(at.description, None);
     }
 
@@ -273,7 +273,7 @@ mod test {
 
             let s = NewStream {
                 namespace_id: namespace.id,
-                name: "".to_string(),
+                name: "awesome-melody".to_string(),
                 description: None,
             };
 
