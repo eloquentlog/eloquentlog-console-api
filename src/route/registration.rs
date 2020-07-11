@@ -11,6 +11,9 @@ use crate::config::Config;
 use crate::db::DbConn;
 use crate::job::{Job, JobKind};
 use crate::model::token::{VerificationClaims, Claims, TokenData};
+use crate::model::namespace::{Namespace, NewNamespace};
+use crate::model::membership::{Membership, NewMembership};
+use crate::model::stream::{Stream, NewStream};
 use crate::model::user::{NewUser, User};
 use crate::model::user_email::{NewUserEmail, UserEmail};
 use crate::mq::MqConn;
@@ -180,6 +183,24 @@ pub fn register<'a>(
                     let ue = NewUserEmail::from(&user);
                     let user_email =
                         UserEmail::insert(&ue, &db_conn, &logger).unwrap();
+
+                    {
+                        // TODO: async
+                        let mut ns = NewNamespace::default();
+                        ns.name = format!("{}'s default namespace", u.username);
+                        let namespace =
+                            Namespace::insert(&ns, &db_conn, &logger).unwrap();
+
+                        let mut s = NewStream::default();
+                        s.namespace_id = namespace.id;
+                        let _ = Stream::insert(&s, &db_conn, &logger).unwrap();
+
+                        let mut m = NewMembership::default();
+                        m.namespace_id = namespace.id;
+                        m.user_id = user.id;
+                        let _ =
+                            Membership::insert(&m, &db_conn, &logger).unwrap();
+                    }
 
                     let data = TokenData {
                         value: UserEmail::generate_token(),

@@ -25,7 +25,7 @@ impl Default for NewStream {
     fn default() -> Self {
         Self {
             namespace_id: -1,
-            name: "".to_string(),
+            name: "main".to_string(),
             description: None,
         }
     }
