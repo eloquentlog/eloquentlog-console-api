@@ -9,12 +9,11 @@ pub mod preflight {
     use rocket::response::Response as RawResponse;
     use rocket_slog::SyncLogger;
 
-    use crate::model::user::User;
     use crate::response::no_content_for;
 
     #[options("/namespace/hgetall")]
-    pub fn hgetall<'a>(user: &User, logger: SyncLogger) -> RawResponse<'a> {
-        info!(logger, "user: {}", user.uuid);
+    pub fn hgetall<'a>(logger: SyncLogger) -> RawResponse<'a> {
+        info!(logger, "hgetall");
         no_content_for("GET")
     }
 }

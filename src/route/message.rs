@@ -15,12 +15,10 @@ pub mod preflight {
     use rocket::response::Response as RawResponse;
     use rocket_slog::SyncLogger;
 
-    use crate::model::user::User;
     use crate::response::no_content_for;
 
     #[options("/message/<namespace_key>/append/<stream_slug>")]
     pub fn append<'a>(
-        user: &User,
         namespace_key: String,
         stream_slug: String,
         logger: SyncLogger,
@@ -28,17 +26,13 @@ pub mod preflight {
     {
         info!(
             logger,
-            "user: {}, namespace: {}, stream: {}",
-            user.uuid,
-            namespace_key,
-            stream_slug
+            "namespace: {}, stream: {}", namespace_key, stream_slug
         );
         no_content_for("POST")
     }
 
     #[options("/message/<namespace_key>/lrange/<stream_slug>/<start>/<stop>")]
     pub fn lrange<'a>(
-        user: &User,
         namespace_key: String,
         stream_slug: String,
         start: i64,
@@ -48,8 +42,7 @@ pub mod preflight {
     {
         info!(
             logger,
-            "user: {}, namespace: {}, stream: {}, start: {}, stop: {}",
-            user.uuid,
+            "namespace: {}, stream: {}, start: {}, stop: {}",
             namespace_key,
             stream_slug,
             start,
