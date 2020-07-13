@@ -92,7 +92,6 @@ pub fn routes() -> Vec<(&'static str, Vec<rocket::Route>)> {
                 route::registration::preflight::deregister,
                 route::registration::preflight::register,
                 route::registration::preignition::register,
-                route::registration::preignition::deregister,
                 route::registration::deregister,
                 route::registration::register,
                 route::health::check,
