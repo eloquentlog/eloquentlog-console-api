@@ -28,6 +28,7 @@ mod password_reset_request;
 
 mod access_token;
 mod message;
+mod namespace;
 
 use std::panic::{self, AssertUnwindSafe};
 use regex::Regex;
@@ -189,6 +190,8 @@ pub fn get_ss_conn(holder: &ss::SsPoolHolder) -> ss::SsConn {
 type NamespaceFixture = FnvHashMap<&'static str, model::namespace::Namespace>;
 type StreamFixture = FnvHashMap<&'static str, model::stream::Stream>;
 type UserFixture = FnvHashMap<&'static str, model::user::User>;
+type MembershipFixture =
+    FnvHashMap<&'static str, model::membership::Membership>;
 
 lazy_static! {
     pub static ref STREAMS: StreamFixture = fnvhashmap! {
@@ -207,7 +210,7 @@ lazy_static! {
         "piano" => model::namespace::Namespace {
             id: 1,
             uuid: Uuid::new_v4(),
-            name: "oswald".to_string(),
+            name: "piano".to_string(),
             description: Some("description".to_string()),
             streams_count: 0,
             archived_at: None,
@@ -228,6 +231,17 @@ lazy_static! {
             reset_password_token: None,
             reset_password_token_expires_at: None,
             reset_password_token_granted_at: None,
+            created_at: Utc.ymd(2019, 7, 7).and_hms(7, 20, 15).naive_utc(),
+            updated_at: Utc.ymd(2019, 7, 7).and_hms(7, 20, 15).naive_utc(),
+        }
+    };
+    pub static ref MEMBERSHIPS: MembershipFixture = fnvhashmap! {
+        "oswald as a primary owner" => model::membership::Membership {
+            id: 1,
+            namespace_id: 1,
+            user_id: 1,
+            role: model::membership::MembershipRole::PrimaryOwner,
+            revoked_at: None,
             created_at: Utc.ymd(2019, 7, 7).and_hms(7, 20, 15).naive_utc(),
             updated_at: Utc.ymd(2019, 7, 7).and_hms(7, 20, 15).naive_utc(),
         }

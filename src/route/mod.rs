@@ -4,6 +4,7 @@ pub mod authentication;
 pub mod error;
 pub mod health;
 pub mod message;
+pub mod namespace;
 pub mod password_reset;
 pub mod registration;
 
