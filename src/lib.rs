@@ -115,6 +115,8 @@ pub fn routes() -> Vec<(&'static str, Vec<rocket::Route>)> {
                 route::message::preflight::lrange,
                 route::message::append,
                 route::message::lrange,
+                route::namespace::preflight::hgetall,
+                route::namespace::hgetall,
                 route::health::check,
             ],
         ),

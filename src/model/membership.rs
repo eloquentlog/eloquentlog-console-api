@@ -2,6 +2,7 @@ use std::fmt;
 
 use chrono::NaiveDateTime;
 use diesel::{Associations, Identifiable, Queryable, debug_query, prelude::*};
+use diesel::dsl;
 use diesel::pg::{Pg, PgConnection};
 
 pub use crate::model::membership_role::*;
@@ -62,6 +63,8 @@ impl Clone for Membership {
     }
 }
 
+pub type WithUser = dsl::Eq<memberships::user_id, i64>;
+
 impl Membership {
     pub fn find_by_id(
         id: i64,
@@ -104,5 +107,53 @@ impl Membership {
             },
             Ok(u) => Some(u),
         }
+    }
+
+    pub fn with_user(user: &User) -> WithUser {
+        memberships::user_id.eq(user.id)
+    }
+}
+
+#[cfg(test)]
+pub mod data {
+    use super::*;
+
+    use chrono::{Utc, TimeZone};
+    use fnv::FnvHashMap;
+
+    use crate::fnvhashmap;
+
+    type MembershipFixture = FnvHashMap<&'static str, Membership>;
+
+    lazy_static! {
+        pub static ref MEMBERSHIPS: MembershipFixture = fnvhashmap! {
+            "oswald as a primary owner" => Membership {
+                id: 1,
+                namespace_id: 1,
+                user_id: 1,
+                role: MembershipRole::PrimaryOwner,
+                revoked_at: None,
+                created_at: Utc.ymd(2019, 7, 7).and_hms(7, 20, 15).naive_utc(),
+                updated_at: Utc.ymd(2019, 7, 7).and_hms(7, 20, 15).naive_utc(),
+            },
+            "weenie as a primary owner" => Membership {
+                id: 2,
+                namespace_id: 2,
+                user_id: 2,
+                role: MembershipRole::PrimaryOwner,
+                revoked_at: None,
+                created_at: Utc.ymd(2019, 7, 7).and_hms(7, 20, 15).naive_utc(),
+                updated_at: Utc.ymd(2019, 7, 7).and_hms(7, 20, 15).naive_utc(),
+            },
+            "henry as a primary owner" => Membership {
+                id: 3,
+                namespace_id: 3,
+                user_id: 3,
+                role: MembershipRole::PrimaryOwner,
+                revoked_at: None,
+                created_at: Utc.ymd(2019, 7, 7).and_hms(7, 20, 15).naive_utc(),
+                updated_at: Utc.ymd(2019, 7, 7).and_hms(7, 20, 15).naive_utc(),
+            }
+        };
     }
 }
