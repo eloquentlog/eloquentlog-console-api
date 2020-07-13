@@ -29,7 +29,7 @@ pub mod preflight {
 
     #[options("/register")]
     pub fn register<'a>() -> RawResponse<'a> {
-        no_content_for("POST")
+        no_content_for("HEAD,POST")
     }
 
     #[options("/deregister")]
@@ -83,43 +83,6 @@ pub mod preignition {
             return res.status(Status::Ok);
         }
         error!(logger, "something went wrong on register");
-        res.status(Status::InternalServerError)
-    }
-
-    #[head("/deregister", format = "json")]
-    pub fn deregister<'a>(
-        mut cookies: Cookies,
-        logger: SyncLogger,
-        mut ss_conn: SsConn,
-    ) -> Response<'a>
-    {
-        // returns CSRF token
-        let res: Response = Default::default();
-        info!(logger, "preignition");
-
-        let duration = Duration::minutes(Config::CSRF_HASH_DURATION);
-        let expires_at = (Utc::now() + duration).timestamp();
-        let key_value = generate_random_hash(
-            Config::CSRF_HASH_SOURCE,
-            Config::CSRF_HASH_LENGTH,
-        );
-        let key = format!("xs-{}", key_value);
-        let value = "1";
-        let result: Result<String, RedisError> = ss_conn
-            .set_ex(&key, value, expires_at as usize)
-            .map_err(|e| {
-                error!(logger, "error: {}", e);
-                e
-            });
-        if result.is_ok() {
-            let mut cookie = Cookie::new("csrf_token", key);
-            cookie.set_http_only(true);
-            cookie.set_secure(false); // TODO
-            cookie.set_same_site(SameSite::Strict);
-            cookies.add_private(cookie);
-            return res.status(Status::Ok);
-        }
-        error!(logger, "something went wrong on deregister");
         res.status(Status::InternalServerError)
     }
 }
