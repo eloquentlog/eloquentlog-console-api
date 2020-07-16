@@ -544,7 +544,7 @@ dependencies = [
  "parking_lot 0.7.1",
  "proctitle",
  "r2d2_redis",
- "rand 0.6.5",
+ "rand 0.7.3",
  "redis",
  "regex 0.2.11",
  "rocket",
