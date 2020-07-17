@@ -9,7 +9,7 @@ steps:
         docker pull ${_REGISTRY_HOST}/$PROJECT_ID/${_SERVICE_NAME}:latest || \
         exit 0
 
-  - id: 'latest'
+  - id: 'build'
     name: 'gcr.io/cloud-builders/docker'
     args:
       - 'build'
@@ -24,9 +24,17 @@ steps:
       - '.'
     wait_for: ['cache']
 
-  - name: 'gcr.io/cloud-builders/gcloud'
+  - id: 'push'
+    name: 'gcr.io/cloud-builders/docker'
     args:
-      - 'beta'
+      - 'push'
+      - '${_REGISTRY_HOST}/$PROJECT_ID/${_SERVICE_NAME}:latest'
+    wait_for: ['build']
+
+  - id: 'run'
+    name: 'gcr.io/google/com/cloudsdktool/cloud-sdk'
+    entrypoint: 'gcloud'
+    args:
       - 'run'
       - 'deploy'
       - '${_SERVICE_NAME}'
@@ -38,41 +46,44 @@ steps:
       - 'managed'
       - '--add-cloudsql-instances'
       - '${_POSTGRES_INSTANCE}'
-      - '--allow-unauthenticated'
+      - '--vpc-connector'
+      - '${_REDIS_CONNECTOR}'
       - '--set-env-vars'
       - >-
+        INSTANCE_CONNECTION_NAME=${_POSTGRES_INSTANCE},
         ENV=${_ENV},
-        _ROCKET_HOST=${_ROCKET_HOST},
-        _ROCKET_PORT=${_ROCKET_PORT},
-        _ROCKET_CLI_COLORS=${_ROCKET_CLI_COLORS},
-        _ROCKET_KEEP_ALIVE=${_ROCKET_KEEP_ALIVE},
-        _APPLICATION_URL=${_APPLICATION_URL},
-        _AUTHENTICATION_TOKEN_ISSUER=${_AUTHENTICATION_TOKEN_ISSUER},
-        _AUTHENTICATION_TOKEN_KEY_ID=${_AUTHENTICATION_TOKEN_KEY_ID},
-        _AUTHENTICATION_TOKEN_SECRET=${_AUTHENTICATION_TOKEN_SECRET},
-        _DATABASE_URL=${_DATABASE_URL},
-        _MAILER_DOMAIN=${_MAILER_DOMAIN},
-        _MAILER_FROM_EMAIL=${_MAILER_FROM_EMAIL},
-        _MAILER_FROM_ALIAS=${_MAILER_FROM_ALIAS},
-        _MAILER_SMTP_HOST=${_MAILER_SMTP_HOST},
-        _MAILER_SMTP_PORT=${_MAILER_SMTP_PORT},
-        _MAILER_SMTP_USERNAME=${_MAILER_SMTP_USERNAME},
-        _MAILER_SMTP_PASSWORD=${_MAILER_SMTP_PASSWORD},
-        _MESSAGE_QUEUE_URL=${_MESSAGE_QUEUE_URL},
-        _SESSION_STORE_URL=${_SESSION_STORE_URL},
-        _VERIFICATION_TOKEN_ISSUER=${_VERIFICATION_TOKEN_ISSUER},
-        _VERIFICATION_TOKEN_KEY_ID=${_VERIFICATION_TOKEN_KEY_ID},
-        _VERIFICATION_TOKEN_SECRET=${_VERIFICATION_TOKEN_SECRET}
-    wait_for: ['latest']
+        ROCKET_HOST=${_ROCKET_HOST},
+        ROCKET_PORT=${_ROCKET_PORT},
+        ROCKET_CLI_COLORS=${_ROCKET_CLI_COLORS},
+        ROCKET_KEEP_ALIVE=${_ROCKET_KEEP_ALIVE},
+        APPLICATION_URL=${_APPLICATION_URL},
+        AUTHENTICATION_TOKEN_ISSUER=${_AUTHENTICATION_TOKEN_ISSUER},
+        AUTHENTICATION_TOKEN_KEY_ID=${_AUTHENTICATION_TOKEN_KEY_ID},
+        AUTHENTICATION_TOKEN_SECRET=${_AUTHENTICATION_TOKEN_SECRET},
+        DATABASE_URL=${_DATABASE_URL},
+        MAILER_DOMAIN=${_MAILER_DOMAIN},
+        MAILER_FROM_EMAIL=${_MAILER_FROM_EMAIL},
+        MAILER_FROM_ALIAS=${_MAILER_FROM_ALIAS},
+        MAILER_SMTP_HOST=${_MAILER_SMTP_HOST},
+        MAILER_SMTP_PORT=${_MAILER_SMTP_PORT},
+        MAILER_SMTP_USERNAME=${_MAILER_SMTP_USERNAME},
+        MAILER_SMTP_PASSWORD=${_MAILER_SMTP_PASSWORD},
+        MESSAGE_QUEUE_URL=${_MESSAGE_QUEUE_URL},
+        SESSION_STORE_URL=${_SESSION_STORE_URL},
+        VERIFICATION_TOKEN_ISSUER=${_VERIFICATION_TOKEN_ISSUER},
+        VERIFICATION_TOKEN_KEY_ID=${_VERIFICATION_TOKEN_KEY_ID},
+        VERIFICATION_TOKEN_SECRET=${_VERIFICATION_TOKEN_SECRET}
+    wait_for: ['push']
 
+# NOTE: These values are dummy. They should be replaced with env vars.
 substitutions:
   # [deployment]
   # -- from args
-  _POSTGRES_INSTANCE: 'foo-bar-baz-qux-quux'
   _BUILD_TARGET_NAME: 'server'
   _BUILD_LOGS_BUCKET: '${_PROJECT_ID}_cloudbuild'
+  _POSTGRES_INSTANCE: 'foo-bar-baz-qux-quux'
+  _REDIS_CONNECTOR: 'connector'
   _SERVICE_NAME: 'eloquentlog-console-api-server'
-
   # -- from .env.deploy
   _REGISTRY_HOST: 'eu.gcr.io'
   _REGISTRY_REGION: 'europe-west1'
@@ -91,8 +102,7 @@ substitutions:
   _AUTHENTICATION_TOKEN_ISSUER: 'org.example.production'
   _AUTHENTICATION_TOKEN_KEY_ID: 'key_id'
   _AUTHENTICATION_TOKEN_SECRET: 'secret'
-  # database (e.g. unix_sock=/cloudsql/${_POSTGRES_INSTANCE}/.s.PGSQL.5432)
-  _DATABASE_URL: 'postgresql://u$er:pa$$w0rd@/dbname?unix_sock=/path/to/sock'
+  _DATABASE_URL: 'postgresql://user:password@%2Fcloudsql%2Ffoo%3Abar%3Abaz'
   # mailer
   _MAILER_DOMAIN: 'example.org'
   _MAILER_FROM_EMAIL: 'no-reply@example.org'
