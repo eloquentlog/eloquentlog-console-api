@@ -49,7 +49,6 @@ stages:
       USE="readline sqlite ssl xml"
         emerge --quiet-build=y --nospinner --oneshot dev-lang/python:3.8;
       cp -R /usr/include/python3.8/ .python/include;
-      cp -R /usr/lib64/python3.8/ .python/lib64;
       cp -R /usr/lib/pkgconfig/python-3.8.pc .python/lib/pkgconfig/;
       cp -R /usr/lib/python-exec/ .python/lib/python-exec;
       cp /usr/bin/python3.8 .python/python3.8;
@@ -58,7 +57,6 @@ stages:
       cp -R .python/lib64/ /usr/lib64/python3.8;
       cp -R .python/lib/pkgconfig/* /usr/lib64/pkgconfig/;
       cp -R .python/lib/python-exec/ /user/lib/python-exec;
-      cp -R .python/python3.8 /usr/bin/python3.8;
       rm -fr /etc/ld.so.cache;
       ldconfig;
     fi
