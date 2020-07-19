@@ -249,9 +249,9 @@ release-development:
   <<: *gentoo
   variables:
     CLOUD_SDK_BASE_URL: https://dl.google.com/dl/cloudsdk/channels/rapid/downloads
-    CLOUD_SDK_CHECKSUM: f152815d05a2f9374c87be1325a7d3bdbf62720d8fad9acb42dc2312d2e33f4a
+    CLOUD_SDK_CHECKSUM: 4773911e9f8fb7fe3b915e1f24ebe957436474253688820a9f2990d7399bd3b8
     CLOUD_SDK_ARTIFACT: google-cloud-sdk
-    CLOUD_SDK_FILENAME: ${CLOUD_SDK_ARTIFACT}-269.0.0-linux-x86_64.tar.gz
+    CLOUD_SDK_FILENAME: ${CLOUD_SDK_ARTIFACT}-301.0.0-linux-x86_64.tar.gz
     # set as secret variables
     # GCP_CLOUD_BUILD_CREDENTIAL_JSON: /path/to/credential.json
     # GCP_CLOUD_BUILD_SUBSTR_ENV_VARS: /path/to/.env.deploy
