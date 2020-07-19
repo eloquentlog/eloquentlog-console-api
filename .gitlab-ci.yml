@@ -270,6 +270,8 @@ release-development:
   script:
     - . .tool/$CLOUD_SDK_ARTIFACT/path.bash.inc; make deploy:server
   only:
+    # FIXME
+    - update-python@eloquentlog/eloquentlog-console-api
     - master@eloquentlog/eloquentlog-console-api
     # - /^v.*$/
     # except:
