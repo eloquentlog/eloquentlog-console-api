@@ -12,15 +12,18 @@ use crate::validation::message::Validator;
 const MESSAGES_PER_REQUEST: i64 = 100;
 
 pub mod preflight {
+    use rocket::State;
     use rocket::response::Response as RawResponse;
     use rocket_slog::SyncLogger;
 
+    use crate::config::Config;
     use crate::response::no_content_for;
 
     #[options("/message/<namespace_key>/append/<stream_slug>")]
     pub fn append<'a>(
         namespace_key: String,
         stream_slug: String,
+        config: State<Config>,
         logger: SyncLogger,
     ) -> RawResponse<'a>
     {
@@ -28,7 +31,7 @@ pub mod preflight {
             logger,
             "namespace: {}, stream: {}", namespace_key, stream_slug
         );
-        no_content_for("POST")
+        no_content_for("POST", &config)
     }
 
     #[options("/message/<namespace_key>/lrange/<stream_slug>/<start>/<stop>")]
@@ -37,6 +40,7 @@ pub mod preflight {
         stream_slug: String,
         start: i64,
         stop: i64,
+        config: State<Config>,
         logger: SyncLogger,
     ) -> RawResponse<'a>
     {
@@ -48,7 +52,7 @@ pub mod preflight {
             start,
             stop
         );
-        no_content_for("GET")
+        no_content_for("GET", &config)
     }
 }
 

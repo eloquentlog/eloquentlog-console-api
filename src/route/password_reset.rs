@@ -26,23 +26,27 @@ use crate::ss::SsConn;
 use crate::util::split_token;
 
 pub mod preflight {
+    use rocket::State;
     use rocket::response::Response as RawResponse;
     use rocket_slog::SyncLogger;
+
+    use crate::config::Config;
     use crate::response::no_content_for;
 
     #[options("/password/reset")]
-    pub fn request<'a>() -> RawResponse<'a> {
-        no_content_for("HEAD,PUT")
+    pub fn request<'a>(config: State<Config>) -> RawResponse<'a> {
+        no_content_for("HEAD,PUT", &config)
     }
 
     #[options("/password/reset/<session_id>")]
     pub fn verify_update<'a>(
         session_id: String,
+        config: State<Config>,
         logger: SyncLogger,
     ) -> RawResponse<'a>
     {
         info!(logger, "session_id: {}", session_id);
-        no_content_for("GET,HEAD,PATCH")
+        no_content_for("GET,HEAD,PATCH", &config)
     }
 }
 

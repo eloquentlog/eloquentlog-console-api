@@ -6,6 +6,8 @@ pub struct Config {
     pub authentication_token_issuer: String,
     pub authentication_token_key_id: String,
     pub authentication_token_secret: String,
+    pub cookie_domain: String,
+    pub cookie_secure: bool,
     pub database_url: String,
     pub database_max_pool_size: u32,
     pub env_name: &'static str,
@@ -43,6 +45,12 @@ impl Default for Config {
                 "AUTHENTICATION_TOKEN_SECRET",
             )
             .expect("AUTHENTICATION_TOKEN_SECRET is not set"),
+
+            cookie_domain: env::var("COOKIE_DOMAIN")
+                .expect("COOKIE_DOMAIN is not set"),
+            cookie_secure: env::var("COOKIE_SECURE")
+                .unwrap_or_else(|_| "false".to_string()) ==
+                "true",
 
             database_max_pool_size: 0,
             database_url: env::var("DATABASE_URL")
@@ -123,6 +131,7 @@ impl Config {
 
         Config {
             env_name: &"production",
+            cookie_secure: true,
             database_max_pool_size,
             mailer_smtp_port,
             message_queue_max_pool_size,
@@ -176,6 +185,12 @@ impl Config {
                 "TEST_AUTHENTICATION_TOKEN_SECRET",
             )
             .expect("TEST_AUTHENTICATION_TOKEN_SECRET is not set"),
+
+            cookie_domain: env::var("TEST_COOKIE_DOMAIN")
+                .expect("TEST_COOKIE_DOMAIN is not set"),
+            cookie_secure: env::var("TEST_COOKIE_SECURE")
+                .unwrap_or_else(|_| "false".to_string()) ==
+                "true",
 
             database_max_pool_size,
             database_url: env::var("TEST_DATABASE_URL")
@@ -277,6 +292,8 @@ mod test {
                 "AUTHENTICATION_TOKEN_ISSUER" => "com.eloquentlog",
                 "AUTHENTICATION_TOKEN_KEY_ID" => "key_id-authentication",
                 "AUTHENTICATION_TOKEN_SECRET" => "secret-authentication",
+                "COOKIE_DOMAIN" => "127.0.0.1",
+                "COOKIE_SECURE" => "false",
                 "DATABASE_URL" =>
                     "postgresql://u$er:pa$$w0rd@localhost:5432/dbname",
                 "MAILER_DOMAIN" => "eloquentlog.com",
@@ -297,6 +314,8 @@ mod test {
                 "TEST_AUTHENTICATION_TOKEN_ISSUER" => "com.eloquentlog",
                 "TEST_AUTHENTICATION_TOKEN_KEY_ID" => "test-key_id-authentication",
                 "TEST_AUTHENTICATION_TOKEN_SECRET" => "test-secret-authentication",
+                "TEST_COOKIE_DOMAIN" => "127.0.0.1",
+                "TEST_COOKIE_SECURE" => "false",
                 "TEST_DATABASE_URL" =>
                     "postgresql://u$er:pa$$w0rd@localhost:5432/dbname",
                 "TEST_MAILER_DOMAIN" => "eloquentlog.com",
@@ -358,6 +377,8 @@ TEST_APPLICATION_URL
 TEST_AUTHENTICATION_TOKEN_ISSUER
 TEST_AUTHENTICATION_TOKEN_KEY_ID
 TEST_AUTHENTICATION_TOKEN_SECRET
+TEST_COOKIE_DOMAIN
+TEST_COOKIE_SECURE
 TEST_DATABASE_URL
 TEST_MAILER_DOMAIN
 TEST_MAILER_FROM_EMAIL
@@ -388,6 +409,8 @@ APPLICATION_URL
 AUTHENTICATION_TOKEN_ISSUER
 AUTHENTICATION_TOKEN_KEY_ID
 AUTHENTICATION_TOKEN_SECRET
+COOKIE_DOMAIN
+COOKIE_SECURE
 DATABASE_URL
 MAILER_DOMAIN
 MAILER_FROM_EMAIL
@@ -418,6 +441,8 @@ TEST_APPLICATION_URL
 TEST_AUTHENTICATION_TOKEN_ISSUER
 TEST_AUTHENTICATION_TOKEN_KEY_ID
 TEST_AUTHENTICATION_TOKEN_SECRET
+TEST_COOKIE_DOMAIN
+TEST_COOKIE_SECURE
 TEST_DATABASE_URL
 TEST_MAILER_DOMAIN
 TEST_MAILER_FROM_EMAIL
@@ -448,6 +473,8 @@ APPLICATION_URL
 AUTHENTICATION_TOKEN_ISSUER
 AUTHENTICATION_TOKEN_KEY_ID
 AUTHENTICATION_TOKEN_SECRET
+COOKIE_DOMAIN
+COOKIE_SECURE
 DATABASE_URL
 MAILER_DOMAIN
 MAILER_FROM_EMAIL
@@ -463,6 +490,7 @@ VERIFICATION_TOKEN_SECRET
 "#, || {
                 let c = Config::from("production").unwrap();
                 assert_eq!(c.env_name, "production");
+                assert_eq!(c.cookie_secure, true);
                 assert_eq!(c.database_max_pool_size, 12);
                 assert_eq!(c.message_queue_max_pool_size, 8);
                 assert_eq!(c.session_store_max_pool_size, 8);
@@ -478,6 +506,8 @@ TEST_APPLICATION_URL
 TEST_AUTHENTICATION_TOKEN_ISSUER
 TEST_AUTHENTICATION_TOKEN_KEY_ID
 TEST_AUTHENTICATION_TOKEN_SECRET
+TEST_COOKIE_DOMAIN
+TEST_COOKIE_SECURE
 TEST_DATABASE_URL
 TEST_MAILER_DOMAIN
 TEST_MAILER_FROM_EMAIL
@@ -493,6 +523,7 @@ TEST_VERIFICATION_TOKEN_SECRET
 "#, || {
                 let c = Config::from("testing").unwrap();
                 assert_eq!(c.env_name, "testing");
+                assert_eq!(c.cookie_secure, false);
                 assert_eq!(c.database_max_pool_size, 2);
                 assert_eq!(c.message_queue_max_pool_size, 2);
                 assert_eq!(c.session_store_max_pool_size, 2);
@@ -508,6 +539,8 @@ APPLICATION_URL
 AUTHENTICATION_TOKEN_ISSUER
 AUTHENTICATION_TOKEN_KEY_ID
 AUTHENTICATION_TOKEN_SECRET
+COOKIE_DOMAIN
+COOKIE_SECURE
 DATABASE_URL
 MAILER_DOMAIN
 MAILER_FROM_EMAIL
@@ -523,6 +556,7 @@ VERIFICATION_TOKEN_SECRET
 "#, || {
                 let c = Config::from("development").unwrap();
                 assert_eq!(c.env_name, "development");
+                assert_eq!(c.cookie_secure, false);
                 assert_eq!(c.database_max_pool_size, 4);
                 assert_eq!(c.message_queue_max_pool_size, 4);
                 assert_eq!(c.session_store_max_pool_size, 4);
