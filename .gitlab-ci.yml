@@ -47,15 +47,13 @@ stages:
     if [ ! -d ".python" ]; then
       mkdir -p .python/{include,lib/pkgconfig,lib64};
       USE="readline sqlite ssl xml"
-        emerge --quiet-build=y --nospinner --oneshot dev-lang/python:3.8;
-      cp -R /usr/include/python3.8/ .python/include;
-      cp -R /usr/lib/pkgconfig/python-3.8.pc .python/lib/pkgconfig/;
+        emerge --quiet-build=y --nospinner --oneshot dev-lang/python:2.7;
+      cp -R /usr/include/python2.7/ .python/include;
       cp -R /usr/lib/python-exec/ .python/lib/python-exec;
-      cp /usr/bin/python3.8 .python/python3.8;
+      cp /usr/bin/python2.7 .python/python2.7;
     else
-      cp -R .python/include/ /user/include/python3.8;
-      cp -R .python/lib64/ /usr/lib64/python3.8;
-      cp -R .python/lib/pkgconfig/* /usr/lib64/pkgconfig/;
+      cp -R .python/include/ /user/include/python2.7;
+      cp -R .python/lib64/ /usr/lib64/python2.7;
       cp -R .python/lib/python-exec/ /user/lib/python-exec;
       rm -fr /etc/ld.so.cache;
       ldconfig;
@@ -222,6 +220,7 @@ build-release:
 # -- release {{{
 .cloud-sdk:
   - &cloud-sdk
+    export CLOUDSDK_PYTHON=python2.7;
     mkdir -p .tool;
     cd .tool;
     if [ ! -d "../.cloud-sdk" ]; then
@@ -239,7 +238,7 @@ build-release:
       --usage-reporting=false
       --rc-path=/dev/null
       --override-components beta cloud-build-local core
-      --quiet >$CLOUD_SDK_ARTIFACT/install.log 2>&1;
+      --quiet >$CLOUD_SDK_ARTIFACT/install.log;
     cd ../
 
 release-development:
