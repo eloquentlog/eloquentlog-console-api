@@ -15,17 +15,20 @@ use crate::ss::SsConn;
 use crate::util::{split_token, make_cookie};
 
 pub mod preflight {
+    use rocket::State;
     use rocket::response::Response as RawResponse;
+
+    use crate::config::Config;
     use crate::response::no_content_for;
 
     #[options("/login")]
-    pub fn login<'a>() -> RawResponse<'a> {
-        no_content_for("HEAD,POST")
+    pub fn login<'a>(config: State<Config>) -> RawResponse<'a> {
+        no_content_for("HEAD,POST", &config)
     }
 
     #[options("/logout")]
-    pub fn logout<'a>() -> RawResponse<'a> {
-        no_content_for("POST")
+    pub fn logout<'a>(config: State<Config>) -> RawResponse<'a> {
+        no_content_for("POST", &config)
     }
 }
 
@@ -81,7 +84,7 @@ pub mod preignition {
 #[post("/login", data = "<data>", format = "json")]
 pub fn login<'a>(
     config: State<Config>,
-    mut cookies: Cookies,
+    mut cookies: Cookies<'a>,
     data: RequestData,
     db_conn: DbConn,
     logger: SyncLogger,
@@ -140,8 +143,9 @@ pub fn login<'a>(
                 },
             };
 
-            let cookie = make_cookie(sign);
-            res.cookies(vec![cookie]).format(json!({ "token": token }))
+            let cookie = make_cookie(sign, &config);
+            cookies.add_private(cookie);
+            res.cookies(cookies).format(json!({ "token": token }))
         },
         _ => {
             warn!(logger, "login failed: username {}", data.username);

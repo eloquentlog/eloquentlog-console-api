@@ -6,15 +6,21 @@ use crate::model::user::User;
 use crate::response::Response;
 
 pub mod preflight {
+    use rocket::State;
     use rocket::response::Response as RawResponse;
     use rocket_slog::SyncLogger;
 
+    use crate::config::Config;
     use crate::response::no_content_for;
 
     #[options("/namespace/hgetall")]
-    pub fn hgetall<'a>(logger: SyncLogger) -> RawResponse<'a> {
+    pub fn hgetall<'a>(
+        config: State<Config>,
+        logger: SyncLogger,
+    ) -> RawResponse<'a>
+    {
         info!(logger, "hgetall");
-        no_content_for("GET")
+        no_content_for("GET", &config)
     }
 }
 

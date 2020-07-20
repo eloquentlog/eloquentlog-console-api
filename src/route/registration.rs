@@ -24,17 +24,20 @@ use crate::ss::SsConn;
 use crate::util::split_token;
 
 pub mod preflight {
+    use rocket::State;
     use rocket::response::Response as RawResponse;
+
+    use crate::config::Config;
     use crate::response::no_content_for;
 
     #[options("/register")]
-    pub fn register<'a>() -> RawResponse<'a> {
-        no_content_for("HEAD,POST")
+    pub fn register<'a>(config: State<Config>) -> RawResponse<'a> {
+        no_content_for("HEAD,POST", &config)
     }
 
     #[options("/deregister")]
-    pub fn deregister<'a>() -> RawResponse<'a> {
-        no_content_for("POST")
+    pub fn deregister<'a>(config: State<Config>) -> RawResponse<'a> {
+        no_content_for("POST", &config)
     }
 }
 
@@ -79,6 +82,7 @@ pub mod preignition {
             cookie.set_http_only(true);
             cookie.set_secure(false); // TODO
             cookie.set_same_site(SameSite::Strict);
+            // encrypted value with expires 1 week from now
             cookies.add_private(cookie);
             return res.status(Status::Ok);
         }

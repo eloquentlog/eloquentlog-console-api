@@ -13,38 +13,56 @@ use crate::request::access_token::AccessTokenData as RequestData;
 use crate::response::Response;
 
 pub mod preflight {
+    use rocket::State;
     use rocket::response::Response as RawResponse;
     use rocket_slog::SyncLogger;
 
+    use crate::config::Config;
     use crate::model::access_token::AgentType;
     use crate::response::no_content_for;
 
     #[options("/access_token/del/<uuid>")]
-    pub fn del<'a>(uuid: String, logger: SyncLogger) -> RawResponse<'a> {
+    pub fn del<'a>(
+        uuid: String,
+        config: State<Config>,
+        logger: SyncLogger,
+    ) -> RawResponse<'a>
+    {
         info!(logger, "uuid: {}", uuid);
-        no_content_for("PATCH")
+        no_content_for("PATCH", &config)
     }
 
     #[options("/access_token/dump/<uuid>")]
-    pub fn dump<'a>(uuid: String, logger: SyncLogger) -> RawResponse<'a> {
+    pub fn dump<'a>(
+        uuid: String,
+        config: State<Config>,
+        logger: SyncLogger,
+    ) -> RawResponse<'a>
+    {
         info!(logger, "uuid: {}", uuid);
-        no_content_for("PATCH")
+        no_content_for("PATCH", &config)
     }
 
     #[options("/access_token/hset/<uuid>/state")]
-    pub fn hset_state<'a>(uuid: String, logger: SyncLogger) -> RawResponse<'a> {
+    pub fn hset_state<'a>(
+        uuid: String,
+        config: State<Config>,
+        logger: SyncLogger,
+    ) -> RawResponse<'a>
+    {
         info!(logger, "uuid: {}", uuid);
-        no_content_for("PATCH")
+        no_content_for("PATCH", &config)
     }
 
     #[options("/access_token/append/<agent_type>")]
     pub fn append<'a>(
         agent_type: AgentType,
+        config: State<Config>,
         logger: SyncLogger,
     ) -> RawResponse<'a>
     {
         info!(logger, "agent_type: {}", agent_type);
-        no_content_for("PUT")
+        no_content_for("PUT", &config)
     }
 
     #[options("/access_token/lrange/<agent_type>/<start>/<stop>")]
@@ -52,6 +70,7 @@ pub mod preflight {
         agent_type: AgentType,
         start: i64,
         stop: i64,
+        config: State<Config>,
         logger: SyncLogger,
     ) -> RawResponse<'a>
     {
@@ -59,7 +78,7 @@ pub mod preflight {
             logger,
             "agent_type: {}, start: {}, stop: {}", agent_type, start, stop,
         );
-        no_content_for("GET")
+        no_content_for("GET", &config)
     }
 }
 

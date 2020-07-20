@@ -2,6 +2,8 @@ use rand::prelude::*;
 use rocket::http::{Cookie, SameSite};
 use rocket::Request;
 
+use crate::config::Config;
+
 // Creates random hash based on source characters
 pub fn generate_random_hash(source: &[u8], length: i32) -> String {
     if length < 1 {
@@ -39,14 +41,12 @@ pub fn split_token(token: String) -> Option<(String, String)> {
 // Make a cookie for signature (sign).
 //
 // This is session cookie (no expires and max-age)
-pub fn make_cookie<'a>(sign: String) -> Cookie<'a> {
-    // TODO:
-    // consider about extension (re-set it again?)
+pub fn make_cookie<'a>(sign: String, config: &Config) -> Cookie<'a> {
     let mut sig = Cookie::new("sign", sign);
-    sig.set_domain("127.0.0.1");
+    sig.set_domain(config.cookie_domain.to_owned());
     sig.set_path("/");
     sig.set_same_site(SameSite::Strict);
-    sig.set_secure(false); // FIXME
+    sig.set_secure(config.cookie_secure);
     sig.set_http_only(true);
     sig
 }

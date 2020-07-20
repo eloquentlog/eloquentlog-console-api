@@ -11,18 +11,22 @@ use crate::response::Response;
 use crate::service::account_activator::AccountActivator;
 
 pub mod preflight {
+    use rocket::State;
     use rocket::response::Response as RawResponse;
     use rocket_slog::SyncLogger;
+
+    use crate::config::Config;
     use crate::response::no_content_for;
 
     #[options("/activate/<session_id>")]
     pub fn activate<'a>(
         session_id: String,
+        config: State<Config>,
         logger: SyncLogger,
     ) -> RawResponse<'a>
     {
         info!(logger, "session_id: {}", session_id);
-        no_content_for("PATCH")
+        no_content_for("PATCH", &config)
     }
 }
 

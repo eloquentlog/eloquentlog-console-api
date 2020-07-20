@@ -172,6 +172,8 @@ test:
     TEST_AUTHENTICATION_TOKEN_ISSUER: "test-authentication-token-issuer"
     TEST_AUTHENTICATION_TOKEN_KEY_ID: "test-authentication-token-key_id"
     TEST_AUTHENTICATION_TOKEN_SECRET: "test-authentication-token-secret"
+    TEST_COOKIE_DOMAIN: "127.0.0.1"
+    TEST_COOKIE_SECURE: "false"
     TEST_DATABASE_URL: "postgresql://eloquentlog:eloquentlog@postgres:5432/eloquentlog_test"
     TEST_MAILER_DOMAIN: "example.com"
     TEST_MAILER_FROM_EMAIL: "no-reply@example.com"

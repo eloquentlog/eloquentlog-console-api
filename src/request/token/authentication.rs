@@ -80,7 +80,7 @@ impl<'a, 'r> FromRequest<'a, 'r> for AuthenticationToken {
                 if token_type == TokenType::BrowserCookieToken {
                     token = req
                         .cookies()
-                        .get("sign")
+                        .get_private("sign")
                         .map(|c| token + "." + c.value())
                         .or_else(|| Some("".to_string()))
                         .unwrap();
