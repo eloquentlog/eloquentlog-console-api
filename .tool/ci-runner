@@ -12,18 +12,20 @@ if [ -z "${job_name}" ]; then
 fi
 
 if [ ! -f "${env_file}" ]; then
-  echo "Please create \`${env_file}\` (cp ${env_file}.sample ${env_file})"
+  echo "Please create ${env_file} (cp ${env_file}.sample ${env_file})"
   exit 2
 fi
 
 while read line; do
-env_opts+=" --env ${line}"
+  env_opts+=" --env $(echo $line | sed -E 's/^export //')"
 done < "${env_file}"
 
 # ci-runner <job>
-echo "${env_opts} ${job_name}" | \
-  xargs $dir_name/gitlab-runner exec docker \
+$dir_name/gitlab-runner exec docker \
+  --executor docker \
   --cache-dir /cache \
   --docker-privileged \
   --docker-volumes $dir_name/../tmp/_cache:/cache \
-  --docker-volumes /var/run/docker.sock:/var/run/docker.sock
+  --docker-volumes /var/run/docker.sock:/var/run/docker.sock \
+  $env_opts \
+  $job_name
