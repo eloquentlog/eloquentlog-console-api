@@ -226,6 +226,7 @@ build-release:
 # -- release {{{
 .cloud-sdk:
   - &cloud-sdk
+    export CLOUDSDK_PYTHON=python2.7
     mkdir -p .tool;
     cd .tool;
     if [ ! -d "../.cloud-sdk" ]; then
