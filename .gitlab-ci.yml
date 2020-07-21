@@ -49,16 +49,12 @@ stages:
       USE="readline sqlite ssl xml"
         emerge --quiet-build=y --nospinner --oneshot dev-lang/python:2.7;
       cp -R /usr/include/python2.7/ .python/include;
-      cp -R /usr/lib64/python2.7/ .python/lib64;
-      cp -R /usr/lib64/pkgconfig/python-2.7.pc .python/lib/pkgconfig/;
       cp -R /usr/lib/python-exec/ .python/lib/python-exec;
       cp /usr/bin/python2.7 .python/python2.7;
     else
-      cp -R .python/python2.7 /usr/bin/python2.7;
-      cp -R .python/lib/pkgconfig/* /usr/lib64/pkgconfig/;
+      cp -R .python/include/ /user/include/python2.7;
       cp -R .python/lib64/ /usr/lib64/python2.7;
       cp -R .python/lib/python-exec/ /user/lib/python-exec;
-      cp -R .python/include/ /user/include/python2.7;
       rm -fr /etc/ld.so.cache;
       ldconfig;
     fi
@@ -226,6 +222,7 @@ build-release:
 # -- release {{{
 .cloud-sdk:
   - &cloud-sdk
+    export CLOUDSDK_PYTHON=python2.7;
     mkdir -p .tool;
     cd .tool;
     if [ ! -d "../.cloud-sdk" ]; then
@@ -243,7 +240,7 @@ build-release:
       --usage-reporting=false
       --rc-path=/dev/null
       --override-components beta cloud-build-local core
-      --quiet >$CLOUD_SDK_ARTIFACT/install.log 2>&1;
+      --quiet >$CLOUD_SDK_ARTIFACT/install.log;
     cd ../
 
 release-development:
@@ -272,6 +269,8 @@ release-development:
   script:
     - . .tool/$CLOUD_SDK_ARTIFACT/path.bash.inc; make deploy:server
   only:
+    # FIXME
+    - update-python@eloquentlog/eloquentlog-console-api
     - master@eloquentlog/eloquentlog-console-api
     # - /^v.*$/
     # except:
