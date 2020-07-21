@@ -60,6 +60,8 @@ steps:
         AUTHENTICATION_TOKEN_ISSUER=${_AUTHENTICATION_TOKEN_ISSUER},
         AUTHENTICATION_TOKEN_KEY_ID=${_AUTHENTICATION_TOKEN_KEY_ID},
         AUTHENTICATION_TOKEN_SECRET=${_AUTHENTICATION_TOKEN_SECRET},
+        COOKIE_DOMAIN=${_COOKIE_DOMAIN},
+        COOKIE_SECURE=${_COOKIE_SECURE},
         DATABASE_URL=${_DATABASE_URL},
         MAILER_DOMAIN=${_MAILER_DOMAIN},
         MAILER_FROM_EMAIL=${_MAILER_FROM_EMAIL},
@@ -102,6 +104,10 @@ substitutions:
   _AUTHENTICATION_TOKEN_ISSUER: 'org.example.production'
   _AUTHENTICATION_TOKEN_KEY_ID: 'key_id'
   _AUTHENTICATION_TOKEN_SECRET: 'secret'
+  # cookie
+  _COOKIE_DOMAIN: 'example.org'
+  _COOKIE_SECURE: 'true'
+  # database
   _DATABASE_URL: 'postgresql://user:password@%2Fcloudsql%2Ffoo%3Abar%3Abaz'
   # mailer
   _MAILER_DOMAIN: 'example.org'
