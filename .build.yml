@@ -32,7 +32,7 @@ steps:
     wait_for: ['build']
 
   - id: 'run'
-    name: 'gcr.io/google/com/cloudsdktool/cloud-sdk'
+    name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     entrypoint: 'gcloud'
     args:
       - 'run'
