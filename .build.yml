@@ -48,6 +48,7 @@ steps:
       - '${_POSTGRES_INSTANCE}'
       - '--vpc-connector'
       - '${_REDIS_CONNECTOR}'
+      - '--allow-unauthenticated'
       - '--set-env-vars'
       - >-
         INSTANCE_CONNECTION_NAME=${_POSTGRES_INSTANCE},

@@ -278,7 +278,7 @@ release:
   #     - $CLOUD_SDK_ARTIFACT
   #   expire_in: 1 day
   cache:
-    key: release-development
+    key: release
     paths:
       - .cloud-sdk
       - .python
