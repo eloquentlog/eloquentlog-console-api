@@ -2,7 +2,7 @@ stages:
   - verify
   - test
   - build
-  - release
+  - deploy
 
 .diesel:
   - &diesel
@@ -79,6 +79,29 @@ stages:
       ldconfig;
     fi
 
+.cloud-sdk:
+  - &cloud-sdk
+    export CLOUDSDK_PYTHON=python2.7;
+    mkdir -p .tool;
+    cd .tool;
+    if [ ! -d "../.cloud-sdk" ]; then
+      mkdir -p ../.cloud-sdk;
+      curl -O $CLOUD_SDK_BASE_URL/$CLOUD_SDK_FILENAME;
+      echo "${CLOUD_SDK_CHECKSUM}" "" ./$CLOUD_SDK_FILENAME | sha256sum -c -;
+      cp $CLOUD_SDK_FILENAME ../.cloud-sdk/;
+    else
+      cp ../.cloud-sdk/$CLOUD_SDK_FILENAME .;
+    fi;
+    tar zxf $CLOUD_SDK_FILENAME;
+    ./$CLOUD_SDK_ARTIFACT/install.sh
+      --command-completion=false
+      --path-update=false
+      --usage-reporting=false
+      --rc-path=/dev/null
+      --override-components beta cloud-build-local core
+      --quiet >$CLOUD_SDK_ARTIFACT/install.log 2>&1;
+    cd ../
+
 .vendor:
   - &vendor
     if [ ! -d "vendor" ]; then
@@ -116,7 +139,7 @@ stages:
   image: registry.gitlab.com/grauwoelfchen/portolan/gentoo-amd64-nomultilib:latest
   <<: *cache
 
-# -- verify {{{
+# verify {{{
 check:
   stage: verify
   <<: *vet-tools
@@ -151,7 +174,7 @@ lint:
   <<: *cache
 # }}}
 
-# -- test {{{
+# test {{{
 test:
   stage: test
   <<: *vet-tools
@@ -201,7 +224,7 @@ test:
   <<: *cache
 # }}}
 
-# -- build  {{{
+# build {{{
 build-debug:
   stage: build
   <<: *rust
@@ -216,35 +239,13 @@ build-release:
   script:
     - make build:release
   only:
-    - master
+    - release@eloquentlog/eloquentlog-console-api
+    - tags@eloquentlog/eloquentlog-console-api
 # }}}
 
-# -- release {{{
-.cloud-sdk:
-  - &cloud-sdk
-    export CLOUDSDK_PYTHON=python2.7;
-    mkdir -p .tool;
-    cd .tool;
-    if [ ! -d "../.cloud-sdk" ]; then
-      mkdir -p ../.cloud-sdk;
-      curl -O $CLOUD_SDK_BASE_URL/$CLOUD_SDK_FILENAME;
-      echo "${CLOUD_SDK_CHECKSUM}" "" ./$CLOUD_SDK_FILENAME | sha256sum -c -;
-      cp $CLOUD_SDK_FILENAME ../.cloud-sdk/;
-    else
-      cp ../.cloud-sdk/$CLOUD_SDK_FILENAME .;
-    fi;
-    tar zxf $CLOUD_SDK_FILENAME;
-    ./$CLOUD_SDK_ARTIFACT/install.sh
-      --command-completion=false
-      --path-update=false
-      --usage-reporting=false
-      --rc-path=/dev/null
-      --override-components beta cloud-build-local core
-      --quiet >$CLOUD_SDK_ARTIFACT/install.log;
-    cd ../
-
-release-development:
-  stage: release
+# deploy {{{
+release:
+  stage: deploy
   <<: *gentoo
   variables:
     CLOUD_SDK_BASE_URL: https://dl.google.com/dl/cloudsdk/channels/rapid/downloads
@@ -269,15 +270,15 @@ release-development:
   script:
     - . .tool/$CLOUD_SDK_ARTIFACT/path.bash.inc; make deploy:server
   only:
-    # FIXME
-    - update-python@eloquentlog/eloquentlog-console-api
-    - master@eloquentlog/eloquentlog-console-api
-    # - /^v.*$/
-    # except:
-    #   - branches
-    #   - tags
+    - release@eloquentlog/eloquentlog-console-api
+    - tags@eloquentlog/eloquentlog-console-api
+  # DEBUG
+  # arfitacts:
+  #   paths:
+  #     - $CLOUD_SDK_ARTIFACT
+  #   expire_in: 1 day
   cache:
-    key: release-development
+    key: release
     paths:
       - .cloud-sdk
       - .python
