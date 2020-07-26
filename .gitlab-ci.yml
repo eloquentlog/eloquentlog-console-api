@@ -52,9 +52,9 @@ stages:
       cp -R /usr/lib/python-exec/ .python/lib/python-exec;
       cp /usr/bin/python2.7 .python/python2.7;
     else
-      cp -R .python/include/ /user/include/python2.7;
+      cp -R .python/include/ /usr/include/python2.7;
       cp -R .python/lib64/ /usr/lib64/python2.7;
-      cp -R .python/lib/python-exec/ /user/lib/python-exec;
+      cp -R .python/lib/python-exec/ /usr/lib/python-exec;
       rm -fr /etc/ld.so.cache;
       ldconfig;
     fi
