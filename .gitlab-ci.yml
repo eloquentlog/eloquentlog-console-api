@@ -49,12 +49,15 @@ stages:
       USE="readline sqlite ssl xml"
         emerge --quiet-build=y --nospinner --oneshot dev-lang/python:2.7;
       cp -R /usr/include/python2.7/ .python/include;
-      cp -R /usr/lib/python-exec/ .python/lib/python-exec;
+      cp -R /usr/lib64/python2.7/ .python/lib/python2.7;
+      cp -R /usr/lib64/python-exec/ .python/lib/python-exec;
+      cp -R /usr/lib64/pkgconfig/python-2.7.pc .python/lib/pkgconfig/;
       cp /usr/bin/python2.7 .python/python2.7;
     else
       cp -R .python/include/ /usr/include/python2.7;
-      cp -R .python/lib64/ /usr/lib64/python2.7;
-      cp -R .python/lib/python-exec/ /usr/lib/python-exec;
+      cp -R .python/lib/python2.7/ /usr/lib64/python2.7;
+      cp -R .python/lib/pkgconfig/* /usr/lib64/pkgconfig/;
+      cp -R .python/lib/python-exec/ /usr/lib64/python-exec;
       rm -fr /etc/ld.so.cache;
       ldconfig;
     fi
