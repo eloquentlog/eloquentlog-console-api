@@ -108,7 +108,7 @@ stages:
       make setup:vendor;
     fi
 
-.cache: &cache
+.builder-cache: &builder-cache
   cache:
     key:
       files:
@@ -120,6 +120,14 @@ stages:
       - .cargo
       - .postgresql
       - vendor
+
+.release-cache: &release-cache
+  cache:
+    key: release
+    paths:
+      - .cloud-sdk
+      - .python
+      - .sqlite
 
 .vet-tools: &vet-tools
   image: registry.gitlab.com/grauwoelfchen/portolan/rust-vet-tools:1.42.0-nightly
@@ -133,11 +141,34 @@ stages:
     - rustc --version
     - cargo --version
     - *vendor
-  <<: *cache
+  <<: *builder-cache
 
 .gentoo: &gentoo
   image: registry.gitlab.com/grauwoelfchen/portolan/gentoo-amd64-nomultilib:latest
-  <<: *cache
+  variables:
+    CLOUD_SDK_BASE_URL: https://dl.google.com/dl/cloudsdk/channels/rapid/downloads
+    CLOUD_SDK_CHECKSUM: 4773911e9f8fb7fe3b915e1f24ebe957436474253688820a9f2990d7399bd3b8
+    CLOUD_SDK_ARTIFACT: google-cloud-sdk
+    CLOUD_SDK_FILENAME: ${CLOUD_SDK_ARTIFACT}-301.0.0-linux-x86_64.tar.gz
+    # set as secret variables
+    # GCP_CLOUD_BUILD_CREDENTIAL_JSON: /path/to/credential.json
+    # GCP_CLOUD_BUILD_SUBSTR_ENV_VARS: /path/to/.env.deploy
+    # GCP_CLOUD_RUN_SERVICE_NAME_BASE: eloquentlog-console-api
+    # GCP_CLOUD_SQL_POSTGRES_INSTANCE: foo-bar-baz-qux-quux
+    # GCP_CLOUD_STORAGE_LOG_DIRECTORY: bucket_name
+    # GCP_CLOUD_MEMORYSTORE_CONNECTOR: connector-name
+    # GCP_PROJECT_ID: eloquentlog
+  # TODO
+  # environment:
+  #   name: development
+  before_script:
+    - *sqlite
+    - *python
+    - *cloud-sdk
+  <<: *release-cache
+  only:
+    - release@eloquentlog/eloquentlog-console-api
+    - tags@eloquentlog/eloquentlog-console-api
 
 # verify {{{
 check:
@@ -171,7 +202,7 @@ lint:
   script:
     - mkdir .git/hooks
     - make verify:lint
-  <<: *cache
+  <<: *builder-cache
 # }}}
 
 # test {{{
@@ -221,7 +252,7 @@ test:
     - KCOV_PATH=/usr/bin/kcov make coverage
   after_script:
     - cat target/coverage/index.json
-  <<: *cache
+  <<: *builder-cache
 # }}}
 
 # build {{{
@@ -244,43 +275,15 @@ build-release:
 # }}}
 
 # deploy {{{
-release:
+release-server:
   stage: deploy
   <<: *gentoo
-  variables:
-    CLOUD_SDK_BASE_URL: https://dl.google.com/dl/cloudsdk/channels/rapid/downloads
-    CLOUD_SDK_CHECKSUM: 4773911e9f8fb7fe3b915e1f24ebe957436474253688820a9f2990d7399bd3b8
-    CLOUD_SDK_ARTIFACT: google-cloud-sdk
-    CLOUD_SDK_FILENAME: ${CLOUD_SDK_ARTIFACT}-301.0.0-linux-x86_64.tar.gz
-    # set as secret variables
-    # GCP_CLOUD_BUILD_CREDENTIAL_JSON: /path/to/credential.json
-    # GCP_CLOUD_BUILD_SUBSTR_ENV_VARS: /path/to/.env.deploy
-    # GCP_CLOUD_RUN_SERVICE_NAME_BASE: eloquentlog-console-api
-    # GCP_CLOUD_SQL_POSTGRES_INSTANCE: foo-bar-baz-qux-quux
-    # GCP_CLOUD_STORAGE_LOG_DIRECTORY: bucket_name
-    # GCP_CLOUD_MEMORYSTORE_CONNECTOR: connector-name
-    # GCP_PROJECT_ID: eloquentlog
-  before_script:
-    - *sqlite
-    - *python
-    - *cloud-sdk
-  # TODO
-  # environment:
-  #   name: development
   script:
     - . .tool/$CLOUD_SDK_ARTIFACT/path.bash.inc; make deploy:server
-  only:
-    - release@eloquentlog/eloquentlog-console-api
-    - tags@eloquentlog/eloquentlog-console-api
-  # DEBUG
-  # arfitacts:
-  #   paths:
-  #     - $CLOUD_SDK_ARTIFACT
-  #   expire_in: 1 day
-  cache:
-    key: release
-    paths:
-      - .cloud-sdk
-      - .python
-      - .sqlite
+
+release-worker:
+  stage: deploy
+  <<: *gentoo
+  script:
+    - . .tool/$CLOUD_SDK_ARTIFACT/path.bash.inc; make deploy:worker
 # }}}
