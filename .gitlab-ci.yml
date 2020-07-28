@@ -50,14 +50,12 @@ stages:
         emerge --quiet-build=y --nospinner --oneshot dev-lang/python:2.7;
       cp -R /usr/include/python2.7/ .python/include;
       cp -R /usr/lib64/python2.7/ .python/lib/python2.7;
-      cp -R /usr/lib64/python-exec/ .python/lib/python-exec;
       cp -R /usr/lib64/pkgconfig/python-2.7.pc .python/lib/pkgconfig/;
       cp /usr/bin/python2.7 .python/python2.7;
     else
       cp -R .python/include/ /usr/include/python2.7;
       cp -R .python/lib/python2.7/ /usr/lib64/python2.7;
       cp -R .python/lib/pkgconfig/* /usr/lib64/pkgconfig/;
-      cp -R .python/lib/python-exec/ /usr/lib64/python-exec;
       rm -fr /etc/ld.so.cache;
       ldconfig;
     fi
@@ -66,7 +64,7 @@ stages:
   - &sqlite
     if [ ! -d ".sqlite" ]; then
       mkdir -p .sqlite/{include,lib/pkgconfig};
-      USE="readline secure-delete"
+      USE="readline secure-delete -tcl"
         emerge --quiet-build=y --nospinner --oneshot dev-db/sqlite:3;
       cp -R /usr/include/sqlite3ext.h .sqlite/include/;
       cp -R /usr/include/sqlite3.h .sqlite/include/;
@@ -102,7 +100,7 @@ stages:
       --usage-reporting=false
       --rc-path=/dev/null
       --override-components beta cloud-build-local core
-      --quiet >$CLOUD_SDK_ARTIFACT/install.log
+      --quiet >$CLOUD_SDK_ARTIFACT/install.log;
     cd ../
 
 .vendor:
