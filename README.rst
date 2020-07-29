@@ -187,8 +187,8 @@ Build
    % docker push ${HOST_NAME}/${PROJECT_ID}/${IMAGE_NAME}:latest
 
 
-Cloud Run
-~~~~~~~~~
+GCP
+~~~
 
 This is experimental. The following middlewares are required.
 
@@ -196,10 +196,16 @@ This is experimental. The following middlewares are required.
 * ``Memorystore`` for Redis (with VPC connector)
 * ``Cloud Storage`` (for logging)
 
-The build will be done via ``Cloud Build``.
+The ``server`` and ``worker`` both applications work with same environment
+variablse. The build will be done via ``Cloud Build``.
+
+Cloud Run
+^^^^^^^^^
+
+target: ``server``
 
 0. Setup gcloud on local
-^^^^^^^^^^^^^^^^^^^^^^^^
+........................
 
 .. code:: zsh
 
@@ -207,9 +213,7 @@ The build will be done via ``Cloud Build``.
    % source .tool/load-gcloud
 
 1. Prepare env vars for applications
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-The ``server`` and ``worker`` both applications use same dotenv file.
+....................................
 
 .. code:: zsh
 
@@ -222,7 +226,7 @@ escaped in DATABASE_URL. So, it should look like:
 ``DATABASE_URL="postgresql://user:password@%2Fpath%2Fto%2Fdir%3Afoo%3Abar``
 
 2. Prepare env vars for deploy
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..............................
 
 Especially ``GCP_CLOUD_BUILD_SUBSTR_ENV_VARS`` must be a path to the file
 ``.env.deploy`` which has been created in above step.
@@ -236,14 +240,36 @@ Especially ``GCP_CLOUD_BUILD_SUBSTR_ENV_VARS`` must be a path to the file
    % source .env.ci
 
 3. Run make deploy
-^^^^^^^^^^^^^^^^^^
+..................
 
 Currently, it may take more than 30 minutes...
 
 .. code:: zsh
 
    % make deploy:server
-   % make deploy:worker
+
+
+Compute Engine
+^^^^^^^^^^^^^^
+
+target: ``server``, ``worker``
+
+0. Create instance with a container
+...................................
+
+.. code:: zsh
+
+   % gcloud compute instances create-with-container <NAME> \
+     --container-image <IMAGE> \
+     --zone <ZONE> \
+     --container-restart-policy always \
+     --container-env-file .env.worker
+
+   % gcloud compute instances set-scopes <NAME> \
+      --scopes=sql-admin,default
+
+   # remove unnecessary external IP address
+   % gcloud compute addresses delete <ADDRESS>
 
 
 License

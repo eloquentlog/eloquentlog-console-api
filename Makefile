@@ -275,13 +275,13 @@ _deploy-%:
 		"$${SUBSTITUTIONS}" | sed 's/ //g' \
 	); \
 	gcloud builds submit \
-		--config=.build.yml . \
+		--config=.build.$${BUILD_TARGET}.yml . \
 		--substitutions="$${SUBSTITUTIONS}"
 
 deploy\:server: _deploy-server  ## Deploy `server` on a cluster on Cloud Run (require: GCP_XXX env vars)
 .PHONY: deploy\:server
 
-deploy\:worker: | _deploy-worker  ## Deploy `worker` on a cluster on Cloud Run (require: GCP_XXX env vars)
+deploy\:worker: | _deploy-worker  ## Deploy `worker` container on Compute Engine (require: GCP_XXX env vars)
 .PHONY: deploy\:worker
 # }}}
 
