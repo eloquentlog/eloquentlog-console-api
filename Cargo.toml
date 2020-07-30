@@ -46,7 +46,7 @@ proctitle = "0.1.1"
 # r2d2_redis 0.9.x  -> redis 0.10.x
 r2d2_redis = "0.10.1"
 rand = "0.6"
-redis = "0.11.0"
+redis = "0.17.0"
 regex = "0.2"
 rocket = "0.4.2"
 rocket_http = "0.4.2"
