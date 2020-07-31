@@ -35,6 +35,7 @@ pub mod preflight {
 pub mod preignition {
     use chrono::{Duration, Utc};
     use redis::{Commands, RedisError};
+    use rocket::State;
     use rocket::http::{Cookie, Cookies, SameSite, Status};
     use rocket_slog::SyncLogger;
 
@@ -45,6 +46,7 @@ pub mod preignition {
 
     #[head("/login", format = "json")]
     pub fn login<'a>(
+        config: State<Config>,
         mut cookies: Cookies,
         logger: SyncLogger,
         mut ss_conn: SsConn,
@@ -71,8 +73,9 @@ pub mod preignition {
         if result.is_ok() {
             let mut cookie = Cookie::new("csrf_token", key);
             cookie.set_http_only(true);
-            cookie.set_secure(false); // TODO
+            cookie.set_secure(config.cookie_secure);
             cookie.set_same_site(SameSite::Strict);
+            // encrypted value with expires 1 week from now
             cookies.add_private(cookie);
             return res.status(Status::Ok);
         }

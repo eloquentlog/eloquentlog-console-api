@@ -53,6 +53,7 @@ pub mod preflight {
 pub mod preignition {
     use chrono::{Duration, Utc};
     use redis::{Commands, RedisError};
+    use rocket::State;
     use rocket::http::{Cookie, Cookies, SameSite, Status};
     use rocket_slog::SyncLogger;
 
@@ -63,6 +64,7 @@ pub mod preignition {
 
     #[head("/password/reset", format = "json")]
     pub fn request<'a>(
+        config: State<Config>,
         logger: SyncLogger,
         mut cookies: Cookies,
         mut ss_conn: SsConn,
@@ -89,8 +91,9 @@ pub mod preignition {
         if result.is_ok() {
             let mut cookie = Cookie::new("csrf_token", key);
             cookie.set_http_only(true);
-            cookie.set_secure(false); // TODO
+            cookie.set_secure(config.cookie_secure);
             cookie.set_same_site(SameSite::Strict);
+            // encrypted value with expires 1 week from now
             cookies.add_private(cookie);
             return res.status(Status::Ok);
         }
@@ -100,6 +103,7 @@ pub mod preignition {
 
     #[head("/password/reset/<session_id>", format = "json")]
     pub fn update<'a>(
+        config: State<Config>,
         logger: SyncLogger,
         session_id: String,
         mut cookies: Cookies,
@@ -129,8 +133,9 @@ pub mod preignition {
         if result.is_ok() {
             let mut cookie = Cookie::new("csrf_token", key);
             cookie.set_http_only(true);
-            cookie.set_secure(false); // TODO
+            cookie.set_secure(config.cookie_secure);
             cookie.set_same_site(SameSite::Strict);
+            // encrypted value with expires 1 week from now
             cookies.add_private(cookie);
             return res.status(Status::Ok);
         }
