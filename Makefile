@@ -254,7 +254,7 @@ _deploy-%:
 		[ "$${BUILD_TARGET}" != "worker" ]; then \
 		exit; \
 	fi; \
-	export CLOUDSDK_PYTHON=python2.7; \
+	export CLOUDSDK_PYTHON=python3.7; \
 	export CLOUDSDK_CORE_PROJECT="$(GCP_PROJECT_ID)"; \
 	gcloud auth activate-service-account \
 		--key-file=$(GCP_CLOUD_BUILD_CREDENTIAL_JSON); \
