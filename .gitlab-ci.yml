@@ -38,9 +38,9 @@ stages:
       ln -s /usr/lib64/postgresql-11/lib64/libpgtypes.so /usr/lib64/libpgtypes.so;
       ln -s /usr/lib64/postgresql-11/lib64/libpq.so /usr/lib64/libpq.so;
       ln -s /usr/lib64/postgresql-11/lib64/libpq.so.5 /usr/lib64/libpq.so.5;
-      rm -fr /etc/ld.so.cache;
-      ldconfig;
-    fi
+    fi;
+    rm -fr /etc/ld.so.cache;
+    ldconfig;
 
 .python:
   - &python
@@ -56,9 +56,9 @@ stages:
       cp -R .python/include/ /usr/include/python2.7;
       cp -R .python/lib/python2.7/ /usr/lib64/python2.7;
       cp -R .python/lib/pkgconfig/* /usr/lib64/pkgconfig/;
-      rm -fr /etc/ld.so.cache;
-      ldconfig;
-    fi
+    fi;
+    rm -fr /etc/ld.so.cache;
+    ldconfig;
 
 .sqlite:
   - &sqlite
@@ -76,9 +76,9 @@ stages:
       cp -R .sqlite/lib/pkgconfig/* /usr/lib64/pkgconfig/;
       cp -R .sqlite/lib/libsqlite* /usr/lib64/;
       cp -R .sqlite/include/* /usr/include/;
-      rm -fr /etc/ld.so.cache;
-      ldconfig;
-    fi
+    fi;
+    rm -fr /etc/ld.so.cache;
+    ldconfig;
 
 .cloud-sdk:
   - &cloud-sdk
