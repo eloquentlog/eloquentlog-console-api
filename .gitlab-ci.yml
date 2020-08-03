@@ -76,8 +76,8 @@ stages:
       cp -R .sqlite/lib/pkgconfig/* /usr/lib64/pkgconfig/;
       cp -R .sqlite/lib/libsqlite* /usr/lib64/;
       cp -R .sqlite/include/* /usr/include/;
-      ln -s /usr/lib64/libsqlite3.so.0.8.6 /usr/lib64/libsqlite3.so
-      ln -s /usr/lib64/libsqlite3.so.0.8.6 /usr/lib64/libsqlite3.so.0
+      ln -s /usr/lib64/libsqlite3.so.0.8.6 /usr/lib64/libsqlite3.so;
+      ln -s /usr/lib64/libsqlite3.so.0.8.6 /usr/lib64/libsqlite3.so.0;
     fi;
     rm -fr /etc/ld.so.cache;
     ldconfig;
