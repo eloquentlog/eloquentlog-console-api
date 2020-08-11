@@ -6,7 +6,7 @@ steps:
     args:
       - '-c'
       - |
-        docker pull ${_REGISTRY_HOST}/$PROJECT_ID/${_SERVICE_NAME}:latest || \
+        docker pull ${_REGISTRY_HOST}/$PROJECT_ID/${_SERVICE_NAME}:latest ||
         exit 0
 
   - id: 'build'
@@ -90,7 +90,6 @@ substitutions:
   # -- from .env.deploy
   _REGISTRY_HOST: 'eu.gcr.io'
   _REGISTRY_REGION: 'europe-west1'
-
   # [application]
   # -- from .env.deploy
   _ENV: 'development'
