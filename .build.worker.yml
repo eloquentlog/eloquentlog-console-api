@@ -37,47 +37,9 @@ substitutions:
   # -- from args
   _BUILD_TARGET_NAME: 'worker'
   _BUILD_LOGS_BUCKET: '${_PROJECT_ID}_cloudbuild'
-  # _POSTGRES_INSTANCE: 'foo-bar-baz-qux-quux'
-  # _REDIS_CONNECTOR: 'connector'
   _SERVICE_NAME: 'eloquentlog-console-api-worker'
   # -- from .env.deploy
   _REGISTRY_HOST: 'eu.gcr.io'
-  # _REGISTRY_REGION: 'europe-west1'
-  # [application]
-  # -- from .env.deploy
-  # _ENV: 'development'
-  # server
-  # _ROCKET_HOST: '0.0.0.0'
-  # _ROCKET_PORT: '8080'
-  # _ROCKET_CLI_COLORS: 'off'
-  # _ROCKET_KEEP_ALIVE: '0'
-  # application
-  # _APPLICATION_URL: 'https://example.org'
-  # authentication
-  # _AUTHENTICATION_TOKEN_ISSUER: 'org.example.production'
-  # _AUTHENTICATION_TOKEN_KEY_ID: 'key_id'
-  # _AUTHENTICATION_TOKEN_SECRET: 'secret'
-  # cookie
-  # _COOKIE_DOMAIN: 'example.org'
-  # _COOKIE_SECURE: 'true'
-  # database
-  # _DATABASE_URL: 'postgresql://user:password@%2Fcloudsql%2Ffoo%3Abar%3Abaz'
-  # mailer
-  # _MAILER_DOMAIN: 'example.org'
-  # _MAILER_FROM_EMAIL: 'no-reply@example.org'
-  # _MAILER_FROM_ALIAS: 'Eloquentlog'
-  # _MAILER_SMTP_HOST: 'server.tld'
-  # _MAILER_SMTP_PORT: '465'
-  # _MAILER_SMTP_USERNAME: 'username'
-  # _MAILER_SMTP_PASSWORD: 'password'
-  # message queue
-  # _MESSAGE_QUEUE_URL: 'redis://h0st:6379/0'
-  # session store
-  # _SESSION_STORE_URL: 'redis://h0st:6379/2'
-  # verification
-  # _VERIFICATION_TOKEN_ISSUER: 'org.example.production'
-  # _VERIFICATION_TOKEN_KEY_ID: 'key_id'
-  # _VERIFICATION_TOKEN_SECRET: 'secret'
 
 logsBucket: 'gs://${_BUILD_LOGS_BUCKET}/'
 timeout: '3600s'
