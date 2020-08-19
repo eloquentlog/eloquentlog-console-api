@@ -60,7 +60,7 @@ stages:
       cp -R .python/lib/pkgconfig/* /usr/lib64/pkgconfig/;
       cp .python/python* /usr/bin/;
     fi;
-    eselect python update --python3;
+    eselect python set --python3 python3.7;
     rm -fr /etc/ld.so.cache;
     ldconfig;
 
@@ -131,8 +131,8 @@ stages:
     key: release
     paths:
       - .cloud-sdk
-      - .python
       - .sqlite
+      - .python
 
 .vet-tools: &vet-tools
   image: registry.gitlab.com/grauwoelfchen/portolan/rust-vet-tools:1.42.0-nightly
@@ -159,9 +159,7 @@ stages:
     # GCP_CLOUD_BUILD_CREDENTIAL_JSON: /path/to/credential.json
     # GCP_CLOUD_BUILD_SUBSTR_ENV_VARS: /path/to/.env.deploy
     # GCP_CLOUD_RUN_SERVICE_NAME_BASE: eloquentlog-console-api
-    # GCP_CLOUD_SQL_POSTGRES_INSTANCE: foo-bar-baz-qux-quux
     # GCP_CLOUD_STORAGE_LOG_DIRECTORY: bucket_name
-    # GCP_CLOUD_MEMORYSTORE_CONNECTOR: connector-name
     # GCP_PROJECT_ID: eloquentlog
   # TODO
   # environment:
