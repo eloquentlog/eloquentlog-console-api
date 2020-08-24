@@ -134,11 +134,7 @@ impl User {
             .limit(1);
 
         info!(logger, "{}", debug_query::<Pg, _>(&q).to_string());
-
-        match q.load::<i64>(conn) {
-            Ok(ref v) if v.is_empty() => true,
-            _ => false,
-        }
+        matches!(q.load::<i64>(conn), Ok(ref v) if v.is_empty())
     }
 
     pub fn check_username_uniqueness(
@@ -153,11 +149,7 @@ impl User {
             .limit(1);
 
         info!(logger, "{}", debug_query::<Pg, _>(&q).to_string());
-
-        match q.load::<i64>(conn) {
-            Ok(ref v) if v.is_empty() => true,
-            _ => false,
-        }
+        matches!(q.load::<i64>(conn), Ok(ref v) if v.is_empty())
     }
 
     pub fn find_by_email(
