@@ -4,16 +4,14 @@ VAR_DATABASE_URL := $(if $(ENV),"$$$(shell echo "$(ENV)" | \
 MIGRATION_DIRECTORY := migration
 MIGRATION_NAME ?=
 
+APP := eloquentlog-console-api
 ENV := development
 
 # deployment
 GCP_PROJECT_ID ?=
 GCP_CLOUD_BUILD_CREDENTIAL_JSON ?=
 GCP_CLOUD_BUILD_SUBSTR_ENV_VARS ?=
-GCP_CLOUD_RUN_SERVICE_NAME_BASE ?=
-GCP_CLOUD_SQL_POSTGRES_INSTANCE ?=
 GCP_CLOUD_STORAGE_LOG_DIRECTORY ?=
-GCP_CLOUD_MEMORYSTORE_CONNECTOR ?=
 
 # setup -- {{{
 setup\:vendor:  ## Install cargo vendor and run it
@@ -254,7 +252,7 @@ _deploy-%:
 		[ "$${BUILD_TARGET}" != "worker" ]; then \
 		exit; \
 	fi; \
-	export CLOUDSDK_PYTHON=python2.7; \
+	export CLOUDSDK_PYTHON=python3.7; \
 	export CLOUDSDK_CORE_PROJECT="$(GCP_PROJECT_ID)"; \
 	gcloud auth activate-service-account \
 		--key-file=$(GCP_CLOUD_BUILD_CREDENTIAL_JSON); \
@@ -266,22 +264,20 @@ _deploy-%:
 	)"; \
 	SUBSTITUTIONS=$$( \
 		printf " \
+		_SERVICE_NAME=$(APP)-$${BUILD_TARGET}, \
 		_BUILD_TARGET_NAME=$${BUILD_TARGET}, \
-		_POSTGRES_INSTANCE=$(GCP_CLOUD_SQL_POSTGRES_INSTANCE), \
 		_BUILD_LOGS_BUCKET=$(GCP_CLOUD_STORAGE_LOG_DIRECTORY), \
-		_REDIS_CONNECTOR=$(GCP_CLOUD_MEMORYSTORE_CONNECTOR), \
-		_SERVICE_NAME=$(GCP_CLOUD_RUN_SERVICE_NAME_BASE)-$${BUILD_TARGET}, \
 		%s" \
 		"$${SUBSTITUTIONS}" | sed 's/ //g' \
 	); \
 	gcloud builds submit \
-		--config=.build.yml . \
+		--config=.build.$${BUILD_TARGET}.yml . \
 		--substitutions="$${SUBSTITUTIONS}"
 
 deploy\:server: _deploy-server  ## Deploy `server` on a cluster on Cloud Run (require: GCP_XXX env vars)
 .PHONY: deploy\:server
 
-deploy\:worker: | _deploy-worker  ## Deploy `worker` on a cluster on Cloud Run (require: GCP_XXX env vars)
+deploy\:worker: | _deploy-worker  ## Deploy `worker` container on Compute Engine (require: GCP_XXX env vars)
 .PHONY: deploy\:worker
 # }}}
 

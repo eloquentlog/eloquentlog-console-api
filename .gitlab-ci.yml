@@ -2,7 +2,6 @@ stages:
   - verify
   - test
   - build
-  - deploy
 
 .diesel:
   - &diesel
@@ -38,69 +37,9 @@ stages:
       ln -s /usr/lib64/postgresql-11/lib64/libpgtypes.so /usr/lib64/libpgtypes.so;
       ln -s /usr/lib64/postgresql-11/lib64/libpq.so /usr/lib64/libpq.so;
       ln -s /usr/lib64/postgresql-11/lib64/libpq.so.5 /usr/lib64/libpq.so.5;
-      rm -fr /etc/ld.so.cache;
-      ldconfig;
-    fi
-
-.python:
-  - &python
-    if [ ! -d ".python" ]; then
-      mkdir -p .python/{include,lib/pkgconfig,lib64};
-      USE="readline sqlite ssl xml"
-        emerge --quiet-build=y --nospinner --oneshot dev-lang/python:2.7;
-      cp -R /usr/include/python2.7/ .python/include;
-      cp -R /usr/lib/python-exec/ .python/lib/python-exec;
-      cp /usr/bin/python2.7 .python/python2.7;
-    else
-      cp -R .python/include/ /user/include/python2.7;
-      cp -R .python/lib64/ /usr/lib64/python2.7;
-      cp -R .python/lib/python-exec/ /user/lib/python-exec;
-      rm -fr /etc/ld.so.cache;
-      ldconfig;
-    fi
-
-.sqlite:
-  - &sqlite
-    if [ ! -d ".sqlite" ]; then
-      mkdir -p .sqlite/{include,lib/pkgconfig};
-      USE="readline secure-delete"
-        emerge --quiet-build=y --nospinner --oneshot dev-db/sqlite:3;
-      cp -R /usr/include/sqlite3ext.h .sqlite/include/;
-      cp -R /usr/include/sqlite3.h .sqlite/include/;
-      cp -R /usr/lib64/libsqlite* .sqlite/lib/;
-      cp -R /usr/lib64/pkgconfig/sqlite3.pc .sqlite/lib/pkgconfig/;
-      cp /usr/bin/sqlite3 .sqlite/sqlite3;
-    else
-      cp -R .sqlite/sqlite3 /usr/bin/sqlite3;
-      cp -R .sqlite/lib/pkgconfig/* /usr/lib64/pkgconfig/;
-      cp -R .sqlite/lib/libsqlite* /usr/lib64/;
-      cp -R .sqlite/include/* /usr/include/;
-      rm -fr /etc/ld.so.cache;
-      ldconfig;
-    fi
-
-.cloud-sdk:
-  - &cloud-sdk
-    export CLOUDSDK_PYTHON=python2.7;
-    mkdir -p .tool;
-    cd .tool;
-    if [ ! -d "../.cloud-sdk" ]; then
-      mkdir -p ../.cloud-sdk;
-      curl -O $CLOUD_SDK_BASE_URL/$CLOUD_SDK_FILENAME;
-      echo "${CLOUD_SDK_CHECKSUM}" "" ./$CLOUD_SDK_FILENAME | sha256sum -c -;
-      cp $CLOUD_SDK_FILENAME ../.cloud-sdk/;
-    else
-      cp ../.cloud-sdk/$CLOUD_SDK_FILENAME .;
     fi;
-    tar zxf $CLOUD_SDK_FILENAME;
-    ./$CLOUD_SDK_ARTIFACT/install.sh
-      --command-completion=false
-      --path-update=false
-      --usage-reporting=false
-      --rc-path=/dev/null
-      --override-components beta cloud-build-local core
-      --quiet >$CLOUD_SDK_ARTIFACT/install.log 2>&1;
-    cd ../
+    rm -fr /etc/ld.so.cache;
+    ldconfig;
 
 .vendor:
   - &vendor
@@ -133,10 +72,6 @@ stages:
     - rustc --version
     - cargo --version
     - *vendor
-  <<: *cache
-
-.gentoo: &gentoo
-  image: registry.gitlab.com/grauwoelfchen/portolan/gentoo-amd64-nomultilib:latest
   <<: *cache
 
 # verify {{{
@@ -241,46 +176,4 @@ build-release:
   only:
     - release@eloquentlog/eloquentlog-console-api
     - tags@eloquentlog/eloquentlog-console-api
-# }}}
-
-# deploy {{{
-release:
-  stage: deploy
-  <<: *gentoo
-  variables:
-    CLOUD_SDK_BASE_URL: https://dl.google.com/dl/cloudsdk/channels/rapid/downloads
-    CLOUD_SDK_CHECKSUM: 4773911e9f8fb7fe3b915e1f24ebe957436474253688820a9f2990d7399bd3b8
-    CLOUD_SDK_ARTIFACT: google-cloud-sdk
-    CLOUD_SDK_FILENAME: ${CLOUD_SDK_ARTIFACT}-301.0.0-linux-x86_64.tar.gz
-    # set as secret variables
-    # GCP_CLOUD_BUILD_CREDENTIAL_JSON: /path/to/credential.json
-    # GCP_CLOUD_BUILD_SUBSTR_ENV_VARS: /path/to/.env.deploy
-    # GCP_CLOUD_RUN_SERVICE_NAME_BASE: eloquentlog-console-api
-    # GCP_CLOUD_SQL_POSTGRES_INSTANCE: foo-bar-baz-qux-quux
-    # GCP_CLOUD_STORAGE_LOG_DIRECTORY: bucket_name
-    # GCP_CLOUD_MEMORYSTORE_CONNECTOR: connector-name
-    # GCP_PROJECT_ID: eloquentlog
-  before_script:
-    - *sqlite
-    - *python
-    - *cloud-sdk
-  # TODO
-  # environment:
-  #   name: development
-  script:
-    - . .tool/$CLOUD_SDK_ARTIFACT/path.bash.inc; make deploy:server
-  only:
-    - release@eloquentlog/eloquentlog-console-api
-    - tags@eloquentlog/eloquentlog-console-api
-  # DEBUG
-  # arfitacts:
-  #   paths:
-  #     - $CLOUD_SDK_ARTIFACT
-  #   expire_in: 1 day
-  cache:
-    key: release
-    paths:
-      - .cloud-sdk
-      - .python
-      - .sqlite
 # }}}

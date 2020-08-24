@@ -1,0 +1,47 @@
+---
+steps:
+  - id: 'cache'
+    name: 'gcr.io/cloud-builders/docker'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        docker pull ${_REGISTRY_HOST}/$PROJECT_ID/${_SERVICE_NAME}:latest ||
+        exit 0
+
+  - id: 'build'
+    name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'build'
+      - '--file'
+      - 'Dockerfile'
+      - '--build-arg'
+      - 'BINARY=${_BUILD_TARGET_NAME}'
+      - '--tag'
+      - '${_REGISTRY_HOST}/$PROJECT_ID/${_SERVICE_NAME}:latest'
+      - '--cache-from'
+      - '${_REGISTRY_HOST}/$PROJECT_ID/${_SERVICE_NAME}:latest'
+      - '.'
+    wait_for: ['cache']
+
+  - id: 'push'
+    name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'push'
+      - '${_REGISTRY_HOST}/$PROJECT_ID/${_SERVICE_NAME}:latest'
+    wait_for: ['build']
+
+# NOTE: These values are dummy. They should be replaced with env vars.
+substitutions:
+  # [deployment]
+  # -- from args
+  _BUILD_TARGET_NAME: 'server'
+  _BUILD_LOGS_BUCKET: '${_PROJECT_ID}_cloudbuild'
+  _SERVICE_NAME: 'eloquentlog-console-api-server'
+  # -- from .env.deploy
+  _REGISTRY_HOST: 'eu.gcr.io'
+
+logsBucket: 'gs://${_BUILD_LOGS_BUCKET}/'
+timeout: '3600s'
+tags: ['latest']
+images: ['${_REGISTRY_HOST}/$PROJECT_ID/${_SERVICE_NAME}']
