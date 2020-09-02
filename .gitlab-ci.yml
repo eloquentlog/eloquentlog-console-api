@@ -18,7 +18,7 @@ stages:
     # /usr/include/postgresql is symlink to postgresql-11
     if [ ! -d ".postgresql" ]; then
       mkdir .postgresql;
-      USE="readline ssl zlib uuid -perl -python"
+      USE="ssl zlib uuid -perl -python"
         emerge --quiet-build=y --nospinner --oneshot dev-db/postgresql:11;
       cp -R /usr/include/postgresql-11/ .postgresql/include;
       cp -R /usr/lib64/postgresql-11/ .postgresql/lib;
