@@ -133,7 +133,7 @@ test:
     TEST_MAILER_FROM_EMAIL: "no-reply@example.com"
     TEST_MAILER_FROM_ALIAS: "Eloquentlog - Testing"
     TEST_MAILER_SMTP_HOST: "server.tld"
-    TEST_MAILER_SMTP_PORT: 587
+    TEST_MAILER_SMTP_PORT: "587"
     TEST_MAILER_SMTP_PASSWORD: "username"
     TEST_MAILER_SMTP_USERNAME: "password"
     TEST_MESSAGE_QUEUE_URL: "redis://redis:6379/0"
