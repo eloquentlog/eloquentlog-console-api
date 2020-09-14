@@ -1,1 +1,3 @@
-VERSION=1.46.0-nightly
+VERSION=1.47.0-nightly
+RUST_INSTALL_DIESEL=1
+RUST_CARGO_BUILD_FLAGS="--release --bin server --bin worker"
