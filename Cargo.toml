@@ -10,15 +10,15 @@ keywords = []
 license = "AGPL-3.0-or-later"
 
 [[bin]]
-name = "router"
+name = "eloquentlog-console-api-router"
 path = "src/bin/router.rs"
 
 [[bin]]
-name = "server"
+name = "eloquentlog-console-api-server"
 path = "src/bin/server.rs"
 
 [[bin]]
-name = "worker"
+name = "eloquentlog-console-api-worker"
 path = "src/bin/worker.rs"
 
 [[test]]
