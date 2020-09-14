@@ -18,10 +18,8 @@ else
 fi
 echo "$kcov_cmd"
 
-target_name="${1}"
-target_files=$(ls $target_dir/$target_name-* | grep -v '\.d$')
-
-for file in $target_files; do
+prefix="${1}"
+for file in $(ls $target_dir/$prefix-* | grep -v '\.d$'); do
   echo $file
 
   $kcov_cmd --verify --include-path=$(pwd)/src \
