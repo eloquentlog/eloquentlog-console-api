@@ -1,0 +1,2 @@
+RUST_INSTALL_DIESEL=1
+RUST_CARGO_BUILD_FLAGS="--release --bin server --bin worker"
