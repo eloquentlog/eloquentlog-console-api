@@ -1,6 +1,1 @@
 nightly-2020-09-14
-
-# [toolchain]
-# channel = "nightly-2020-08-28"
-# components = ["cargo", "clippy", "rust-std", "rustc", "rustfmt"]
-# targets = ["x86_64-unknown-linux-gnu"]
