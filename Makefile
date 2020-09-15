@@ -117,44 +117,44 @@ build\:release:  ## Build targets in release mode
 ## applications
 
 build\:debug\:server:  ## build only server binary in debug mode [alias: build:server]
-	cargo build --bin server
+	cargo build --bin eloquentlog-console-api-server
 .PHONY: build\:debug\:server
 
 build\:server: | build\:debug\:server
 .PHONY: build\:server
 
 build\:release\:server:  ## build only server binary in release mode
-	cargo build --bin server --release
+	cargo build --bin eloquentlog-console-api-server --release
 .PHONY: build\:release\:server
 
 build\:debug\:worker:  ## build only worker binary in debug mode [alias: build:worker]
-	cargo build --bin worker
+	cargo build --bin eloquentlog-console-api-worker
 .PHONY: build\:debug\:worker
 
 build\:worker: | build\:debug\:worker
 .PHONY: build\:worker
 
 build\:release\:worker:  ## build only worker binary in release mode
-	cargo build --bin worker --release
+	cargo build --bin eloquentlog-console-api-worker --release
 .PHONY: build\:release\:worker
 
 ## utilities
 
 build\:debug\:router:  ## build only router binary in debug mode [alias: build:router]
-	cargo build --bin router
+	cargo build --bin eloquentlog-console-api-router
 .PHONY: build\:debug\:router
 
 build\:router: | build\:debug\:router
 .PHONY: build\:router
 
 build\:release\:router:  ## build only router binary in release mode
-	cargo build --bin router --release
+	cargo build --bin eloquentlog-console-api-router --release
 .PHONY: build\:release\:router
 # }}}
 
 # watch -- {{{
 watch\:server:  ## Start watch process for development server [alias: server]
-	@cargo watch --exec 'run --bin server' --delay 0.3 \
+	@cargo watch --exec 'run --bin eloquentlog-console-api-server' --delay 0.3 \
 		--ignore '(\.tool|tmp|migration|src\/worker)/\*'
 .PHONY: watch\:server
 
@@ -162,7 +162,7 @@ server: | watch\:server
 .PHONY: server
 
 watch\:worker:  ## Start watch process for development worker [alias: worker]
-	@cargo watch --exec 'run --bin worker' --delay 0.3 \
+	@cargo watch --exec 'run --bin eloquentlog-console-api-worker' --delay 0.3 \
 		--ignore '(\.tool|tmp|migration|src\/server)/\*'
 .PHONY: watch\:worker
 
@@ -299,7 +299,7 @@ doc: | doc\:lib
 .PHONY: doc
 
 route:  ## Print all routes using router
-	@cargo run --bin router
+	@cargo run --bin eloquentlog-console-api-router
 .PHONY: route
 
 help:  ## Display this message
