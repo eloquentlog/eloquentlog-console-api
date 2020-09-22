@@ -1,3 +1,3 @@
 RUST_INSTALL_DIESEL=1
 RUST_CARGO_BUILD_FLAGS="--release --bin eloquentlog-console-api-server --bin eloquentlog-console-api-worker"
-DIESEL_FLAGS="--no-default-features --features chrono postgres r2d2 uuidv07"
+DIESEL_FLAGS="--force --no-default-features --features postgres"
