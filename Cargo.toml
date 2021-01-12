@@ -58,7 +58,7 @@ serde_derive = "1.0"
 serde_json = "1.0"
 slog = "2.4"
 sloggers = "0.3"
-uuid = { version = "0.7.0", features = ["v4"] }
+uuid = { version = "0.8.2", features = ["v4"] }
 
 [dependencies.diesel]
 version = "1.4.5"
