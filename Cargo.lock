@@ -120,6 +120,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "71938f30533e4d95a6d17aa530939da3842c2ab6f4f84b9dae68447e4129f74a"
 
 [[package]]
+name = "async-trait"
+version = "0.1.42"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8d3a45e77e34375a7923b1e8febb049bb011f064714a8e17a1a616fef01da13d"
+dependencies = [
+ "proc-macro2 1.0.18",
+ "quote 1.0.7",
+ "syn 1.0.33",
+]
+
+[[package]]
 name = "atty"
 version = "0.2.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -273,6 +284,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "bytes"
+version = "1.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b700ce4376041dcd0a327fd0097c41095743c4c8af8887265942faf1100bd040"
+
+[[package]]
 name = "cargo-husky"
 version = "1.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -331,6 +348,16 @@ dependencies = [
  "either",
  "memchr",
  "unreachable",
+]
+
+[[package]]
+name = "combine"
+version = "4.5.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cc4369b5e4c0cddf64ad8981c0111e7df4f7078f4d6ba98fb31f2e17c4c57b7e"
+dependencies = [
+ "bytes 1.0.1",
+ "memchr",
 ]
 
 [[package]]
@@ -545,7 +572,7 @@ dependencies = [
  "proctitle",
  "r2d2_redis",
  "rand 0.6.5",
- "redis",
+ "redis 0.11.0",
  "regex 0.2.11",
  "rocket",
  "rocket-slog",
@@ -690,12 +717,22 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "00b0228411908ca8685dba7fc2cdd70ec9990a6e753e89b6ac91a84c40fbaf4b"
 
 [[package]]
+name = "form_urlencoded"
+version = "1.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5fc25a87fa4fd2094bffb06925852034d90a17f0d1e05197d4956d3555752191"
+dependencies = [
+ "matches",
+ "percent-encoding 2.1.0",
+]
+
+[[package]]
 name = "fourche"
 version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b0fc9571c864077849400e4b3ace4b48bbcb193bafc5b57729f1ce45a28178da"
 dependencies = [
- "redis",
+ "redis 0.11.0",
  "serde",
  "serde_json",
 ]
@@ -843,7 +880,7 @@ dependencies = [
  "traitobject",
  "typeable",
  "unicase",
- "url",
+ "url 1.7.2",
 ]
 
 [[package]]
@@ -851,6 +888,17 @@ name = "idna"
 version = "0.1.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "38f09e0f0b1fb55fdee1f17470ad800da77af5186a1a76c026b679358b7e844e"
+dependencies = [
+ "matches",
+ "unicode-bidi",
+ "unicode-normalization",
+]
+
+[[package]]
+name = "idna"
+version = "0.2.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "89829a5d69c23d348314a7ac337fe39173b61149a9864deabd260983aed48c21"
 dependencies = [
  "matches",
  "unicode-bidi",
@@ -1473,12 +1521,12 @@ dependencies = [
 
 [[package]]
 name = "r2d2_redis"
-version = "0.10.1"
+version = "0.14.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9d536b77898af8ead6cff5f05b769f4433792dff459ab8e8f676048a74b73322"
+checksum = "182473b876b0b93e353682ec58e207dd1cb4a62278bbe0045fe52b86b74363bb"
 dependencies = [
  "r2d2",
- "redis",
+ "redis 0.20.0",
 ]
 
 [[package]]
@@ -1656,8 +1704,8 @@ version = "0.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1b03b599645e2db97724125cdff11196b56a70b21837a6e68f0e55955989e0cc"
 dependencies = [
- "bytes",
- "combine",
+ "bytes 0.4.12",
+ "combine 3.8.1",
  "dtoa",
  "futures",
  "itoa",
@@ -1668,7 +1716,22 @@ dependencies = [
  "tokio-sync",
  "tokio-tcp",
  "tokio-uds",
- "url",
+ "url 1.7.2",
+]
+
+[[package]]
+name = "redis"
+version = "0.20.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "eeb8f8d059ead7805e171fc22de8348a3d611c0f985aaa4f5cf6c0dfc7645407"
+dependencies = [
+ "async-trait",
+ "combine 4.5.2",
+ "dtoa",
+ "itoa",
+ "percent-encoding 2.1.0",
+ "sha1",
+ "url 2.2.1",
 ]
 
 [[package]]
@@ -2227,9 +2290,18 @@ dependencies = [
 
 [[package]]
 name = "tinyvec"
-version = "0.3.3"
+version = "1.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "53953d2d3a5ad81d9f844a32f14ebb121f50b650cd59d0ee2a07cf13c617efed"
+checksum = "317cca572a0e89c3ce0ca1f1bdc9369547fe318a683418e42ac8f59d14701023"
+dependencies = [
+ "tinyvec_macros",
+]
+
+[[package]]
+name = "tinyvec_macros"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cda74da7e1a664f795bb1f8a87ec406fb89a02522cf6e50620d016add6dbbf5c"
 
 [[package]]
 name = "tokio-codec"
@@ -2237,7 +2309,7 @@ version = "0.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "25b2998660ba0e70d18684de5d06b70b70a3a747469af9dea7618cc59e75976b"
 dependencies = [
- "bytes",
+ "bytes 0.4.12",
  "futures",
  "tokio-io",
 ]
@@ -2258,7 +2330,7 @@ version = "0.1.13"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "57fc868aae093479e3131e3d165c93b1c7474109d13c90ec0dda2a1bbfff0674"
 dependencies = [
- "bytes",
+ "bytes 0.4.12",
  "futures",
  "log 0.4.8",
 ]
@@ -2298,7 +2370,7 @@ version = "0.1.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "98df18ed66e3b72e742f185882a9e201892407957e45fbff8da17ae7a7c51f72"
 dependencies = [
- "bytes",
+ "bytes 0.4.12",
  "futures",
  "iovec",
  "mio",
@@ -2312,7 +2384,7 @@ version = "0.2.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ab57a4ac4111c8c9dbcf70779f6fc8bc35ae4b2454809febac840ad19bd7e4e0"
 dependencies = [
- "bytes",
+ "bytes 0.4.12",
  "futures",
  "iovec",
  "libc",
@@ -2396,9 +2468,9 @@ dependencies = [
 
 [[package]]
 name = "unicode-normalization"
-version = "0.1.13"
+version = "0.1.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6fb19cf769fa8c6a80a162df694621ebeb4dafb606470b2b2fce0be40a98a977"
+checksum = "07fbfce1c8a97d547e8b5334978438d9d6ec8c20e38f56d4a4374d181493eaef"
 dependencies = [
  "tinyvec",
 ]
@@ -2446,9 +2518,21 @@ version = "1.7.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "dd4e7c0d531266369519a4aa4f399d748bd37043b00bde1e4ff1f60a120b355a"
 dependencies = [
- "idna",
+ "idna 0.1.5",
  "matches",
  "percent-encoding 1.0.1",
+]
+
+[[package]]
+name = "url"
+version = "2.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9ccd964113622c8e9322cfac19eb1004a07e636c545f325da085d5cdde6f1f8b"
+dependencies = [
+ "form_urlencoded",
+ "idna 0.2.2",
+ "matches",
+ "percent-encoding 2.1.0",
 ]
 
 [[package]]
