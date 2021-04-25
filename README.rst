@@ -1,11 +1,11 @@
 Eloquentlog Console API
 =======================
 
-.. image:: https://gitlab.com/eloquentlog/eloquentlog-console-api/badges/master/pipeline.svg
-   :target: https://gitlab.com/eloquentlog/eloquentlog-console-api/commits/master
+.. image:: https://gitlab.com/eloquentlog/eloquentlog-console-api/badges/trunk/pipeline.svg
+   :target: https://gitlab.com/eloquentlog/eloquentlog-console-api/commits/trunk
 
-.. image:: https://gitlab.com/eloquentlog/eloquentlog-console-api/badges/master/coverage.svg
-   :target: https://gitlab.com/eloquentlog/eloquentlog-console-api/commits/master
+.. image:: https://gitlab.com/eloquentlog/eloquentlog-console-api/badges/trunk/coverage.svg
+   :target: https://gitlab.com/eloquentlog/eloquentlog-console-api/commits/trunk
 
 .. code:: text
 
