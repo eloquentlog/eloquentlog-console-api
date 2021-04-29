@@ -1,0 +1,14 @@
+version: 2
+updates:
+- package-ecosystem: cargo
+  directory: "/"
+  schedule:
+    interval: daily
+  open-pull-requests-limit: 10
+  ignore:
+  - dependency-name: redis
+    versions:
+    - 0.19.0
+  - dependency-name: r2d2_redis
+    versions:
+    - 0.13.0
