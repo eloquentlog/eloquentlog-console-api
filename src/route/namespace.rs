@@ -1,3 +1,6 @@
+use diesel::result::Error;
+use rocket::http::Status;
+use rocket_contrib::json::JsonValue;
 use rocket_slog::SyncLogger;
 
 use crate::db::DbConn;
@@ -13,6 +16,17 @@ pub mod preflight {
     use crate::config::Config;
     use crate::response::no_content_for;
 
+    #[options("/namespace/hget/<uuid>")]
+    pub fn hget<'a>(
+        uuid: String,
+        config: State<Config>,
+        logger: SyncLogger,
+    ) -> RawResponse<'a>
+    {
+        info!(logger, "hget uuid: {}", uuid);
+        no_content_for("GET", &config)
+    }
+
     #[options("/namespace/hgetall")]
     pub fn hgetall<'a>(
         config: State<Config>,
@@ -22,6 +36,32 @@ pub mod preflight {
         info!(logger, "hgetall");
         no_content_for("GET", &config)
     }
+}
+
+#[get("/namespace/hget/<uuid>")]
+pub fn hget(
+    uuid: String,
+    user: &User,
+    conn: DbConn,
+    logger: SyncLogger,
+) -> Response
+{
+    info!(logger, "user: {}, uuid: {}", user.uuid, uuid);
+
+    let res: Response = Default::default();
+
+    let data: Result<JsonValue, Error> =
+        match Namespace::find_by_uuid(&uuid, &user, &conn, &logger) {
+            None => {
+                error!(logger, "err: no namespace for uuid: {}", uuid);
+                Err(Error::NotFound)
+            },
+            Some(n) => Ok(json!({ "namespace": n })),
+        };
+    if data.is_err() {
+        return res.status(Status::NotFound);
+    }
+    res.format(data.unwrap())
 }
 
 #[get("/namespace/hgetall")]
