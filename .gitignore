@@ -1,15 +1,13 @@
+.cache
 target
-tmp
 vendor
 
 .env*
 !.env*.sample
 .cargo/config
 .cargo/vendor
-.tool/kcov
-.tool/gitlab-runner
-.tool/*sdk*
-.tool/*credential*
-.tool/cloud_sql_proxy
-!.tool/{setup,load}*
-**/*.rs.bk
+
+.build*
+
+release.sh
+*ignore

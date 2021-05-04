@@ -1,3 +1,6 @@
+Tue 04 May 2021 Yasuhiro Яша Asaka <yasuhiro.asaka@grauwoelfchen.net>
+	* Remove .tool
+
 Thu 09 Jul 2020 Yasuhiro Яша Asaka <yasuhiro.asaka@grauwoelfchen.net>
 	* Separate v1 routes from internal endpoint
 	* Rename `/user/activate` to `/activate`

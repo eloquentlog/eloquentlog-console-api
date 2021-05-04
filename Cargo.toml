@@ -22,7 +22,7 @@ name = "eloquentlog-console-api-worker"
 path = "src/bin/worker.rs"
 
 [[test]]
-name = "integration"
+name = "e2e"
 path = "test/test.rs"
 
 [dependencies]

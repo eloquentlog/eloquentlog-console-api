@@ -52,7 +52,6 @@ stages:
     key:
       files:
         - Cargo.lock
-      # NOTE: set an environment variable `CI_CACHE_VERSION`
       prefix: "${CI_PROJECT_NAME}-cache-${CI_CACHE_VERSION}"
     paths:
       - .diesel
@@ -74,7 +73,6 @@ stages:
     - *vendor
   <<: *cache
 
-# verify {{{
 check:
   stage: verify
   <<: *vet-tools
@@ -103,13 +101,11 @@ lint:
     - cargo --version
     - cargo clippy --version
     - *vendor
-  script:
     - mkdir .git/hooks
+  script:
     - make verify:lint
   <<: *cache
-# }}}
 
-# test {{{
 test:
   stage: test
   <<: *vet-tools
@@ -142,7 +138,6 @@ test:
     TEST_VERIFICATION_TOKEN_KEY_ID: "test-verification-token-key_id"
     TEST_VERIFICATION_TOKEN_SECRET: "test-verification-token-secret"
   before_script:
-    - mkdir -p .git/hooks
     - *postgresql
     - rustc --version
     - cargo --version
@@ -152,14 +147,14 @@ test:
     - psql $TEST_DATABASE_URL -c "CREATE EXTENSION IF NOT EXISTS \"uuid-ossp\""
     - DATABASE_URL=$TEST_DATABASE_URL make schema:migration:commit
     - DATABASE_URL=$TEST_DATABASE_URL make schema:migration:status
+    - mkdir -p .git/hooks
   script:
-    - KCOV_PATH=/usr/bin/kcov make coverage
+    - make clean
+    - make coverage
   after_script:
-    - cat target/coverage/index.json
+    - cat target/coverage/index.js
   <<: *cache
-# }}}
 
-# build {{{
 build-debug:
   stage: build
   <<: *rust
@@ -176,4 +171,3 @@ build-release:
   only:
     - release@eloquentlog/eloquentlog-console-api
     - tags@eloquentlog/eloquentlog-console-api
-# }}}
