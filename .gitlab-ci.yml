@@ -149,7 +149,7 @@ test:
     - DATABASE_URL=$TEST_DATABASE_URL make schema:migration:status
     - mkdir -p .git/hooks
   script:
-    - make coverage
+    - make coverage:all
   after_script:
     - cat target/coverage/index.js
   <<: *cache
