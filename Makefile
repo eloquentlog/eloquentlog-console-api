@@ -9,8 +9,6 @@ ENV := development
 # setup
 setup\:vendor: ## Install cargo vendor and run it
 	@mkdir -p .cargo
-	@which cargo-vendor >/dev/null 2>&1 || cargo install \
-		cargo-vendor --force
 	@cargo vendor > .cargo/config
 .PHONY: setup\:vendor
 
