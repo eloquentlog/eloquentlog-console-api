@@ -60,12 +60,12 @@ stages:
       - vendor
 
 .vet-tools: &vet-tools
-  image: registry.gitlab.com/grauwoelfchen/portolan/rust-vet-tools:1.48.0-nightly
+  image: registry.gitlab.com/grauwoelfchen/portolan/rust-vet-tools:1.54.0-nightly
   except:
     - tags
 
 .rust: &rust
-  image: registry.gitlab.com/grauwoelfchen/portolan/rust:1.48.0-nightly
+  image: registry.gitlab.com/grauwoelfchen/portolan/rust:1.54.0-nightly
   before_script:
     - *postgresql
     - rustc --version
@@ -110,8 +110,8 @@ test:
   stage: test
   <<: *vet-tools
   services:
-    - postgres:11.2
-    - redis:5.0
+    - postgres:11
+    - redis:5
   variables:
     ENV: test
     # superuser
