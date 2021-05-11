@@ -152,6 +152,7 @@ test:
     - make coverage:all
   after_script:
     - cat target/coverage/index.js
+  coverage: /"covered":"(\d+(?:\.\d+)?)",/
   <<: *cache
 
 build-debug:
