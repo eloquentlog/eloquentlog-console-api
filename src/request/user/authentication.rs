@@ -60,7 +60,9 @@ impl<'v> FromData<'v> for UserAuthentication {
                 },
             };
 
-        if authentication.username == "" || authentication.password == "" {
+        if authentication.username.is_empty() ||
+            authentication.password.is_empty()
+        {
             return Failure((
                 Status::UnprocessableEntity,
                 UserAuthenticationError::Empty,

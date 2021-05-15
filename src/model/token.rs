@@ -142,10 +142,11 @@ impl Claims for VerificationClaims {
             nbf: data.granted_at as usize,
         };
 
-        let mut h = Header::default();
-        h.alg = Self::ALGORITHM;
-        h.kid = Some(key_id.to_string());
-
+        let h = Header {
+            alg: Self::ALGORITHM,
+            kid: Some(key_id.to_string()),
+            ..Default::default()
+        };
         encode_data(&h, &c, secret.as_ref()).unwrap()
     }
 
@@ -224,10 +225,11 @@ impl Claims for AuthenticationClaims {
             nbf: data.granted_at as usize,
         };
 
-        let mut h = Header::default();
-        h.alg = Self::ALGORITHM;
-        h.kid = Some(key_id.to_string());
-
+        let h = Header {
+            alg: Self::ALGORITHM,
+            kid: Some(key_id.to_string()),
+            ..Default::default()
+        };
         encode_data(&h, &c, secret.as_ref()).unwrap()
     }
 
