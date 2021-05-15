@@ -10,8 +10,7 @@ use crate::{run_test, load_user, USERS};
 fn password_reset_request_by(
     user: &model::user::User,
     client: &Client,
-) -> Result<(), ()>
-{
+) -> Result<(), ()> {
     let _ = client
         .head("/_/password/reset")
         .header(ContentType::JSON)

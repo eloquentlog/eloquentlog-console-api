@@ -55,8 +55,7 @@ impl DerefMut for SsConn {
 pub fn init_pool_holder(
     session_store_url: &str,
     max_size: u32,
-) -> SsPoolHolder
-{
+) -> SsPoolHolder {
     let connection_manager =
         RedisConnectionManager::new(session_store_url).unwrap();
     let pool = Pool::builder()

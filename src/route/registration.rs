@@ -59,8 +59,7 @@ pub mod preignition {
         mut cookies: Cookies,
         logger: SyncLogger,
         mut ss_conn: SsConn,
-    ) -> Response<'a>
-    {
+    ) -> Response<'a> {
         // returns CSRF token
         let res: Response = Default::default();
         info!(logger, "preignition");
@@ -102,8 +101,7 @@ pub fn register<'a>(
     mut ss_conn: SsConn,
     logger: SyncLogger,
     config: State<Config>,
-) -> Response<'a>
-{
+) -> Response<'a> {
     // FIXME: create `account_registrar` service
     let res: Response = Default::default();
 
@@ -244,8 +242,7 @@ pub fn deregister<'a>(
     user: &User,
     mut ss_conn: SsConn,
     logger: SyncLogger,
-) -> Response<'a>
-{
+) -> Response<'a> {
     let res: Response = Default::default();
 
     info!(logger, "user: {}", user.uuid);

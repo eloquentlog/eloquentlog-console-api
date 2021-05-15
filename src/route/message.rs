@@ -25,8 +25,7 @@ pub mod preflight {
         stream_slug: String,
         config: State<Config>,
         logger: SyncLogger,
-    ) -> RawResponse<'a>
-    {
+    ) -> RawResponse<'a> {
         info!(
             logger,
             "namespace: {}, stream: {}", namespace_key, stream_slug
@@ -42,8 +41,7 @@ pub mod preflight {
         stop: i64,
         config: State<Config>,
         logger: SyncLogger,
-    ) -> RawResponse<'a>
-    {
+    ) -> RawResponse<'a> {
         info!(
             logger,
             "namespace: {}, stream: {}, start: {}, stop: {}",
@@ -82,8 +80,7 @@ pub fn append(
     data: Json<RequestData>,
     conn: DbConn,
     logger: SyncLogger,
-) -> Response
-{
+) -> Response {
     let res: Response = Default::default();
 
     info!(
@@ -131,8 +128,7 @@ pub fn lrange(
     stop: u64,
     conn: DbConn,
     logger: SyncLogger,
-) -> Response
-{
+) -> Response {
     let res: Response = Default::default();
 
     info!(

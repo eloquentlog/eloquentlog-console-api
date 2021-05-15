@@ -21,8 +21,7 @@ pub mod preflight {
         uuid: String,
         config: State<Config>,
         logger: SyncLogger,
-    ) -> RawResponse<'a>
-    {
+    ) -> RawResponse<'a> {
         info!(logger, "hget uuid: {}", uuid);
         no_content_for("GET", &config)
     }
@@ -31,8 +30,7 @@ pub mod preflight {
     pub fn hgetall<'a>(
         config: State<Config>,
         logger: SyncLogger,
-    ) -> RawResponse<'a>
-    {
+    ) -> RawResponse<'a> {
         info!(logger, "hgetall");
         no_content_for("GET", &config)
     }
@@ -44,8 +42,7 @@ pub fn hget(
     user: &User,
     conn: DbConn,
     logger: SyncLogger,
-) -> Response
-{
+) -> Response {
     info!(logger, "user: {}, uuid: {}", user.uuid, uuid);
 
     let res: Response = Default::default();

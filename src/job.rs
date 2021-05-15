@@ -36,8 +36,7 @@ where T: Clone + fmt::Debug + Into<String>
         db_conn: &PgConnection,
         config: &Config,
         logger: &Logger,
-    )
-    {
+    ) {
         match self.kind {
             JobKind::SendUserActivationEmail => {
                 self.send_user_activation_email(db_conn, config, logger);
@@ -53,8 +52,7 @@ where T: Clone + fmt::Debug + Into<String>
         db_conn: &PgConnection,
         config: &Config,
         logger: &Logger,
-    )
-    {
+    ) {
         info!(logger, "args: {:#?}", self.args.as_slice());
         let args = self.args.as_slice();
         if args.is_empty() {
@@ -107,8 +105,7 @@ where T: Clone + fmt::Debug + Into<String>
         db_conn: &PgConnection,
         config: &Config,
         logger: &Logger,
-    )
-    {
+    ) {
         info!(logger, "args: {:#?}", self.args.as_slice());
         let args = self.args.as_slice();
         if args.is_empty() {

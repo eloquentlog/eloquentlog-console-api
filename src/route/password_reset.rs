@@ -43,8 +43,7 @@ pub mod preflight {
         session_id: String,
         config: State<Config>,
         logger: SyncLogger,
-    ) -> RawResponse<'a>
-    {
+    ) -> RawResponse<'a> {
         info!(logger, "session_id: {}", session_id);
         no_content_for("GET,HEAD,PATCH", &config)
     }
@@ -68,8 +67,7 @@ pub mod preignition {
         logger: SyncLogger,
         mut cookies: Cookies,
         mut ss_conn: SsConn,
-    ) -> Response<'a>
-    {
+    ) -> Response<'a> {
         // returns CSRF token
         let res: Response = Default::default();
         info!(logger, "preignition");
@@ -108,8 +106,7 @@ pub mod preignition {
         session_id: String,
         mut cookies: Cookies,
         mut ss_conn: SsConn,
-    ) -> Response<'a>
-    {
+    ) -> Response<'a> {
         info!(logger, "session_id: {}", session_id);
 
         // returns CSRF token
@@ -153,8 +150,7 @@ pub fn request<'a>(
     mut mq_conn: MqConn,
     db_conn: DbConn,
     payload: Json<PasswordResetRequest>,
-) -> Response<'a>
-{
+) -> Response<'a> {
     // FIXME: create `password_renewer` service
     let res: Response = Default::default();
 
@@ -272,8 +268,7 @@ pub fn verify<'a>(
     logger: SyncLogger,
     session_id: String,
     token: VerificationToken,
-) -> Response<'a>
-{
+) -> Response<'a> {
     info!(logger, "session_id: {}", session_id);
     info!(logger, "token: {}", &token.0);
     let res: Response = Default::default();
@@ -292,8 +287,7 @@ pub fn update<'a>(
     mut ss_conn: SsConn,
     payload: Json<PasswordResetUpdate>,
     db_conn: DbConn,
-) -> Response<'a>
-{
+) -> Response<'a> {
     info!(logger, "session_id: {}", session_id);
 
     let res: Response = Default::default();

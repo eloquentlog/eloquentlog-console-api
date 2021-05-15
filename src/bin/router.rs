@@ -22,8 +22,7 @@ fn get_env() -> String {
 fn format_route(
     r: rocket::Route,
     ns: &'static str,
-) -> (&str, &str, String, String)
-{
+) -> (&str, &str, String, String) {
     let uri = if ns != "/" {
         format!("{}{}", ns, r.uri)
     } else {

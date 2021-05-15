@@ -19,8 +19,7 @@ impl<'a> Validator<'a> {
         _: &'a PgConnection,
         data: &'a Json<RequestData>,
         logger: &'a Logger,
-    ) -> Self
-    {
+    ) -> Self {
         Self { data, logger }
     }
 

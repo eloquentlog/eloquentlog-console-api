@@ -26,8 +26,7 @@ pub mod preflight {
         uuid: String,
         config: State<Config>,
         logger: SyncLogger,
-    ) -> RawResponse<'a>
-    {
+    ) -> RawResponse<'a> {
         info!(logger, "uuid: {}", uuid);
         no_content_for("PATCH", &config)
     }
@@ -37,8 +36,7 @@ pub mod preflight {
         uuid: String,
         config: State<Config>,
         logger: SyncLogger,
-    ) -> RawResponse<'a>
-    {
+    ) -> RawResponse<'a> {
         info!(logger, "uuid: {}", uuid);
         no_content_for("PATCH", &config)
     }
@@ -48,8 +46,7 @@ pub mod preflight {
         uuid: String,
         config: State<Config>,
         logger: SyncLogger,
-    ) -> RawResponse<'a>
-    {
+    ) -> RawResponse<'a> {
         info!(logger, "uuid: {}", uuid);
         no_content_for("PATCH", &config)
     }
@@ -59,8 +56,7 @@ pub mod preflight {
         agent_type: AgentType,
         config: State<Config>,
         logger: SyncLogger,
-    ) -> RawResponse<'a>
-    {
+    ) -> RawResponse<'a> {
         info!(logger, "agent_type: {}", agent_type);
         no_content_for("PUT", &config)
     }
@@ -72,8 +68,7 @@ pub mod preflight {
         stop: i64,
         config: State<Config>,
         logger: SyncLogger,
-    ) -> RawResponse<'a>
-    {
+    ) -> RawResponse<'a> {
         info!(
             logger,
             "agent_type: {}, start: {}, stop: {}", agent_type, start, stop,
@@ -89,8 +84,7 @@ pub fn dump<'a>(
     conn: DbConn,
     config: State<Config>,
     logger: SyncLogger,
-) -> Response<'a>
-{
+) -> Response<'a> {
     info!(logger, "user: {}, uuid: {}", user.uuid, uuid);
 
     let res: Response = Default::default();
@@ -164,8 +158,7 @@ pub fn del<'a>(
     user: &User,
     conn: DbConn,
     logger: SyncLogger,
-) -> Response<'a>
-{
+) -> Response<'a> {
     info!(logger, "user: {}, uuid: {}", user.uuid, uuid);
 
     let res: Response = Default::default();
@@ -209,8 +202,7 @@ pub fn hset_state<'a>(
     user: &User,
     conn: DbConn,
     logger: SyncLogger,
-) -> Response<'a>
-{
+) -> Response<'a> {
     info!(logger, "user: {}, uuid: {}", user.uuid, uuid);
 
     let res: Response = Default::default();
@@ -253,8 +245,7 @@ pub fn append<'a>(
     user: &User,
     agent_type: AgentType,
     logger: SyncLogger,
-) -> Response<'a>
-{
+) -> Response<'a> {
     info!(logger, "user: {}, agent_type: {}", user.uuid, agent_type);
 
     // TODO
@@ -270,8 +261,7 @@ pub fn lrange<'a>(
     user: &User,
     conn: DbConn,
     logger: SyncLogger,
-) -> Response<'a>
-{
+) -> Response<'a> {
     info!(
         logger,
         "user: {}, agent_type: {}, start: {}, stop: {}",

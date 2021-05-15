@@ -50,8 +50,7 @@ pub mod preignition {
         mut cookies: Cookies,
         logger: SyncLogger,
         mut ss_conn: SsConn,
-    ) -> Response<'a>
-    {
+    ) -> Response<'a> {
         // returns CSRF token
         let res: Response = Default::default();
         info!(logger, "preignition");
@@ -92,8 +91,7 @@ pub fn login<'a>(
     db_conn: DbConn,
     logger: SyncLogger,
     mut ss_conn: SsConn,
-) -> Response<'a>
-{
+) -> Response<'a> {
     let res: Response = Default::default();
 
     let cookie = cookies.get_private("csrf_token").ok_or("");
@@ -169,8 +167,7 @@ pub fn logout<'a>(
     mut cookies: Cookies,
     user: &User,
     logger: SyncLogger,
-) -> Response<'a>
-{
+) -> Response<'a> {
     let res: Response = Default::default();
     info!(logger, "user: {}", user.uuid);
 

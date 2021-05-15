@@ -253,8 +253,7 @@ lazy_static! {
 fn load_user(
     mut user: model::user::User,
     db_conn: &PgConnection,
-) -> model::user::User
-{
+) -> model::user::User {
     user.change_password(&make_raw_password(&user));
 
     let result: Result<model::user::User, diesel::result::Error> = db_conn

@@ -195,8 +195,7 @@ impl Message {
         limit: i64,
         conn: &PgConnection,
         logger: &Logger,
-    ) -> Option<Vec<Self>>
-    {
+    ) -> Option<Vec<Self>> {
         if stream_slug.is_empty() {
             return None;
         }
@@ -226,8 +225,7 @@ impl Message {
         stream_id: i64,
         conn: &PgConnection,
         logger: &Logger,
-    ) -> Option<Self>
-    {
+    ) -> Option<Self> {
         let q = messages::table
             .filter(messages::stream_id.eq(stream_id))
             .find(id);
@@ -250,8 +248,7 @@ impl Message {
         message: &NewMessage,
         conn: &PgConnection,
         logger: &Logger,
-    ) -> Option<i64>
-    {
+    ) -> Option<i64> {
         let q = diesel::insert_into(messages::table)
             .values(message)
             .returning(messages::id);
@@ -271,8 +268,7 @@ impl Message {
         message: &mut Message,
         conn: &PgConnection,
         logger: &Logger,
-    ) -> Option<i64>
-    {
+    ) -> Option<i64> {
         message.updated_at = Utc::now().naive_utc();
         let q = diesel::update(messages::table)
             .set(&*message)

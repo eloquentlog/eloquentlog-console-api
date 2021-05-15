@@ -42,8 +42,7 @@ impl<'v> FromData<'v> for AccessTokenData {
     fn transform(
         req: &Request,
         data: Data,
-    ) -> Transform<data::Outcome<Self::Owned, Self::Error>>
-    {
+    ) -> Transform<data::Outcome<Self::Owned, Self::Error>> {
         let logger = req.guard::<State<SyncLogger>>().unwrap();
 
         let mut stream = data.open().take(ACCESS_TOKEN_LENGTH_LIMIT);
@@ -63,8 +62,7 @@ impl<'v> FromData<'v> for AccessTokenData {
     fn from_data(
         req: &Request,
         outcome: Transformed<'v, Self>,
-    ) -> data::Outcome<Self, Self::Error>
-    {
+    ) -> data::Outcome<Self, Self::Error> {
         let logger = req.guard::<State<SyncLogger>>().unwrap();
 
         let input = outcome.borrowed()?;

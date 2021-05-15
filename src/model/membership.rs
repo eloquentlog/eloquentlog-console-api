@@ -70,8 +70,7 @@ impl Membership {
         id: i64,
         conn: &PgConnection,
         logger: &Logger,
-    ) -> Option<Self>
-    {
+    ) -> Option<Self> {
         if id < 1 {
             return None;
         }
@@ -90,8 +89,7 @@ impl Membership {
         membership: &NewMembership,
         conn: &PgConnection,
         logger: &Logger,
-    ) -> Option<Self>
-    {
+    ) -> Option<Self> {
         let q = diesel::insert_into(memberships::table).values((
             memberships::namespace_id.eq(membership.namespace_id),
             memberships::user_id.eq(membership.user_id),

@@ -19,8 +19,7 @@ impl<'a> Validator<'a> {
         _: &'a PgConnection,
         data: &'a Json<RequestData>,
         logger: &'a Logger,
-    ) -> Self
-    {
+    ) -> Self {
         Self { data, logger }
     }
 
@@ -168,8 +167,7 @@ mod test {
     fn test_validate_password_contains_username(
         username: &'static str,
         password: &'static str,
-    )
-    {
+    ) {
         run(|_, _, logger| {
             let data = &Json(RequestData {
                 username: username.to_string(),
@@ -205,8 +203,7 @@ mod test {
     fn test_validate_password_is_included_in_username(
         username: &'static str,
         password: &'static str,
-    )
-    {
+    ) {
         run(|_, _, logger| {
             let data = &Json(RequestData {
                 username: username.to_string(),
@@ -241,8 +238,7 @@ mod test {
     fn test_validate_password_is_not_formatted_according_rules(
         password: &'static str,
         message: &'static str,
-    )
-    {
+    ) {
         run(|_, _, logger| {
             let data = &Json(RequestData {
                 username: "username".to_string(),

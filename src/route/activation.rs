@@ -23,8 +23,7 @@ pub mod preflight {
         session_id: String,
         config: State<Config>,
         logger: SyncLogger,
-    ) -> RawResponse<'a>
-    {
+    ) -> RawResponse<'a> {
         info!(logger, "session_id: {}", session_id);
         no_content_for("PATCH", &config)
     }
@@ -37,8 +36,7 @@ pub fn activate(
     db_conn: DbConn,
     logger: SyncLogger,
     config: State<Config>,
-) -> Response
-{
+) -> Response {
     info!(logger, "session_id: {}", session_id);
 
     let res: Response = Default::default();
