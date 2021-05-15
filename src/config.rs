@@ -340,11 +340,10 @@ mod test {
             let mut origins: HashMap<&str, Result<String, env::VarError>> =
                 HashMap::new();
 
-            let inputs: Vec<&str> = keys.split('\n').collect();
             for (key, var) in TESTS.iter() {
                 origins.insert(key, env::var(key));
 
-                if !inputs.contains(&key) {
+                if !keys.split('\n').any(|x| &x == key) {
                     env::remove_var(key);
                 } else {
                     env::set_var(key, var);
