@@ -56,7 +56,7 @@ pub fn make_cookie<'a>(sign: String, config: &Config) -> Cookie<'a> {
 /// The URI path should look like:
 /// * /_/password/reset/<...>
 /// * /_/activate/<...>
-pub fn extract_session_key<'r>(req: &Request<'r>) -> String {
+pub fn extract_session_key(req: &Request<'_>) -> String {
     // NOTE: The part of `/_/` (empty segment) will be ignored in routed path
     // within Segments. See below:
     // https://api.rocket.rs/v0.4/rocket/http/uri/struct.Segments.html
