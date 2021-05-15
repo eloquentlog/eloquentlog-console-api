@@ -102,13 +102,13 @@ impl<'a> Validator<'a> {
                     .collect();
         }
 
-        if errors.iter().find(|&e| "email" == e.field).is_none() {
+        if !errors.iter().any(|e| "email" == e.field) {
             if let Err(e) = self.validate_email_uniqueness() {
                 errors.push(e);
             }
         }
 
-        if errors.iter().find(|&e| "username" == e.field).is_none() {
+        if !errors.iter().any(|e| "username" == e.field) {
             if let Err(e) = self.validate_username_uniqueness() {
                 errors.push(e);
             }
