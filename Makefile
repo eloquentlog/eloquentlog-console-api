@@ -18,10 +18,10 @@ setup\:tool: ## Install development tools
 		diesel_cli --no-default-features --features "postgres" --force
 .PHONY: setup\:tool
 
-setup\:all: setup\:tool setup\:vendor ## Setup vendor and tool both [alias: setup]
+setup\:all: setup\:tool setup\:vendor ## Setup vendor and tool both
 .PHONY: setup\:all
 
-setup: setup\:all
+setup: setup\:all ## Sysonym of setup:all
 .PHONY: setup
 
 # verify
@@ -71,11 +71,11 @@ test\:doc: ## Run doc tests
 	@cargo test --doc
 .PHONY: test\:doc
 
-test\:all: test\:doc ## Run doc, lib and e2e tests [alias: test]
+test\:all: test\:doc ## Run tests for doc, lib and e2e
 	@cargo test --lib --test e2e
 .PHONY: test\:all
 
-test: test\:all
+test: test\:all ## Synonym of test:all
 .PHONY: test
 
 # coverage

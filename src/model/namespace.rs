@@ -129,8 +129,7 @@ impl Namespace {
         user: &User,
         conn: &PgConnection,
         logger: &Logger,
-    ) -> Option<Vec<Self>>
-    {
+    ) -> Option<Vec<Self>> {
         if user.id < 1 {
             return None;
         }
@@ -153,8 +152,7 @@ impl Namespace {
         user: &User,
         conn: &PgConnection,
         logger: &Logger,
-    ) -> Option<Self>
-    {
+    ) -> Option<Self> {
         if user.id < 1 {
             return None;
         }
@@ -178,8 +176,7 @@ impl Namespace {
         namespace: &NewNamespace,
         conn: &PgConnection,
         logger: &Logger,
-    ) -> Option<Self>
-    {
+    ) -> Option<Self> {
         let uuid = Uuid::new_v4();
         let q = diesel::insert_into(namespaces::table).values((
             namespaces::uuid.eq(uuid),

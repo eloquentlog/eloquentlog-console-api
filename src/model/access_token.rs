@@ -131,8 +131,7 @@ impl AccessToken {
         access_token: &NewAccessToken,
         conn: &PgConnection,
         logger: &Logger,
-    ) -> Option<Self>
-    {
+    ) -> Option<Self> {
         let uuid = Uuid::new_v4();
         let q = diesel::insert_into(access_tokens::table).values((
             access_tokens::uuid.eq(uuid),
@@ -161,8 +160,7 @@ impl AccessToken {
         limit: i64,
         conn: &PgConnection,
         logger: &Logger,
-    ) -> Option<Vec<Self>>
-    {
+    ) -> Option<Vec<Self>> {
         if user.id < 1 || limit < 1 {
             return None;
         }
@@ -189,8 +187,7 @@ impl AccessToken {
         uuid: &str,
         conn: &PgConnection,
         logger: &Logger,
-    ) -> Option<Self>
-    {
+    ) -> Option<Self> {
         let with_uuid = Self::with_uuid(&uuid);
         let q = Self::visible_to(user).filter(with_uuid).limit(1);
 
@@ -214,8 +211,7 @@ impl AccessToken {
         token: &str,
         conn: &PgConnection,
         logger: &Logger,
-    ) -> Result<Self, &'static str>
-    {
+    ) -> Result<Self, &'static str> {
         let q = diesel::update(
             access_tokens::table
                 .filter(access_tokens::id.eq(self.id))
@@ -239,8 +235,7 @@ impl AccessToken {
         state: AccessTokenState,
         conn: &PgConnection,
         logger: &Logger,
-    ) -> Result<AccessTokenState, &'static str>
-    {
+    ) -> Result<AccessTokenState, &'static str> {
         let q = diesel::update(self).set(access_tokens::state.eq(state));
 
         info!(logger, "{}", debug_query::<Pg, _>(&q).to_string());
@@ -258,8 +253,7 @@ impl AccessToken {
         &self,
         conn: &PgConnection,
         logger: &Logger,
-    ) -> Result<Self, &'static str>
-    {
+    ) -> Result<Self, &'static str> {
         let now = Utc::now().naive_utc();
 
         // TODO: refactor

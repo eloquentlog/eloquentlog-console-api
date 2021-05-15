@@ -99,8 +99,7 @@ impl Claims for VerificationClaims {
         token: &str,
         issuer: &str,
         secret: &str,
-    ) -> Result<Self, jsonwebtoken::errors::Error>
-    {
+    ) -> Result<Self, jsonwebtoken::errors::Error> {
         // self check
         let _ = match decode_header(&token) {
             Ok(ref header) if header.alg == Self::ALGORITHM => header,
@@ -133,8 +132,7 @@ impl Claims for VerificationClaims {
         issuer: &str,
         key_id: &str,
         secret: &str,
-    ) -> String
-    {
+    ) -> String {
         // TODO: aud
         let c = Self {
             sub: data.value,
@@ -144,10 +142,11 @@ impl Claims for VerificationClaims {
             nbf: data.granted_at as usize,
         };
 
-        let mut h = Header::default();
-        h.alg = Self::ALGORITHM;
-        h.kid = Some(key_id.to_string());
-
+        let h = Header {
+            alg: Self::ALGORITHM,
+            kid: Some(key_id.to_string()),
+            ..Default::default()
+        };
         encode_data(&h, &c, secret.as_ref()).unwrap()
     }
 
@@ -185,8 +184,7 @@ impl Claims for AuthenticationClaims {
         token: &str,
         issuer: &str,
         secret: &str,
-    ) -> Result<Self, jsonwebtoken::errors::Error>
-    {
+    ) -> Result<Self, jsonwebtoken::errors::Error> {
         // self check
         let header = decode_header(&token)?;
         if header.alg != Self::ALGORITHM {
@@ -217,8 +215,7 @@ impl Claims for AuthenticationClaims {
         issuer: &str,
         key_id: &str,
         secret: &str,
-    ) -> String
-    {
+    ) -> String {
         // TODO: aud
         let c = Self {
             sub: data.value,
@@ -228,10 +225,11 @@ impl Claims for AuthenticationClaims {
             nbf: data.granted_at as usize,
         };
 
-        let mut h = Header::default();
-        h.alg = Self::ALGORITHM;
-        h.kid = Some(key_id.to_string());
-
+        let h = Header {
+            alg: Self::ALGORITHM,
+            kid: Some(key_id.to_string()),
+            ..Default::default()
+        };
         encode_data(&h, &c, secret.as_ref()).unwrap()
     }
 
@@ -356,8 +354,7 @@ mod test {
         issuer: &'static str,
         secret: &'static str,
         granted_at: DateTime<Utc>,
-    )
-    {
+    ) {
         let data = TokenData {
             value: value.to_string(),
             granted_at: granted_at.timestamp(),
@@ -394,8 +391,7 @@ mod test {
         issuer: &'static str,
         secret: &'static str,
         granted_at: DateTime<Utc>,
-    )
-    {
+    ) {
         dbg!(&granted_at);
         let data = TokenData {
             value: value.to_string(),

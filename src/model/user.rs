@@ -126,8 +126,7 @@ impl User {
         email: &str,
         conn: &PgConnection,
         logger: &Logger,
-    ) -> bool
-    {
+    ) -> bool {
         let q = users::table
             .select(users::id)
             .filter(users::email.eq(email))
@@ -141,8 +140,7 @@ impl User {
         username: &str,
         conn: &PgConnection,
         logger: &Logger,
-    ) -> bool
-    {
+    ) -> bool {
         let q = users::table
             .select(users::id)
             .filter(users::username.eq(username))
@@ -156,8 +154,7 @@ impl User {
         s: &str,
         conn: &PgConnection,
         logger: &Logger,
-    ) -> Option<Self>
-    {
+    ) -> Option<Self> {
         if s.is_empty() {
             return None;
         }
@@ -179,8 +176,7 @@ impl User {
         s: &str,
         conn: &PgConnection,
         logger: &Logger,
-    ) -> Option<Self>
-    {
+    ) -> Option<Self> {
         if s.is_empty() {
             return None;
         }
@@ -213,8 +209,7 @@ impl User {
         id: i64,
         conn: &PgConnection,
         logger: &Logger,
-    ) -> Option<Self>
-    {
+    ) -> Option<Self> {
         if id < 1 {
             return None;
         }
@@ -233,8 +228,7 @@ impl User {
         s: &str,
         conn: &PgConnection,
         logger: &Logger,
-    ) -> Option<Self>
-    {
+    ) -> Option<Self> {
         if s.is_empty() {
             return None;
         }
@@ -263,8 +257,7 @@ impl User {
         s: &str,
         conn: &PgConnection,
         logger: &Logger,
-    ) -> Option<Self>
-    {
+    ) -> Option<Self> {
         if s.is_empty() {
             return None;
         }
@@ -289,8 +282,7 @@ impl User {
         secret: &str,
         conn: &PgConnection,
         logger: &Logger,
-    ) -> Option<Self>
-    {
+    ) -> Option<Self> {
         let t = T::decode(token, issuer, secret).expect("invalid value");
         let c = &t as &dyn Any;
         if let Some(claims) = c.downcast_ref::<BrowserCookieTokenClaims>() {
@@ -312,8 +304,7 @@ impl User {
         token: &str,
         conn: &PgConnection,
         logger: &Logger,
-    ) -> Option<User>
-    {
+    ) -> Option<User> {
         let q = users::table
             .inner_join(
                 access_tokens::table.on(users::id
@@ -342,8 +333,7 @@ impl User {
         user: &NewUser,
         conn: &PgConnection,
         logger: &Logger,
-    ) -> Option<Self>
-    {
+    ) -> Option<Self> {
         let q = diesel::insert_into(users::table).values((
             Some(users::name.eq(&user.name)),
             users::username.eq(&user.username),
@@ -383,8 +373,7 @@ impl User {
         secret: &str,
         conn: &PgConnection,
         logger: &Logger,
-    ) -> Result<String, &'static str>
-    {
+    ) -> Result<String, &'static str> {
         // TODO: should we check duplication?
         let c = T::decode(token, issuer, secret).expect("Invalid value");
 
@@ -413,8 +402,7 @@ impl Activatable for User {
         &self,
         conn: &PgConnection,
         logger: &Logger,
-    ) -> Result<(), &'static str>
-    {
+    ) -> Result<(), &'static str> {
         conn.build_transaction()
             .serializable()
             .deferrable()
@@ -472,8 +460,7 @@ impl Authenticatable for User {
         new_password: &str,
         conn: &PgConnection,
         logger: &Logger,
-    ) -> Result<(), &'static str>
-    {
+    ) -> Result<(), &'static str> {
         self.change_password(new_password);
 
         let q = diesel::update(
@@ -512,8 +499,7 @@ impl Verifiable<(Self, UserEmail)> for User {
         token: &str,
         issuer: &str,
         secret: &str,
-    ) -> Result<String, &'static str>
-    {
+    ) -> Result<String, &'static str> {
         let claims = Self::TokenClaims::decode(token, issuer, secret)
             .map_err(|_| "invalid token")?;
         Ok(claims.get_subject())
@@ -523,8 +509,7 @@ impl Verifiable<(Self, UserEmail)> for User {
         concrete_token: &str,
         conn: &PgConnection,
         logger: &Logger,
-    ) -> Result<(Self, UserEmail), &'static str>
-    {
+    ) -> Result<(Self, UserEmail), &'static str> {
         let q = users::table
             .filter(users::state.eq(UserState::Pending))
             .inner_join(user_emails::table)
@@ -553,8 +538,7 @@ impl Verifiable<User> for User {
         token: &str,
         issuer: &str,
         secret: &str,
-    ) -> Result<String, &'static str>
-    {
+    ) -> Result<String, &'static str> {
         let claims = Self::TokenClaims::decode(token, issuer, secret)
             .map_err(|_| "invalid token")?;
         Ok(claims.get_subject())
@@ -564,8 +548,7 @@ impl Verifiable<User> for User {
         concrete_token: &str,
         conn: &PgConnection,
         logger: &Logger,
-    ) -> Result<Self, &'static str>
-    {
+    ) -> Result<Self, &'static str> {
         let q = users::table
             .filter(users::state.eq(UserState::Active))
             .filter(users::reset_password_token.eq(concrete_token))

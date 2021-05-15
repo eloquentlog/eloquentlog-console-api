@@ -114,8 +114,7 @@ impl Stream {
         uuid: &str,
         conn: &PgConnection,
         logger: &Logger,
-    ) -> Option<Self>
-    {
+    ) -> Option<Self> {
         let q = Self::by_uuid(&uuid).limit(1);
 
         info!(logger, "{}", debug_query::<Pg, _>(&q).to_string());
@@ -133,8 +132,7 @@ impl Stream {
         stream: &NewStream,
         conn: &PgConnection,
         logger: &Logger,
-    ) -> Option<Self>
-    {
+    ) -> Option<Self> {
         let uuid = Uuid::new_v4();
         let q = diesel::insert_into(streams::table).values((
             streams::uuid.eq(uuid),

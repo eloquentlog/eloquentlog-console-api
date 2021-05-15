@@ -26,8 +26,7 @@ impl<'v> FromData<'v> for UserAuthentication {
     fn transform(
         _: &Request,
         data: Data,
-    ) -> Transform<data::Outcome<Self::Owned, Self::Error>>
-    {
+    ) -> Transform<data::Outcome<Self::Owned, Self::Error>> {
         let mut stream = data.open().take(USER_AUTHENTICATION_LENGTH_LIMIT);
         let mut string = String::with_capacity(
             (USER_AUTHENTICATION_LENGTH_LIMIT / 2) as usize,
@@ -48,8 +47,7 @@ impl<'v> FromData<'v> for UserAuthentication {
     fn from_data(
         _: &Request,
         outcome: Transformed<'v, Self>,
-    ) -> data::Outcome<Self, Self::Error>
-    {
+    ) -> data::Outcome<Self, Self::Error> {
         let input = outcome.borrowed()?;
         let authentication: UserAuthentication =
             match serde_json::from_str(input) {
@@ -62,7 +60,9 @@ impl<'v> FromData<'v> for UserAuthentication {
                 },
             };
 
-        if authentication.username == "" || authentication.password == "" {
+        if authentication.username.is_empty() ||
+            authentication.password.is_empty()
+        {
             return Failure((
                 Status::UnprocessableEntity,
                 UserAuthenticationError::Empty,

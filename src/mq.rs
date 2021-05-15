@@ -55,8 +55,7 @@ impl DerefMut for MqConn {
 pub fn init_pool_holder(
     message_queue_url: &str,
     max_size: u32,
-) -> MqPoolHolder
-{
+) -> MqPoolHolder {
     let connection_manager =
         RedisConnectionManager::new(message_queue_url).unwrap();
     let pool = Pool::builder()

@@ -12,7 +12,7 @@ use crate::db::DbConn;
 use crate::job::{Job, JobKind};
 use crate::model::token::{VerificationClaims, Claims, TokenData};
 use crate::model::namespace::{Namespace, NewNamespace};
-use crate::model::membership::{Membership, NewMembership};
+use crate::model::membership::{Membership, MembershipRole, NewMembership};
 use crate::model::stream::{Stream, NewStream};
 use crate::model::user::{NewUser, User};
 use crate::model::user_email::{NewUserEmail, UserEmail};
@@ -59,8 +59,7 @@ pub mod preignition {
         mut cookies: Cookies,
         logger: SyncLogger,
         mut ss_conn: SsConn,
-    ) -> Response<'a>
-    {
+    ) -> Response<'a> {
         // returns CSRF token
         let res: Response = Default::default();
         info!(logger, "preignition");
@@ -102,8 +101,7 @@ pub fn register<'a>(
     mut ss_conn: SsConn,
     logger: SyncLogger,
     config: State<Config>,
-) -> Response<'a>
-{
+) -> Response<'a> {
     // FIXME: create `account_registrar` service
     let res: Response = Default::default();
 
@@ -155,18 +153,26 @@ pub fn register<'a>(
 
                     {
                         // TODO: async
-                        let mut ns = NewNamespace::default();
-                        ns.name = format!("{}'s default namespace", u.username);
+                        let ns = NewNamespace {
+                            name: format!("{}'s default namespace", u.username),
+                            description: None,
+                            streams_count: 0,
+                        };
                         let namespace =
                             Namespace::insert(&ns, &db_conn, &logger).unwrap();
 
-                        let mut s = NewStream::default();
-                        s.namespace_id = namespace.id;
+                        let s = NewStream {
+                            namespace_id: namespace.id,
+                            name: "main".to_string(),
+                            description: None,
+                        };
                         let _ = Stream::insert(&s, &db_conn, &logger).unwrap();
 
-                        let mut m = NewMembership::default();
-                        m.namespace_id = namespace.id;
-                        m.user_id = user.id;
+                        let m = NewMembership {
+                            namespace_id: namespace.id,
+                            user_id: user.id,
+                            role: MembershipRole::PrimaryOwner,
+                        };
                         let _ =
                             Membership::insert(&m, &db_conn, &logger).unwrap();
                     }
@@ -244,8 +250,7 @@ pub fn deregister<'a>(
     user: &User,
     mut ss_conn: SsConn,
     logger: SyncLogger,
-) -> Response<'a>
-{
+) -> Response<'a> {
     let res: Response = Default::default();
 
     info!(logger, "user: {}", user.uuid);

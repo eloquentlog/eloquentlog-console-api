@@ -340,11 +340,10 @@ mod test {
             let mut origins: HashMap<&str, Result<String, env::VarError>> =
                 HashMap::new();
 
-            let inputs: Vec<&str> = keys.split('\n').collect();
             for (key, var) in TESTS.iter() {
                 origins.insert(key, env::var(key));
 
-                if !inputs.contains(&key) {
+                if !keys.split('\n').any(|x| &x == key) {
                     env::remove_var(key);
                 } else {
                     env::set_var(key, var);
@@ -490,7 +489,7 @@ VERIFICATION_TOKEN_SECRET
 "#, || {
                 let c = Config::from("production").unwrap();
                 assert_eq!(c.env_name, "production");
-                assert_eq!(c.cookie_secure, true);
+                assert!(c.cookie_secure);
                 assert_eq!(c.database_max_pool_size, 12);
                 assert_eq!(c.message_queue_max_pool_size, 8);
                 assert_eq!(c.session_store_max_pool_size, 8);
@@ -523,7 +522,7 @@ TEST_VERIFICATION_TOKEN_SECRET
 "#, || {
                 let c = Config::from("testing").unwrap();
                 assert_eq!(c.env_name, "testing");
-                assert_eq!(c.cookie_secure, false);
+                assert!(c.cookie_secure);
                 assert_eq!(c.database_max_pool_size, 2);
                 assert_eq!(c.message_queue_max_pool_size, 2);
                 assert_eq!(c.session_store_max_pool_size, 2);
@@ -556,7 +555,7 @@ VERIFICATION_TOKEN_SECRET
 "#, || {
                 let c = Config::from("development").unwrap();
                 assert_eq!(c.env_name, "development");
-                assert_eq!(c.cookie_secure, false);
+                assert!(c.cookie_secure);
                 assert_eq!(c.database_max_pool_size, 4);
                 assert_eq!(c.message_queue_max_pool_size, 4);
                 assert_eq!(c.session_store_max_pool_size, 4);

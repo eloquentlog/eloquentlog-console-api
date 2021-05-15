@@ -92,8 +92,7 @@ impl UserEmail {
         id: i64,
         conn: &PgConnection,
         logger: &Logger,
-    ) -> Option<Self>
-    {
+    ) -> Option<Self> {
         if id < 1 {
             return None;
         }
@@ -115,8 +114,7 @@ impl UserEmail {
         secret: &str,
         conn: &PgConnection,
         logger: &Logger,
-    ) -> Option<Self>
-    {
+    ) -> Option<Self> {
         let value = match T::decode(token, issuer, secret) {
             Ok(claims) => claims.get_subject(),
             Err(e) => {
@@ -162,8 +160,7 @@ impl UserEmail {
         user_email: &NewUserEmail,
         conn: &PgConnection,
         logger: &Logger,
-    ) -> Option<Self>
-    {
+    ) -> Option<Self> {
         let q = diesel::insert_into(user_emails::table).values((
             user_emails::user_id.eq(&user_email.user_id),
             Some(user_emails::email.eq(&user_email.email)),
@@ -190,8 +187,7 @@ impl UserEmail {
         secret: &str,
         conn: &PgConnection,
         logger: &Logger,
-    ) -> Result<String, &'static str>
-    {
+    ) -> Result<String, &'static str> {
         // TODO: should we check duplication?
         let c = T::decode(token, issuer, secret).expect("Invalid value");
 
@@ -226,8 +222,7 @@ impl Activatable for UserEmail {
         &self,
         conn: &PgConnection,
         logger: &Logger,
-    ) -> Result<(), &'static str>
-    {
+    ) -> Result<(), &'static str> {
         // TODO: set identification_token to NULL
         let q = diesel::update(self).set((
             user_emails::identification_state

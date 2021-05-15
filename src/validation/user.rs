@@ -20,8 +20,7 @@ impl<'a> Validator<'a> {
         conn: &'a PgConnection,
         data: &'a Json<RequestData>,
         logger: &'a Logger,
-    ) -> Self
-    {
+    ) -> Self {
         Self { conn, data, logger }
     }
 
@@ -103,13 +102,13 @@ impl<'a> Validator<'a> {
                     .collect();
         }
 
-        if errors.iter().find(|&e| "email" == e.field).is_none() {
+        if !errors.iter().any(|e| "email" == e.field) {
             if let Err(e) = self.validate_email_uniqueness() {
                 errors.push(e);
             }
         }
 
-        if errors.iter().find(|&e| "username" == e.field).is_none() {
+        if !errors.iter().any(|e| "username" == e.field) {
             if let Err(e) = self.validate_username_uniqueness() {
                 errors.push(e);
             }
@@ -427,8 +426,7 @@ mod test {
     fn test_validate_username_is_invalid(
         username: &'static str,
         message: &'static str,
-    )
-    {
+    ) {
         run(|conn, _, logger| {
             let data = &Json(RequestData {
                 email: "postmaster@example.org".to_string(),
@@ -481,8 +479,7 @@ mod test {
     fn test_validate_username_contains_only_digits(
         username: &'static str,
         messages: Vec<&'static str>,
-    )
-    {
+    ) {
         run(|conn, _, logger| {
             let data = &Json(RequestData {
                 email: "postmaster@example.org".to_string(),
@@ -751,8 +748,7 @@ mod test {
     fn test_validate_password_is_not_formatted_according_rules(
         password: &'static str,
         message: &'static str,
-    )
-    {
+    ) {
         run(|conn, _, logger| {
             let data = &Json(RequestData {
                 email: "postmaster@example.org".to_string(),

@@ -168,8 +168,7 @@ mod test {
     fn test_contain_only_alphanumeric_or_underscore(
         raw_s: &'static str,
         expected: bool,
-    )
-    {
+    ) {
         let f = contain_only_alphanumeric_or_underscore();
         let s = &raw_s.to_string();
 
@@ -188,8 +187,7 @@ mod test {
     fn test_not_contain_only_digits_or_underscore(
         raw_s: &'static str,
         expected: bool,
-    )
-    {
+    ) {
         let f = not_contain_only_digits_or_underscore();
         let s = &raw_s.to_string();
 
@@ -210,8 +208,7 @@ mod test {
         needle: &'static str,
         raw_s: &'static str,
         expected: bool,
-    )
-    {
+    ) {
         let f = not_contain_if_given(Some((needle).to_string()));
         let s = &raw_s.to_string();
 
@@ -232,8 +229,7 @@ mod test {
         needle: &'static str,
         raw_s: &'static str,
         expected: bool,
-    )
-    {
+    ) {
         let field_name = "test_field";
 
         let f = not_overlap_with(field_name)(needle.to_string());
@@ -256,8 +252,7 @@ mod test {
         needle: &'static str,
         raw_s: &'static str,
         expected: bool,
-    )
-    {
+    ) {
         let f = not_start_with(needle);
         let s = &raw_s.to_string();
 

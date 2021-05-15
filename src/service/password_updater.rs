@@ -22,8 +22,7 @@ where T: Authenticatable + Clone + Verifiable<T> + fmt::Display
         db_conn: &'a DbConn,
         config: &'a Config,
         logger: &'a SyncLogger,
-    ) -> Self
-    {
+    ) -> Self {
         Self {
             db_conn,
             config,
