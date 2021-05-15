@@ -1,4 +1,6 @@
 Sun 16 May 2021 Yasuhiro Яша Asaka <yasuhiro.asaka@grauwoelfchen.net>
+	* Add .renovaterc.json
+	* Update Makefile (description, aliases)
 	* Remove Procfile
 	* Remove unnecessary .env sample files
 
