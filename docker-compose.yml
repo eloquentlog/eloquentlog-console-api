@@ -27,7 +27,7 @@ services:
       context: .
       args:
         - BINARY=server
-    env_file: ./.env.docker
+    env_file: ./.env
     ports:
       - "8000:8000"
     depends_on:
@@ -41,7 +41,7 @@ services:
       context: .
       args:
         - BINARY=worker
-    env_file: ./.env.docker
+    env_file: ./.env
     depends_on:
       - postgres
       - redis
