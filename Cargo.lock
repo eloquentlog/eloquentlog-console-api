@@ -497,7 +497,7 @@ name = "eloquentlog-console-api"
 version = "0.0.1"
 dependencies = [
  "accord",
- "base64 0.10.1",
+ "base64 0.13.0",
  "bcrypt",
  "cargo-husky",
  "chrono",
