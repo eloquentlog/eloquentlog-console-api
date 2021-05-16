@@ -6,6 +6,6 @@
   "labels": ["dependency"],
   "timezone": "UTC",
   "schedule": [
-    "before 14:00"
+    "before 8:00pm"
   ]
 }
