@@ -52,7 +52,7 @@ rocket = "0.4.7"
 rocket_http = "0.4.7"
 rocket_codegen = "*"
 rocket-slog = "0.4.0"
-rusty-fork = "0.2"
+rusty-fork = "0.3"
 serde = { version = "1.0", features = ["derive"] }
 serde_derive = "1.0"
 serde_json = "1.0"
