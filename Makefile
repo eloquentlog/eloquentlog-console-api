@@ -146,6 +146,9 @@ build\:debug: ## build targets in debug mode [synonym: debug]
 debug: build\:debug
 .PHONY: debug
 
+build: build\:debug ## Alias of build:debug
+.PHONY: build
+
 build\:release: ## Build targets in release mode [synonym: release]
 	cargo build --release
 .PHONY: build\:release
