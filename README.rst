@@ -21,8 +21,8 @@ The console backend API server of Eloquentlog_.
 Repositories
 ------------
 
-The main repository_ is hosted on GitLab.com.  
-# A mirror_ is available also on GitHub.
+| The main repository_ is hosted on GitLab.com.
+| # A mirror_ is available also on GitHub.
 
 
 Requirements
