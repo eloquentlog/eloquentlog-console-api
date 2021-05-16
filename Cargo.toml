@@ -51,7 +51,7 @@ regex = "0.2"
 rocket = "0.4.2"
 rocket_http = "0.4.2"
 rocket_codegen = "*"
-rocket-slog = "0.4.0-rc2"
+rocket-slog = "0.4.0"
 rusty-fork = "0.2"
 serde = { version = "1.0", features = ["derive"] }
 serde_derive = "1.0"
