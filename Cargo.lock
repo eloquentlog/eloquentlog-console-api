@@ -1756,9 +1756,9 @@ dependencies = [
 
 [[package]]
 name = "rocket_http"
-version = "0.4.7"
+version = "0.4.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ce364100ed7a1bf39257b69ebd014c1d5b4979b0d365d8c9ab0aa9c79645493d"
+checksum = "51317fa44f95876c7aec93e5b3dcbd5297f801b6cc77c09608baf7aca18cdf8e"
 dependencies = [
  "cookie",
  "hyper",
