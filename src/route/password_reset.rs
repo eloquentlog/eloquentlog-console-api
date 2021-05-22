@@ -244,7 +244,7 @@ pub fn request<'a>(
                         kind: JobKind::SendPasswordResetEmail,
                         args: vec![id.to_string(), session_id, token],
                     };
-                    let mut queue = Queue::new("default", &mut mq_conn);
+                    let mut queue = Queue::new("default", &mut *mq_conn);
                     if let Err(err) = queue.enqueue::<Job<String>>(job) {
                         error!(logger, "error: {}", err);
                     } else {
