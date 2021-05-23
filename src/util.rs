@@ -15,7 +15,7 @@ pub fn generate_random_hash(source: &[u8], length: i32) -> String {
 
     (0..length)
         .map(|_| {
-            let idx = rng.gen_range(0, source_length);
+            let idx = rng.gen_range(0..source_length);
             char::from(unsafe { *source.get_unchecked(idx) })
         })
         .collect()
