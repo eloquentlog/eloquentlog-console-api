@@ -33,7 +33,7 @@ chrono = { version = "0.4.19", features = ["serde"] }
 dotenv = "0.15"
 fourche = "~0.2.0"
 fnv = "1.0.7"
-jsonwebtoken = "5.0"
+jsonwebtoken = "7.2"
 lazy_static = "1.4"
 lettre = "0.9.6"
 lettre_email = "0.9.4"

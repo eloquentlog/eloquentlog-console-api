@@ -4,8 +4,8 @@ use std::fmt;
 use chrono::{NaiveDateTime, Utc};
 
 use jsonwebtoken::{
-    Algorithm, Header, Validation, decode as decode_token, decode_header,
-    encode as encode_data,
+    Algorithm, EncodingKey, DecodingKey, Header, Validation,
+    decode as decode_token, decode_header, encode as encode_data,
 };
 
 use crate::model::user::User;
@@ -57,7 +57,7 @@ pub trait Claims
 where Self: std::marker::Sized
 {
     const ALGORITHM: Algorithm;
-    const LEEWAY: i64;
+    const LEEWAY: u64;
 
     fn decode(
         token: &str, // encoded string
@@ -93,7 +93,7 @@ pub struct VerificationClaims {
 
 impl Claims for VerificationClaims {
     const ALGORITHM: Algorithm = Algorithm::HS512;
-    const LEEWAY: i64 = 36; // seconds
+    const LEEWAY: u64 = 36; // seconds
 
     fn decode(
         token: &str,
@@ -121,7 +121,11 @@ impl Claims for VerificationClaims {
             ..Validation::default()
         };
 
-        match decode_token::<Self>(&token, secret.as_ref(), &v) {
+        match decode_token::<Self>(
+            &token,
+            &DecodingKey::from_secret(secret.as_bytes()),
+            &v,
+        ) {
             Ok(v) => Ok(v.claims),
             Err(e) => Err(e),
         }
@@ -147,7 +151,8 @@ impl Claims for VerificationClaims {
             kid: Some(key_id.to_string()),
             ..Default::default()
         };
-        encode_data(&h, &c, secret.as_ref()).unwrap()
+        encode_data(&h, &c, &EncodingKey::from_secret(secret.as_bytes()))
+            .unwrap()
     }
 
     fn get_subject(&self) -> String {
@@ -178,7 +183,7 @@ pub struct AuthenticationClaims {
 
 impl Claims for AuthenticationClaims {
     const ALGORITHM: Algorithm = Algorithm::HS256;
-    const LEEWAY: i64 = 36; // seconds
+    const LEEWAY: u64 = 36; // seconds
 
     fn decode(
         token: &str,
@@ -204,7 +209,11 @@ impl Claims for AuthenticationClaims {
             ..Validation::default()
         };
 
-        match decode_token::<Self>(&token, secret.as_ref(), &v) {
+        match decode_token::<Self>(
+            &token,
+            &DecodingKey::from_secret(secret.as_bytes()),
+            &v,
+        ) {
             Ok(v) => Ok(v.claims),
             Err(e) => Err(e),
         }
@@ -230,7 +239,8 @@ impl Claims for AuthenticationClaims {
             kid: Some(key_id.to_string()),
             ..Default::default()
         };
-        encode_data(&h, &c, secret.as_ref()).unwrap()
+        encode_data(&h, &c, &EncodingKey::from_secret(secret.as_bytes()))
+            .unwrap()
     }
 
     fn get_subject(&self) -> String {
