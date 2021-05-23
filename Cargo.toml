@@ -48,7 +48,7 @@ r2d2_redis = "0.14.0"
 rand = "0.8"
 redis = { version = "0.20.1", features = ["async-std-comp"] }
 regex = "1.5"
-rocket = "0.4.7"
+rocket = "0.4.10"
 rocket_http = "0.4.10"
 rocket_codegen = "*"
 rocket-slog = "0.4.0"
