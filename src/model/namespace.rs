@@ -10,6 +10,7 @@ use serde::Serialize;
 use uuid::Uuid;
 
 use crate::logger::Logger;
+use crate::request::namespace::Namespace as RequestData;
 use crate::model::membership::{Membership, memberships};
 use crate::model::user::User;
 
@@ -23,12 +24,28 @@ pub struct NewNamespace {
     pub streams_count: i64,
 }
 
+impl fmt::Display for NewNamespace {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "<NewNamespace {name}>", name = &self.name)
+    }
+}
+
 impl Default for NewNamespace {
     // includes validation errors
     fn default() -> Self {
         Self {
             name: "".to_string(),
             description: None,
+            streams_count: 0,
+        }
+    }
+}
+
+impl From<RequestData> for NewNamespace {
+    fn from(data: RequestData) -> Self {
+        Self {
+            name: data.name.unwrap_or_else(|| "".to_string()),
+            description: data.description,
             streams_count: 0,
         }
     }

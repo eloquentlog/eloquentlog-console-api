@@ -1,4 +1,5 @@
 pub mod message;
+pub mod namespace;
 pub mod password_reset;
 pub mod password_reset_request;
 pub mod user;
