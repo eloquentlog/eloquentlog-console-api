@@ -1,6 +1,7 @@
 pub mod access_token;
 pub mod agent_type;
 pub mod message;
+pub mod namespace;
 pub mod password_reset;
 pub mod token;
 pub mod user;
