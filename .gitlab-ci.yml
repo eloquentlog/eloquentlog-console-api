@@ -1,5 +1,5 @@
 stages:
-  - verify
+  - vet
   - test
   - build
 
@@ -74,26 +74,26 @@ stages:
   <<: *cache
 
 check:
-  stage: verify
+  stage: vet
   <<: *vet-tools
   before_script:
     - rustc --version
     - cargo --version
   script:
-    - make verify:check
+    - make vet:check
 
 format:
-  stage: verify
+  stage: vet
   <<: *vet-tools
   before_script:
     - rustc --version
     - cargo --version
     - cargo fmt --version
   script:
-    - make verify:format
+    - make vet:format
 
 lint:
-  stage: verify
+  stage: vet
   <<: *vet-tools
   before_script:
     - *postgresql
@@ -103,7 +103,7 @@ lint:
     - *vendor
     - mkdir .git/hooks
   script:
-    - make verify:lint
+    - make vet:lint
   <<: *cache
 
 test:

@@ -109,13 +109,13 @@ As a common issue, ``--env_file`` doesn't handle double-quoted string like
 Development
 -----------
 
-Verify
-~~~~~~
+Vet
+~~~
 
 .. code:: zsh
 
    : see make help about details
-   % make verify
+   % make vet:all
 
 Route
 ~~~~~

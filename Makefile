@@ -27,39 +27,39 @@ setup\:all: setup\:tool setup\:vendor ## Setup vendor and tool both
 setup: setup\:vendor ## Alias of setup:vendor
 .PHONY: setup
 
-# verify
-verify\:check: ## Check Rust syntax [synonym: check]
+# vet
+vet\:check: ## Check Rust syntax [synonym: check]
 	@cargo check --all --verbose
-.PHONY: verify\:check
+.PHONY: vet\:check
 
-check: verify\:check
+check: vet\:check
 .PHONY: check
 
-verify\:format: ## Check format without changes [synonym: verify:fmt, format, fmt]
+vet\:format: ## Check format without changes [synonym: vet:fmt, format, fmt]
 	@cargo fmt --all -- --check
-.PHONY: verify\:format
+.PHONY: vet\:format
 
-verify\:fmt: verify\:format
-.PHONY: verify\:fmt
+vet\:fmt: vet\:format
+.PHONY: vet\:fmt
 
-format: verify\:format
+format: vet\:format
 .PHONY: format
 
-fmt: verify\:format
+fmt: vet\:format
 .PHONY: fmt
 
-verify\:lint: ## Check style using clippy [synonym: lint]
+vet\:lint: ## Check style using clippy [synonym: lint]
 	@cargo clippy --all-targets
-.PHONY: verify\:lint
+.PHONY: vet\:lint
 
-lint: verify\:lint
+lint: vet\:lint
 .PHONY: lint
 
-verify\:all: verify\:check verify\:format verify\:lint ## Check code using all verify targets
-.PHONY: verify\:all
+vet\:all: vet\:check vet\:format vet\:lint ## Check code using all vet targets
+.PHONY: vet\:all
 
-verify: verify\:check ## Alias of verify:check
-.PHONY: verify
+vet: vet\:check ## Alias of vet:check
+.PHONY: vet
 
 # test
 test\:lib: ## Run tests for lib [synonym: test]
@@ -88,7 +88,7 @@ _get_covered:
 		rm "$(DST_DIR)/index.js*"; \
 	fi; \
 	file=($(DST_DIR)/debug/deps/$(MODULE)-*); \
-	kcov --verify --include-path=$(SRC_DIR) $(DST_DIR) $${file[0]}; \
+	kcov --vet --include-path=$(SRC_DIR) $(DST_DIR) $${file[0]}; \
 	grep 'index.html' $(DST_DIR)/index.js* | \
 		grep --only-matching --extended-regexp $(COVERAGE)
 
