@@ -61,7 +61,7 @@ sloggers = "2.0"
 uuid = { version = "0.8.2", features = ["v4"] }
 
 [dependencies.diesel]
-version = "1.4.6"
+version = "1.4.7"
 default-features = false
 features = ["chrono", "postgres", "r2d2", "uuidv07"]
 
