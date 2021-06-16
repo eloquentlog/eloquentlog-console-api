@@ -28,7 +28,7 @@ path = "test/test.rs"
 [dependencies]
 accord = { git = "https://github.com/ChrisBuchholz/accord.git", rev = "e56cecc" }
 base64 = "0.13.0"
-bcrypt = "0.9"
+bcrypt = "0.10"
 chrono = { version = "0.4.19", features = ["serde"] }
 dotenv = "0.15"
 fourche = "~0.2.0"
