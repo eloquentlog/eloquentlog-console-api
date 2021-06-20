@@ -19,7 +19,7 @@ pub mod preflight {
     use crate::config::Config;
     use crate::response::no_content_for;
 
-    #[options("/namespace/hget/<uuid>")]
+    #[options("/namespace/hget/<uuid>", rank = 2)]
     pub fn hget<'a>(
         uuid: String,
         config: State<Config>,
@@ -29,7 +29,7 @@ pub mod preflight {
         no_content_for("GET", &config)
     }
 
-    #[options("/namespace/hgetall")]
+    #[options("/namespace/hgetall", rank = 2)]
     pub fn hgetall<'a>(
         config: State<Config>,
         logger: SyncLogger,
@@ -38,7 +38,7 @@ pub mod preflight {
         no_content_for("GET", &config)
     }
 
-    #[options("/namespace/hset")]
+    #[options("/namespace/hset", rank = 2)]
     pub fn hset<'a>(
         config: State<Config>,
         logger: SyncLogger,
@@ -48,7 +48,7 @@ pub mod preflight {
     }
 }
 
-#[get("/namespace/hget/<uuid>")]
+#[get("/namespace/hget/<uuid>", rank = 1)]
 pub fn hget(
     uuid: String,
     user: &User,
@@ -73,7 +73,7 @@ pub fn hget(
     res.format(data.unwrap())
 }
 
-#[get("/namespace/hgetall")]
+#[get("/namespace/hgetall", rank = 1)]
 pub fn hgetall(user: &User, conn: DbConn, logger: SyncLogger) -> Response {
     let res: Response = Default::default();
 
@@ -89,7 +89,7 @@ pub fn hgetall(user: &User, conn: DbConn, logger: SyncLogger) -> Response {
     res.format(json!(data))
 }
 
-#[post("/namespace/hset", format = "json", data = "<data>")]
+#[post("/namespace/hset", data = "<data>", format = "json", rank = 1)]
 pub fn hset(
     user: &User,
     data: Json<RequestData>,

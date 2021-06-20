@@ -21,12 +21,12 @@ pub mod preflight {
     use crate::config::Config;
     use crate::response::no_content_for;
 
-    #[options("/login")]
+    #[options("/login", rank = 2)]
     pub fn login<'a>(config: State<Config>) -> RawResponse<'a> {
         no_content_for("HEAD,POST", &config)
     }
 
-    #[options("/logout")]
+    #[options("/logout", rank = 2)]
     pub fn logout<'a>(config: State<Config>) -> RawResponse<'a> {
         no_content_for("POST", &config)
     }
@@ -44,7 +44,7 @@ pub mod preignition {
     use crate::ss::SsConn;
     use crate::util::generate_random_hash;
 
-    #[head("/login", format = "json")]
+    #[head("/login", format = "json", rank = 3)]
     pub fn login<'a>(
         config: State<Config>,
         mut cookies: Cookies,
@@ -83,7 +83,7 @@ pub mod preignition {
     }
 }
 
-#[post("/login", data = "<data>", format = "json")]
+#[post("/login", data = "<data>", format = "json", rank = 1)]
 pub fn login<'a>(
     config: State<Config>,
     mut cookies: Cookies<'a>,
@@ -162,7 +162,7 @@ pub fn login<'a>(
 //
 // * Remove a cookie
 // * Delete session value in Redis
-#[post("/logout", format = "json")]
+#[post("/logout", format = "json", rank = 1)]
 pub fn logout<'a>(
     mut cookies: Cookies,
     user: &User,

@@ -18,7 +18,7 @@ pub mod preflight {
     use crate::config::Config;
     use crate::response::no_content_for;
 
-    #[options("/activate/<session_id>")]
+    #[options("/activate/<session_id>", rank = 2)]
     pub fn activate<'a>(
         session_id: String,
         config: State<Config>,
@@ -29,7 +29,7 @@ pub mod preflight {
     }
 }
 
-#[patch("/activate/<session_id>")]
+#[patch("/activate/<session_id>", rank = 1)]
 pub fn activate(
     session_id: String,
     token: VerificationToken,
