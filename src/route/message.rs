@@ -19,7 +19,7 @@ pub mod preflight {
     use crate::config::Config;
     use crate::response::no_content_for;
 
-    #[options("/message/<namespace_key>/append/<stream_slug>")]
+    #[options("/message/<namespace_key>/append/<stream_slug>", rank = 2)]
     pub fn append<'a>(
         namespace_key: String,
         stream_slug: String,
@@ -33,7 +33,10 @@ pub mod preflight {
         no_content_for("POST", &config)
     }
 
-    #[options("/message/<namespace_key>/lrange/<stream_slug>/<start>/<stop>")]
+    #[options(
+        "/message/<namespace_key>/lrange/<stream_slug>/<start>/<stop>",
+        rank = 2
+    )]
     pub fn lrange<'a>(
         namespace_key: String,
         stream_slug: String,
@@ -71,7 +74,8 @@ pub mod preflight {
 #[post(
     "/message/<namespace_key>/append/<stream_slug>",
     format = "json",
-    data = "<data>"
+    data = "<data>",
+    rank = 1
 )]
 pub fn append(
     user: &User,
@@ -119,7 +123,10 @@ pub fn append(
     }
 }
 
-#[get("/message/<namespace_key>/lrange/<stream_slug>/<start>/<stop>")]
+#[get(
+    "/message/<namespace_key>/lrange/<stream_slug>/<start>/<stop>",
+    rank = 1
+)]
 pub fn lrange(
     user: &User,
     namespace_key: String,

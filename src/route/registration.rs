@@ -30,12 +30,12 @@ pub mod preflight {
     use crate::config::Config;
     use crate::response::no_content_for;
 
-    #[options("/register")]
+    #[options("/register", rank = 2)]
     pub fn register<'a>(config: State<Config>) -> RawResponse<'a> {
         no_content_for("HEAD,POST", &config)
     }
 
-    #[options("/deregister")]
+    #[options("/deregister", rank = 2)]
     pub fn deregister<'a>(config: State<Config>) -> RawResponse<'a> {
         no_content_for("POST", &config)
     }
@@ -53,7 +53,7 @@ pub mod preignition {
     use crate::ss::SsConn;
     use crate::util::generate_random_hash;
 
-    #[head("/register", format = "json")]
+    #[head("/register", format = "json", rank = 3)]
     pub fn register<'a>(
         config: State<Config>,
         mut cookies: Cookies,
@@ -92,7 +92,7 @@ pub mod preignition {
     }
 }
 
-#[post("/register", data = "<data>", format = "json")]
+#[post("/register", data = "<data>", format = "json", rank = 1)]
 pub fn register<'a>(
     data: Json<UserRegistration>,
     mut cookies: Cookies,
@@ -244,7 +244,7 @@ pub fn register<'a>(
     }
 }
 
-#[post("/deregister", format = "json")]
+#[post("/deregister", format = "json", rank = 1)]
 pub fn deregister<'a>(
     mut cookies: Cookies,
     user: &User,

@@ -33,12 +33,12 @@ pub mod preflight {
     use crate::config::Config;
     use crate::response::no_content_for;
 
-    #[options("/password/reset")]
+    #[options("/password/reset", rank = 2)]
     pub fn request<'a>(config: State<Config>) -> RawResponse<'a> {
         no_content_for("HEAD,PUT", &config)
     }
 
-    #[options("/password/reset/<session_id>")]
+    #[options("/password/reset/<session_id>", rank = 2)]
     pub fn verify_update<'a>(
         session_id: String,
         config: State<Config>,
@@ -61,7 +61,7 @@ pub mod preignition {
     use crate::ss::SsConn;
     use crate::util::generate_random_hash;
 
-    #[head("/password/reset", format = "json")]
+    #[head("/password/reset", format = "json", rank = 3)]
     pub fn request<'a>(
         config: State<Config>,
         logger: SyncLogger,
@@ -99,7 +99,7 @@ pub mod preignition {
         res.status(Status::InternalServerError)
     }
 
-    #[head("/password/reset/<session_id>", format = "json")]
+    #[head("/password/reset/<session_id>", format = "json", rank = 3)]
     pub fn update<'a>(
         config: State<Config>,
         logger: SyncLogger,
@@ -141,7 +141,7 @@ pub mod preignition {
     }
 }
 
-#[put("/password/reset", data = "<payload>", format = "json")]
+#[put("/password/reset", data = "<payload>", format = "json", rank = 1)]
 pub fn request<'a>(
     logger: SyncLogger,
     mut cookies: Cookies,
@@ -263,7 +263,7 @@ pub fn request<'a>(
 // TODO:
 // Can't generate multiple verbs for a same route for now
 // https://github.com/SergioBenitez/Rocket/issues/2
-#[get("/password/reset/<session_id>", format = "json")]
+#[get("/password/reset/<session_id>", format = "json", rank = 1)]
 pub fn verify<'a>(
     logger: SyncLogger,
     session_id: String,
@@ -277,7 +277,12 @@ pub fn verify<'a>(
 
 // The arguments order is matter due to a spec of FromRequest
 #[allow(clippy::too_many_arguments)]
-#[patch("/password/reset/<session_id>", data = "<payload>", format = "json")]
+#[patch(
+    "/password/reset/<session_id>",
+    data = "<payload>",
+    format = "json",
+    rank = 1
+)]
 pub fn update<'a>(
     logger: SyncLogger,
     mut cookies: Cookies,

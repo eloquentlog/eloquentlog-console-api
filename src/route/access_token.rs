@@ -21,7 +21,7 @@ pub mod preflight {
     use crate::model::access_token::AgentType;
     use crate::response::no_content_for;
 
-    #[options("/access_token/del/<uuid>")]
+    #[options("/access_token/del/<uuid>", rank = 2)]
     pub fn del<'a>(
         uuid: String,
         config: State<Config>,
@@ -31,7 +31,7 @@ pub mod preflight {
         no_content_for("PATCH", &config)
     }
 
-    #[options("/access_token/dump/<uuid>")]
+    #[options("/access_token/dump/<uuid>", rank = 2)]
     pub fn dump<'a>(
         uuid: String,
         config: State<Config>,
@@ -41,7 +41,7 @@ pub mod preflight {
         no_content_for("PATCH", &config)
     }
 
-    #[options("/access_token/hset/<uuid>/state")]
+    #[options("/access_token/hset/<uuid>/state", rank = 2)]
     pub fn hset_state<'a>(
         uuid: String,
         config: State<Config>,
@@ -51,7 +51,7 @@ pub mod preflight {
         no_content_for("PATCH", &config)
     }
 
-    #[options("/access_token/append/<agent_type>")]
+    #[options("/access_token/append/<agent_type>", rank = 2)]
     pub fn append<'a>(
         agent_type: AgentType,
         config: State<Config>,
@@ -61,7 +61,7 @@ pub mod preflight {
         no_content_for("PUT", &config)
     }
 
-    #[options("/access_token/lrange/<agent_type>/<start>/<stop>")]
+    #[options("/access_token/lrange/<agent_type>/<start>/<stop>", rank = 2)]
     pub fn lrange<'a>(
         agent_type: AgentType,
         start: i64,
@@ -77,7 +77,7 @@ pub mod preflight {
     }
 }
 
-#[patch("/access_token/dump/<uuid>")]
+#[patch("/access_token/dump/<uuid>", rank = 1)]
 pub fn dump<'a>(
     uuid: String,
     user: &User,
@@ -152,7 +152,7 @@ pub fn dump<'a>(
     }))
 }
 
-#[patch("/access_token/del/<uuid>")]
+#[patch("/access_token/del/<uuid>", rank = 1)]
 pub fn del<'a>(
     uuid: String,
     user: &User,
@@ -195,7 +195,12 @@ pub fn del<'a>(
     }))
 }
 
-#[patch("/access_token/hset/<uuid>/state", data = "<data>", format = "json")]
+#[patch(
+    "/access_token/hset/<uuid>/state",
+    data = "<data>",
+    format = "json",
+    rank = 1
+)]
 pub fn hset_state<'a>(
     uuid: String,
     data: RequestData,
@@ -240,7 +245,7 @@ pub fn hset_state<'a>(
     }))
 }
 
-#[put("/access_token/append/<agent_type>")]
+#[put("/access_token/append/<agent_type>", rank = 1)]
 pub fn append<'a>(
     user: &User,
     agent_type: AgentType,
@@ -253,7 +258,7 @@ pub fn append<'a>(
     res
 }
 
-#[get("/access_token/lrange/<agent_type>/<start>/<stop>")]
+#[get("/access_token/lrange/<agent_type>/<start>/<stop>", rank = 1)]
 pub fn lrange<'a>(
     agent_type: AgentType,
     start: i64,
