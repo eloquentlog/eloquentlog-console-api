@@ -44,7 +44,7 @@ pub mod preflight {
         logger: SyncLogger,
     ) -> RawResponse<'a> {
         info!(logger, "hset");
-        no_content_for("GET", &config)
+        no_content_for("POST", &config)
     }
 }
 
