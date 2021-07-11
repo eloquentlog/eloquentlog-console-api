@@ -88,7 +88,7 @@ _get_covered:
 		rm "$(DST_DIR)/index.js*"; \
 	fi; \
 	file=($(DST_DIR)/debug/deps/$(MODULE)-*); \
-	kcov --vet --include-path=$(SRC_DIR) $(DST_DIR) $${file[0]}; \
+	kcov --verify --include-path=$(SRC_DIR) $(DST_DIR) $${file[0]}; \
 	grep 'index.html' $(DST_DIR)/index.js* | \
 		grep --only-matching --extended-regexp $(COVERAGE)
 
