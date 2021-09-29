@@ -38,7 +38,7 @@ lazy_static = "1.4"
 lettre = "0.9.6"
 lettre_email = "0.9.4"
 native-tls = "0.2.8"
-parking_lot = "0.11.1"
+parking_lot = "0.11.2"
 proctitle = "0.1.1"
 # NOTE:
 # r2d2_redis ?      -> redis 0.12.x
