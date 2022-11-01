@@ -37,7 +37,7 @@ jsonwebtoken = "7.2"
 lazy_static = "1.4"
 lettre = "0.9.6"
 lettre_email = "0.9.4"
-native-tls = "0.2.8"
+native-tls = "0.2.11"
 parking_lot = "0.12.1"
 proctitle = "0.1.1"
 # NOTE:
