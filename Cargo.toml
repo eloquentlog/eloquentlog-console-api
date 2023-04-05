@@ -46,7 +46,7 @@ proctitle = "0.1.1"
 # r2d2_redis 0.9.x  -> redis 0.10.x
 r2d2_redis = "0.14.0"
 rand = "0.8"
-redis = { version = "0.20.2", features = ["async-std-comp"] }
+redis = { version = "0.23.0", features = ["async-std-comp"] }
 regex = "1.6"
 rocket = "0.4.10"
 rocket_http = "0.4.10"
