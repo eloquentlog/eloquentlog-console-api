@@ -74,6 +74,12 @@ features = ["json"]
 [dev-dependencies]
 rstest = "0.11.0"
 
+# for --locked in make setup:tool
+[dev-dependencies.diesel_cli]
+version = "1.4.1"
+default-features = false
+features = ["postgres"]
+
 [dev-dependencies.cargo-husky]
 version = "1"
 default-features = false

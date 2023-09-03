@@ -15,10 +15,16 @@ setup\:vendor: ## Install cargo vendor and run it
 	@cargo vendor > .cargo/config
 .PHONY: setup\:vendor
 
+# https://github.com/rust-lang/cargo/issues/2267
 setup\:tool: ## Install development tools
 	@mkdir -p .git/hooks
 	@which diesel >/dev/null 2>&1 || cargo install \
-		diesel_cli --no-default-features --features "postgres" --force
+		diesel_cli \
+		--version 1.4.1 \
+		--no-default-features \
+		--features "postgres" \
+		--locked \
+		--force
 .PHONY: setup\:tool
 
 setup\:all: setup\:tool setup\:vendor ## Setup vendor and tool both
@@ -235,7 +241,7 @@ watch: watch\:server ## Alias of watch:server
 schema\:migration\:commit: ## Run all migrations
 	@if [ -f "$$(pwd)/.env" ]; then \
 		source $$(pwd)/.env && \
-		export $$(cut -d "=" -f 1 $$(pwd)/.env | grep -vE "^(\#|$$)"); \
+		export $$(cut -d "=" -f 1 $$(pwd)/.env | grep -vE "^(#|$$)"); \
 	fi; \
 	export DATABASE_URL="$(DATABASE_URL)"; \
 	diesel setup --migration-dir $(MIGRATION_DIRECTORY) && \
@@ -249,7 +255,7 @@ schema\:migration\:create: ## Generate new migration files (require: MIGRATION_N
 	fi
 	@if [ -f "$$(pwd)/.env" ]; then \
 		source $$(pwd)/.env && \
-		export $$(cut -d "=" -f 1 $$(pwd)/.env | grep -vE "^(\#|$$)"); \
+		export $$(cut -d "=" -f 1 $$(pwd)/.env | grep -vE "^(#|$$)"); \
 	fi; \
 	export DATABASE_URL="$(DATABASE_URL)"; \
 	diesel setup --migration-dir $(MIGRATION_DIRECTORY) && \
@@ -262,7 +268,7 @@ schema\:migration\:create: ## Generate new migration files (require: MIGRATION_N
 schema\:migration\:revert: ## Rollback a latest migration
 	@if [ -f "$$(pwd)/.env" ]; then \
 		source $$(pwd)/.env && \
-		export $$(cut -d "=" -f 1 $$(pwd)/.env | grep -vE "^(\#|$$)"); \
+		export $$(cut -d "=" -f 1 $$(pwd)/.env | grep -vE "^(#|$$)"); \
 	fi; \
 	export DATABASE_URL="$(DATABASE_URL)"; \
 	diesel migration revert --migration-dir $(MIGRATION_DIRECTORY)
@@ -271,7 +277,7 @@ schema\:migration\:revert: ## Rollback a latest migration
 schema\:migration\:status: ## List migrations
 	@if [ -f "$$(pwd)/.env" ]; then \
 		source $$(pwd)/.env && \
-		export $$(cut -d "=" -f 1 $$(pwd)/.env | grep -vE "^(\#|$$)"); \
+		export $$(cut -d "=" -f 1 $$(pwd)/.env | grep -vE "^(#|$$)"); \
 	fi; \
 	export DATABASE_URL="$(DATABASE_URL)"; \
 	diesel migration list --migration-dir $(MIGRATION_DIRECTORY)
