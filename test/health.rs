@@ -21,7 +21,7 @@ fn test_v1_health_check() {
     run_test(|client, conn, _, _| {
         let u = USERS.get("oswald").unwrap().clone();
         let password = make_raw_password(&u);
-        let user = load_user(u, &conn.db);
+        let user = load_user(u, conn.db);
 
         let _ = client
             .head("/_/login/")

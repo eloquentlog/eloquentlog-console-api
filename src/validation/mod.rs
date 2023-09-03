@@ -143,7 +143,7 @@ fn max_if_present(
 ) -> Box<dyn Fn(&Option<String>) -> ValidatorResult> {
     Box::new(move |s: &Option<String>| {
         match &s {
-            Some(v) => original_max(max)(&v),
+            Some(v) => original_max(max)(v),
             None => Ok(()),
         }
     })

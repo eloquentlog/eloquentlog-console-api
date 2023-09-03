@@ -88,7 +88,7 @@ mod test {
 
                 ..Default::default()
             });
-            let v = Validator::new(&data, &logger);
+            let v = Validator::new(&data, logger);
 
             let result = v.validate();
             assert!(result.is_err());
@@ -115,7 +115,7 @@ mod test {
 
                 ..Default::default()
             });
-            let v = Validator::new(&data, &logger);
+            let v = Validator::new(&data, logger);
 
             let result = v.validate();
             assert!(result.is_err());
@@ -142,7 +142,7 @@ mod test {
 
                 ..Default::default()
             });
-            let v = Validator::new(&data, &logger);
+            let v = Validator::new(&data, logger);
 
             let result = v.validate();
             assert!(result.is_ok());
@@ -158,7 +158,7 @@ mod test {
 
                 ..Default::default()
             });
-            let v = Validator::new(&data, &logger);
+            let v = Validator::new(&data, logger);
 
             let result = v.validate();
             assert!(result.is_ok());
@@ -174,7 +174,7 @@ mod test {
 
                 ..Default::default()
             });
-            let v = Validator::new(&data, &logger);
+            let v = Validator::new(&data, logger);
 
             let result = v.validate();
             assert!(result.is_err());
@@ -198,7 +198,7 @@ mod test {
 
                 ..Default::default()
             });
-            let v = Validator::new(&data, &logger);
+            let v = Validator::new(&data, logger);
 
             let result = v.validate();
             assert!(result.is_ok());
@@ -214,7 +214,7 @@ mod test {
 
                 ..Default::default()
             });
-            let v = Validator::new(&data, &logger);
+            let v = Validator::new(&data, logger);
 
             let result = v.validate();
             assert!(result.is_ok());
@@ -230,7 +230,7 @@ mod test {
 
                 ..Default::default()
             });
-            let v = Validator::new(&data, &logger);
+            let v = Validator::new(&data, logger);
 
             let result = v.validate();
             assert!(result.is_ok());
@@ -246,7 +246,7 @@ mod test {
 
                 ..Default::default()
             });
-            let v = Validator::new(&data, &logger);
+            let v = Validator::new(&data, logger);
 
             let result = v.validate();
             assert!(result.is_ok());
@@ -262,7 +262,7 @@ mod test {
 
                 ..Default::default()
             });
-            let v = Validator::new(&data, &logger);
+            let v = Validator::new(&data, logger);
 
             let result = v.validate();
             assert!(result.is_ok());
@@ -278,7 +278,7 @@ mod test {
 
                 ..Default::default()
             });
-            let v = Validator::new(&data, &logger);
+            let v = Validator::new(&data, logger);
 
             let result = v.validate();
             assert!(result.is_ok());
@@ -294,7 +294,7 @@ mod test {
 
                 ..Default::default()
             });
-            let v = Validator::new(&data, &logger);
+            let v = Validator::new(&data, logger);
 
             let result = v.validate();
             assert!(result.is_ok());
@@ -309,7 +309,7 @@ mod test {
 
                 ..Default::default()
             });
-            let v = Validator::new(&data, &logger);
+            let v = Validator::new(&data, logger);
 
             let result = v.validate();
             assert!(result.is_err());
@@ -332,7 +332,7 @@ mod test {
 
                 ..Default::default()
             });
-            let v = Validator::new(&data, &logger);
+            let v = Validator::new(&data, logger);
 
             let result = v.validate();
             assert!(result.is_err());
@@ -358,7 +358,7 @@ mod test {
 
                 ..Default::default()
             });
-            let v = Validator::new(&data, &logger);
+            let v = Validator::new(&data, logger);
 
             let result = v.validate();
             assert!(result.is_ok());
@@ -374,7 +374,7 @@ mod test {
 
                 ..Default::default()
             });
-            let v = Validator::new(&data, &logger);
+            let v = Validator::new(&data, logger);
 
             let result = v.validate();
             assert!(result.is_err());
@@ -401,7 +401,7 @@ mod test {
 
                 ..Default::default()
             });
-            let v = Validator::new(&data, &logger);
+            let v = Validator::new(&data, logger);
 
             let result = v.validate();
             assert!(result.is_ok());
@@ -417,7 +417,7 @@ mod test {
 
                 ..Default::default()
             });
-            let v = Validator::new(&data, &logger);
+            let v = Validator::new(&data, logger);
 
             let result = v.validate();
             assert!(result.is_ok());
@@ -430,7 +430,7 @@ mod test {
             let data = Json(RequestData {
                 ..Default::default()
             });
-            let v = Validator::new(&data, &logger);
+            let v = Validator::new(&data, logger);
 
             let result = v.validate();
             assert!(result.is_err());
@@ -448,7 +448,7 @@ mod test {
     #[test]
     fn test_validate() {
         run(|logger| {
-            let data = &Json(RequestData {
+            let data = Json(RequestData {
                 agent_id: 1,
                 agent_type: Some("person".to_string()),
                 stream_id: 1,
@@ -468,7 +468,7 @@ description = "It's deprecated. Use panic!() instead"
                     .to_string(),
                 ),
             });
-            let v = Validator::new(&data, &logger);
+            let v = Validator::new(&data, logger);
 
             let result = v.validate();
             assert!(result.is_ok());

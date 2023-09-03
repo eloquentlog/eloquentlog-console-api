@@ -115,7 +115,7 @@ impl Stream {
         conn: &PgConnection,
         logger: &Logger,
     ) -> Option<Self> {
-        let q = Self::by_uuid(&uuid).limit(1);
+        let q = Self::by_uuid(uuid).limit(1);
 
         info!(logger, "{}", debug_query::<Pg, _>(&q).to_string());
 

@@ -60,7 +60,7 @@ pub fn hget(
     let res: Response = Default::default();
 
     let data: Result<JsonValue, Error> =
-        match Namespace::find_by_uuid(&uuid, &user, &conn, &logger) {
+        match Namespace::find_by_uuid(&uuid, user, &conn, &logger) {
             None => {
                 error!(logger, "err: no namespace for uuid: {}", uuid);
                 Err(Error::NotFound)

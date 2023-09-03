@@ -188,7 +188,7 @@ impl AccessToken {
         conn: &PgConnection,
         logger: &Logger,
     ) -> Option<Self> {
-        let with_uuid = Self::with_uuid(&uuid);
+        let with_uuid = Self::with_uuid(uuid);
         let q = Self::visible_to(user).filter(with_uuid).limit(1);
 
         info!(logger, "{}", debug_query::<Pg, _>(&q).to_string());

@@ -70,7 +70,7 @@ where T: Clone + fmt::Debug + Into<String>
             .build_transaction()
             .read_only()
             .run::<_, diesel::result::Error, _>(|| {
-            match UserEmail::find_by_id(user_email_id, db_conn, &logger) {
+            match UserEmail::find_by_id(user_email_id, db_conn, logger) {
                 Some(ref user_email) => {
                     let email = user_email.email.as_ref().unwrap();
                     info!(logger, "user_email.email: {}", email);
@@ -123,7 +123,7 @@ where T: Clone + fmt::Debug + Into<String>
             .build_transaction()
             .read_only()
             .run::<_, diesel::result::Error, _>(|| {
-            match User::find_by_id(user_id, db_conn, &logger) {
+            match User::find_by_id(user_id, db_conn, logger) {
                 Some(user) => {
                     let email = user.email.as_ref();
                     info!(logger, "user.email: {}", email);

@@ -101,7 +101,7 @@ impl Claims for VerificationClaims {
         secret: &str,
     ) -> Result<Self, jsonwebtoken::errors::Error> {
         // self check
-        let _ = match decode_header(&token) {
+        let _ = match decode_header(token) {
             Ok(ref header) if header.alg == Self::ALGORITHM => header,
             _ => {
                 return Err(jsonwebtoken::errors::Error::from(
@@ -122,7 +122,7 @@ impl Claims for VerificationClaims {
         };
 
         match decode_token::<Self>(
-            &token,
+            token,
             &DecodingKey::from_secret(secret.as_bytes()),
             &v,
         ) {
@@ -191,7 +191,7 @@ impl Claims for AuthenticationClaims {
         secret: &str,
     ) -> Result<Self, jsonwebtoken::errors::Error> {
         // self check
-        let header = decode_header(&token)?;
+        let header = decode_header(token)?;
         if header.alg != Self::ALGORITHM {
             return Err(jsonwebtoken::errors::Error::from(
                 jsonwebtoken::errors::ErrorKind::InvalidToken,
@@ -210,7 +210,7 @@ impl Claims for AuthenticationClaims {
         };
 
         match decode_token::<Self>(
-            &token,
+            token,
             &DecodingKey::from_secret(secret.as_bytes()),
             &v,
         ) {
@@ -376,7 +376,7 @@ mod test {
             &CONFIG.verification_token_key_id,
             &CONFIG.verification_token_secret,
         );
-        assert!(VerificationClaims::decode(&token, &issuer, &secret,).is_err());
+        assert!(VerificationClaims::decode(&token, issuer, secret).is_err());
     }
 
     #[rstest(
@@ -416,7 +416,7 @@ mod test {
             &CONFIG.verification_token_secret,
         );
 
-        let claims = VerificationClaims::decode(&token, &issuer, &secret)
+        let claims = VerificationClaims::decode(&token, issuer, secret)
             .ok()
             .unwrap();
 

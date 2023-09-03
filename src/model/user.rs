@@ -487,7 +487,7 @@ impl Authenticatable for User {
     /// Checks whether the password given as an argument is valid or not.
     /// This takes a bit long til returning the result.
     fn verify_password(&self, password: &str) -> bool {
-        verify(password, &str::from_utf8(&self.password).unwrap()).unwrap()
+        verify(password, str::from_utf8(&self.password).unwrap()).unwrap()
     }
 }
 

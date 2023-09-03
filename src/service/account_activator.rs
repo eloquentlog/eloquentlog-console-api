@@ -56,7 +56,7 @@ where
     pub fn activate(&self) -> Result<(), &str> {
         if let Some(user) = self.target.as_ref().map(|v| v.0.clone()) {
             return user
-                .activate(&self.db_conn, &self.logger)
+                .activate(self.db_conn, self.logger)
                 .map(|_| {
                     info!(
                         self.logger,

@@ -174,7 +174,7 @@ impl Namespace {
             return None;
         }
 
-        let q = Self::visible_to(&user)
+        let q = Self::visible_to(user)
             .filter(Self::with_uuid(uuid))
             .limit(1);
 

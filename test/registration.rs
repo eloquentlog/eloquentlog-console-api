@@ -34,8 +34,9 @@ fn test_register_with_validation_error() {
             .dispatch();
 
         assert_eq!(res.status(), Status::UnprocessableEntity);
-        assert!(model::user::User::find_by_email(&email, conn.db, &logger)
-            .is_none());
+        assert!(
+            model::user::User::find_by_email(email, conn.db, logger).is_none()
+        );
     });
 }
 

@@ -41,7 +41,7 @@ fn test_password_reset_with_invalid_token() {
         let u = USERS.get("oswald").unwrap().clone();
         let user = load_user(u, conn.db);
 
-        let request = password_reset_request_by(&user, &client);
+        let request = password_reset_request_by(&user, client);
         assert!(request.is_ok());
 
         let mut queue = Queue::new("default", conn.mq);
@@ -93,7 +93,7 @@ fn test_password_reset_with_invalid_session_id() {
         let u = USERS.get("oswald").unwrap().clone();
         let user = load_user(u, conn.db);
 
-        let request = password_reset_request_by(&user, &client);
+        let request = password_reset_request_by(&user, client);
         assert!(request.is_ok());
 
         let mut queue = Queue::new("default", conn.mq);
@@ -146,7 +146,7 @@ fn test_password_reset_without_authorization_header() {
         let u = USERS.get("oswald").unwrap().clone();
         let user = load_user(u, conn.db);
 
-        let request = password_reset_request_by(&user, &client);
+        let request = password_reset_request_by(&user, client);
         assert!(request.is_ok());
 
         let mut queue = Queue::new("default", conn.mq);
@@ -195,7 +195,7 @@ fn test_password_reset_without_x_requested_with_header() {
         let u = USERS.get("oswald").unwrap().clone();
         let user = load_user(u, conn.db);
 
-        let request = password_reset_request_by(&user, &client);
+        let request = password_reset_request_by(&user, client);
         assert!(request.is_ok());
 
         let mut queue = Queue::new("default", conn.mq);
@@ -245,7 +245,7 @@ fn test_password_reset() {
         let u = USERS.get("oswald").unwrap().clone();
         let user = load_user(u, conn.db);
 
-        let request = password_reset_request_by(&user, &client);
+        let request = password_reset_request_by(&user, client);
         assert!(request.is_ok());
 
         let mut queue = Queue::new("default", conn.mq);

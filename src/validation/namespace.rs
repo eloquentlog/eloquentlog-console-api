@@ -82,7 +82,7 @@ mod test {
 
                 ..Default::default()
             });
-            let v = Validator::new(&data, &logger);
+            let v = Validator::new(&data, logger);
 
             let result = v.validate();
             assert!(result.is_err());
@@ -108,7 +108,7 @@ mod test {
 
                 ..Default::default()
             });
-            let v = Validator::new(&data, &logger);
+            let v = Validator::new(&data, logger);
 
             let result = v.validate();
             assert!(result.is_err());
@@ -134,7 +134,7 @@ mod test {
 
                 ..Default::default()
             });
-            let v = Validator::new(&data, &logger);
+            let v = Validator::new(&data, logger);
 
             let result = v.validate();
             assert!(result.is_err());
@@ -160,7 +160,7 @@ mod test {
 
                 ..Default::default()
             });
-            let v = Validator::new(&data, &logger);
+            let v = Validator::new(&data, logger);
 
             let result = v.validate();
             assert!(result.is_ok());
@@ -174,7 +174,7 @@ mod test {
                 description: Some("text".repeat(751)),
                 name: Some("name".to_string()),
             });
-            let v = Validator::new(&data, &logger);
+            let v = Validator::new(&data, logger);
 
             let result = v.validate();
             assert!(result.is_err());
@@ -199,7 +199,7 @@ mod test {
                 description: None,
                 name: Some("name".to_string()),
             });
-            let v = Validator::new(&data, &logger);
+            let v = Validator::new(&data, logger);
 
             let result = v.validate();
             assert!(result.is_ok());
@@ -213,7 +213,7 @@ mod test {
                 description: Some("text".repeat(750)),
                 name: Some("name".to_string()),
             });
-            let v = Validator::new(&data, &logger);
+            let v = Validator::new(&data, logger);
 
             let result = v.validate();
             assert!(result.is_ok());
@@ -226,7 +226,7 @@ mod test {
             let data = Json(RequestData {
                 ..Default::default()
             });
-            let v = Validator::new(&data, &logger);
+            let v = Validator::new(&data, logger);
 
             let result = v.validate();
             assert!(result.is_err());
@@ -256,7 +256,7 @@ This is a namespace for testing.
                     .to_string(),
                 ),
             });
-            let v = Validator::new(&data, &logger);
+            let v = Validator::new(data, logger);
 
             let result = v.validate();
             assert!(result.is_ok());

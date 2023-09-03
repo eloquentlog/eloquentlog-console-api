@@ -56,7 +56,7 @@ impl Default for Config {
             database_url: env::var("DATABASE_URL")
                 .expect("DATABASE_URL is not set"),
 
-            env_name: &"undefined",
+            env_name: "undefined",
 
             mailer_domain: env::var("MAILER_DOMAIN")
                 .expect("MAILER_DOMAIN is not set"),
@@ -130,7 +130,7 @@ impl Config {
             };
 
         Config {
-            env_name: &"production",
+            env_name: "production",
             cookie_secure: true,
             database_max_pool_size,
             mailer_smtp_port,
@@ -196,7 +196,7 @@ impl Config {
             database_url: env::var("TEST_DATABASE_URL")
                 .expect("TEST_DATABASE_URL is not set"),
 
-            env_name: &"testing",
+            env_name: "testing",
 
             mailer_domain: env::var("TEST_MAILER_DOMAIN")
                 .expect("TEST_MAILER_DOMAIN is not set"),
@@ -260,7 +260,7 @@ impl Config {
             };
 
         Config {
-            env_name: &"development",
+            env_name: "development",
             database_max_pool_size,
             mailer_smtp_port,
             message_queue_max_pool_size,

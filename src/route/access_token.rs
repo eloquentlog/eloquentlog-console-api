@@ -95,7 +95,7 @@ pub fn dump<'a>(
         .deferrable()
         .read_write()
         .run::<AccessToken, diesel::result::Error, _>(|| {
-            match AccessToken::owned_by_uuid(&user, &uuid, &conn, &logger) {
+            match AccessToken::owned_by_uuid(user, &uuid, &conn, &logger) {
                 // Note: this is available only once
                 Some(mut t) if t.token.is_none() => {
                     let token = AccessToken::generate_token();
@@ -169,7 +169,7 @@ pub fn del<'a>(
         .deferrable()
         .read_write()
         .run::<(), diesel::result::Error, _>(|| {
-            match AccessToken::owned_by_uuid(&user, &uuid, &conn, &logger) {
+            match AccessToken::owned_by_uuid(user, &uuid, &conn, &logger) {
                 None => {
                     error!(logger, "err: not found {}", uuid);
                     Err(Error::RollbackTransaction)
@@ -218,7 +218,7 @@ pub fn hset_state<'a>(
         .deferrable()
         .read_write()
         .run::<(), diesel::result::Error, _>(|| {
-            match AccessToken::owned_by_uuid(&user, &uuid, &conn, &logger) {
+            match AccessToken::owned_by_uuid(user, &uuid, &conn, &logger) {
                 None => {
                     error!(logger, "err: not found {}", uuid);
                     Err(Error::RollbackTransaction)
@@ -290,7 +290,7 @@ pub fn lrange<'a>(
     }
 
     let data = match AccessToken::owned_all_by_agent_type(
-        &user, agent_type, offset, limit, &conn, &logger,
+        user, agent_type, offset, limit, &conn, &logger,
     ) {
         None => {
             error!(logger, "err: not found user.id {}", user.uuid);
