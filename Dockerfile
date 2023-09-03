@@ -16,7 +16,7 @@ RUN set -eux; \
   libssl-dev \
   pkg-config \
   \
-  libpq-dev=11.7-0+deb10u1
+  libpq-dev=11.17-0+deb10u1
 
 COPY . .
 
@@ -36,9 +36,9 @@ RUN set -eux; \
   DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
   ca-certificates \
   \
-  libpq5=11.7-0+deb10u1
+  libpq5=11.17-0+deb10u1
 
-COPY --from=builder /build/target/release/${BINARY} .
+COPY --from=builder /build/target/release/eloquentlog-console-api-${BINARY} .
 
 # TODO:
 # - only for server (run in shell script or not?)
@@ -47,4 +47,4 @@ COPY --from=builder /build/target/release/${BINARY} .
 # RUN make schema:migration:commit
 # RUN make schema:migration:status
 
-CMD /app/${BINARY}
+CMD /app/eloquentlog-console-api-${BINARY}
