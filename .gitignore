@@ -9,5 +9,8 @@ vendor
 
 .build*
 
+*.log
+*.sh
+
 release.sh
 *ignore
